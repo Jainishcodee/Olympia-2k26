@@ -11,6 +11,7 @@ import { ScrollProgress } from '@/components/arena/ScrollProgress';
 import { useCollection } from '@/hooks/useCollection';
 import { Sport } from '@/types';
 import { PageLoading } from '@/components/admin/kit';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const SportsUniverseWrapper: React.FC = () => {
   const sports = useCollection<Sport>('sports', { sortBy: 'name' });
@@ -22,8 +23,10 @@ const SportsUniverseWrapper: React.FC = () => {
 };
 
 export const Home: React.FC = () => {
+  const { theme } = useTheme();
+
   return (
-    <div className="bg-[#080A0D] min-h-screen text-white overflow-x-hidden">
+    <div className={`min-h-screen overflow-x-hidden ${theme === 'day' ? 'bg-page text-ink' : 'bg-[#080A0D] text-white'}`}>
       <ScrollProgress />
 
       {/* Hero owns the first screen; the ticker becomes the hand-off

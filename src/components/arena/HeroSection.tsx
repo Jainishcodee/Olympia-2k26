@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { motion, useMotionValue, useScroll, useSpring, useTransform } from 'framer-motion';
+import { motion, MotionValue, useMotionValue, useScroll, useSpring, useTransform } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { OlympiaEmblem } from './OlympiaEmblem';
 import { SportsObjects } from './SportsObjects';
@@ -34,6 +34,47 @@ const RevealText: React.FC<{
     ))}
   </span>
 );
+
+const DayHero: React.FC<{ mx: MotionValue<number>; my: MotionValue<number> }> = ({ mx, my }) => {
+  const { scrollY } = useScroll();
+  const copyY = useTransform(scrollY, [0, 800], [0, 250]);
+  const copyOpacity = useTransform(scrollY, [0, 500], [1, 0]);
+  const emblemY = useTransform(scrollY, [0, 800], [0, 180]);
+  const emblemRotate = useTransform(scrollY, [0, 800], [0, -7]);
+  const ringX = useTransform(mx, [-1, 1], [-18, 18]);
+  const ringY = useTransform(my, [-1, 1], [-12, 12]);
+
+  return (
+    <section className="relative h-[100svh] min-h-[760px] overflow-hidden bg-[#F7F6F1] text-[#071426]">
+      <div aria-hidden className="absolute inset-0 opacity-70 ol-day-field" />
+      <motion.div style={{ x: ringX, y: ringY }} aria-hidden className="absolute -right-[16vw] top-[8%] h-[62vw] w-[62vw] max-h-[820px] max-w-[820px] rounded-full border border-[#155EEF]/20" />
+      <div aria-hidden className="absolute right-[7%] top-[18%] h-[44vw] w-[44vw] max-h-[570px] max-w-[570px] rounded-full border border-dashed border-[#155EEF]/30" />
+
+      <motion.div style={{ y: copyY, opacity: copyOpacity }} className="relative z-10 flex h-full flex-col px-5 pb-10 pt-28 sm:px-10 lg:px-14 lg:pt-32">
+        <div className="flex items-center justify-between border-y border-[#071426]/15 py-3 text-[9px] font-black uppercase tracking-[0.26em] sm:text-[10px]">
+          <span>OLYMPIA 2K26 / ANNUAL SPORTS FESTIVAL</span>
+          <span className="hidden sm:block">SWIPE / SELECT / EXPLORE ↗</span>
+        </div>
+        <div className="relative flex flex-1 flex-col justify-center lg:max-w-[72%]">
+          <motion.p initial={{ opacity: 0, x: -18 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.35, ease: EASE_OUT }} className="mb-5 text-[10px] font-black uppercase tracking-[0.32em] text-[#155EEF] sm:text-xs">The stage is set / 2026</motion.p>
+          <div className="relative z-10 text-[clamp(4.3rem,13.6vw,14.5rem)] font-black leading-[0.76] tracking-[-0.09em]">
+            <RevealText text={'YOUR'.split('')} delay={0.45} className="justify-start" letterClassName="text-[#155EEF]" />
+            <RevealText text={'PLAY.'.split('')} delay={0.7} className="justify-start" letterClassName="text-[#071426]" />
+          </div>
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.05, ease: EASE_OUT }} className="mt-10 flex flex-wrap items-end gap-x-12 gap-y-5">
+            <p className="max-w-[270px] text-sm leading-relaxed text-[#071426]/65">One festival. Every sport. Live scores, rivalry, and the moments that matter.</p>
+            <Link to="/live" className="ol-editorial-button">Enter the arena <span>↘</span></Link>
+          </motion.div>
+        </div>
+        <div className="relative z-10 flex items-end justify-between border-t border-[#071426]/15 pt-4 text-[9px] font-black uppercase tracking-[0.24em] sm:text-[10px]">
+          <span>01 / 10 DISCIPLINES</span><span className="text-[#155EEF]">Live scoring / Real time</span><span className="hidden sm:block">Scroll to enter ↓</span>
+        </div>
+      </motion.div>
+      <motion.div style={{ y: emblemY, rotate: emblemRotate }} className="pointer-events-none absolute right-[5%] top-[25%] z-20 w-[min(47vw,550px)] max-lg:right-[-9%] max-lg:top-[18%] max-lg:opacity-30"><OlympiaEmblem mx={mx} my={my} depth={20} tilt={9} /></motion.div>
+      <motion.div animate={{ rotate: 360 }} transition={{ duration: 26, repeat: Infinity, ease: 'linear' }} aria-hidden className="absolute bottom-[12%] right-[33%] h-16 w-16 rounded-full border-[10px] border-[#FFD21F] shadow-[8px_8px_0_#FF6A00]" />
+    </section>
+  );
+};
 
 export const HeroSection: React.FC = () => {
   const { scrollY } = useScroll();
@@ -89,6 +130,8 @@ export const HeroSection: React.FC = () => {
   const hudOpacity = useTransform(scrollY, [0, 400], [1, 0]);
 
   const cueOpacity = useTransform(scrollY, [0, 160], [1, 0]);
+
+  if (theme === 'day') return <DayHero mx={mx} my={my} />;
 
   return (
     <section className="relative h-[100svh] min-h-[640px] w-full overflow-hidden bg-[#040B17]">

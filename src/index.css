@@ -77,7 +77,7 @@
   color-scheme: light;
 
   /* Surfaces */
-  --page: #faf6ec;
+  --page: #f7f6f1;
   --surface: #ffffff;
   --surface-2: #f1f4fa;
   --surface-3: #e6ebf6;
@@ -191,6 +191,50 @@ body {
   overflow-x: hidden;
   margin: 0;
   transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+.ol-day-field {
+  background-image:
+    linear-gradient(rgba(7, 20, 38, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(7, 20, 38, 0.045) 1px, transparent 1px),
+    radial-gradient(circle at 76% 24%, rgba(21, 94, 239, 0.12), transparent 20%);
+  background-size: 72px 72px, 72px 72px, auto;
+  mask-image: linear-gradient(to bottom, black, transparent 88%);
+}
+
+.ol-editorial-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 2.5rem;
+  border-bottom: 2px solid #071426;
+  padding: 0.85rem 0;
+  color: #071426;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+  transition: color 220ms ease, gap 220ms ease;
+}
+.ol-editorial-button:hover { color: #155eef; gap: 3rem; }
+.ol-sport-link {
+  display: grid;
+  min-height: 164px;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 1rem;
+  color: #071426;
+  transition: color 350ms ease;
+}
+.ol-sport-link:hover { color: #ffffff; }
+.ol-sport-name {
+  font-size: clamp(2.35rem, 5vw, 5.6rem);
+  font-weight: 900;
+  letter-spacing: -0.08em;
+  line-height: 0.84;
+  text-transform: uppercase;
+}
+@media (min-width: 768px) {
+  .ol-sport-link { grid-template-columns: 76px 1fr auto; padding: 1.7rem 1.25rem; }
 }
 
 ::selection {

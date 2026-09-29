@@ -64,6 +64,25 @@ const SportCard: React.FC<SportCardProps> = ({ sport, index, isDay }) => {
     borderColor: `${accentColor}30`
   };
 
+  if (isDay) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 28 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-60px' }}
+        transition={{ duration: 0.55, delay: Math.min(index * 0.045, 0.28), ease: [0.16, 1, 0.3, 1] }}
+        className={`group relative border-b border-[#071426]/15 ${index === 0 ? 'md:col-span-2' : ''}`}
+      >
+        <Link to={`/sports/${sport.slug}`} className="ol-sport-link">
+          <span className="text-[10px] font-black tracking-[0.22em] text-[#071426]/45">{String(index + 1).padStart(2, '0')} / 10</span>
+          <span className="ol-sport-name">{sport.name}</span>
+          <span className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#155EEF]">Explore <span className="text-lg transition-transform duration-300 group-hover:translate-x-1">↗</span></span>
+          <span aria-hidden className="absolute inset-0 -z-10 origin-left scale-x-0 bg-[#155EEF] transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:scale-x-100" />
+        </Link>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       key={sport.id}
@@ -187,7 +206,8 @@ export const SportsUniverse: React.FC<SportsUniverseProps> = ({ sports }) => {
   }
 
   return (
-    <section className={`py-24 ${isDay ? 'bg-[#FAF6EC]' : 'bg-[#080A0D]'}`}>
+    <section className={`relative overflow-hidden py-24 ${isDay ? 'bg-[#F7F6F1]' : 'bg-[#080A0D]'}`}>
+      {isDay && <div aria-hidden className="pointer-events-none absolute inset-0 ol-day-field opacity-40" />}
       <Container>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -196,14 +216,14 @@ export const SportsUniverse: React.FC<SportsUniverseProps> = ({ sports }) => {
           transition={{ duration: 0.6 }}
         >
           <SectionTitle 
-            title="SPORTS UNIVERSE" 
-            subtitle="Explore all disciplines · Live matches · Upcoming fixtures · Teams"
+            title={isDay ? 'CHOOSE YOUR PLAY.' : 'SPORTS UNIVERSE'}
+            subtitle={isDay ? 'Ten disciplines. One arena. Make your move.' : 'Explore all disciplines · Live matches · Upcoming fixtures · Teams'}
             className="mb-12"
           />
         </motion.div>
 
         {/* Sports grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className={isDay ? 'relative grid grid-cols-1 md:grid-cols-2' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'}>
           {activeSports.map((sport, index) => (
             <SportCard key={sport.id} sport={sport} index={index} isDay={isDay} />
           ))}

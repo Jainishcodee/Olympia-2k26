@@ -5,6 +5,7 @@ import { cn } from '@/utils/cn';
 import { MobileMenu } from './MobileMenu';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const NAV_ITEMS = [
   { label: 'ARENA', href: '/' },
@@ -21,6 +22,8 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { isAdmin, isLoading: authLoading } = useAuth();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -39,7 +42,7 @@ export const Navbar: React.FC = () => {
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b border-transparent",
           isScrolled
-            ? "bg-[#080A0D]/90 backdrop-blur-xl border-white/5 py-3 shadow-[0_18px_50px_-30px_rgba(0,0,0,0.9)]"
+            ? isDay ? "bg-[#F7F6F1]/90 backdrop-blur-xl border-[#071426]/10 py-3 shadow-[0_18px_50px_-30px_rgba(7,20,38,0.18)]" : "bg-[#080A0D]/90 backdrop-blur-xl border-white/5 py-3 shadow-[0_18px_50px_-30px_rgba(0,0,0,0.9)]"
             : "bg-transparent py-6"
         )}
       >
@@ -57,7 +60,7 @@ export const Navbar: React.FC = () => {
           {/* Left side - OLYMPIA wordmark only on scroll */}
           <Link to="/" className="z-50 relative group flex items-center">
             <motion.span
-              className="text-xl md:text-2xl font-black tracking-[0.2em] text-white/60 group-hover:text-white transition-colors"
+              className={cn("text-xl md:text-2xl font-black tracking-[0.2em] transition-colors", isDay ? "text-[#071426]/60 group-hover:text-[#071426]" : "text-white/60 group-hover:text-white")}
               style={{ letterSpacing: '0.2em' }}
               animate={{ opacity: isScrolled ? 1 : 0, x: isScrolled ? 0 : -20 }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
@@ -86,7 +89,7 @@ export const Navbar: React.FC = () => {
                 <Link to={item.href} className="relative py-2 group block">
                   <span className={cn(
                     "text-sm font-bold tracking-widest transition-colors",
-                    isActive ? "text-white" : "text-white/60 group-hover:text-white"
+                    isActive ? (isDay ? "text-[#071426]" : "text-white") : (isDay ? "text-[#071426]/55 group-hover:text-[#071426]" : "text-white/60 group-hover:text-white")
                   )}>
                     {item.label}
                   </span>
@@ -135,13 +138,13 @@ export const Navbar: React.FC = () => {
             )}
             
             <button
-              className="z-50 relative text-white p-2"
+              className={cn("z-50 relative p-2", isDay ? "text-[#071426]" : "text-white")}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               <div className="w-6 h-5 flex flex-col justify-between">
-                <span className={cn("w-full h-0.5 bg-white transition-transform origin-left", mobileMenuOpen && "rotate-45 translate-x-1")} />
-                <span className={cn("w-full h-0.5 bg-white transition-opacity", mobileMenuOpen && "opacity-0")} />
-                <span className={cn("w-full h-0.5 bg-white transition-transform origin-left", mobileMenuOpen && "-rotate-45 translate-x-1")} />
+                <span className={cn("w-full h-0.5 transition-transform origin-left", isDay ? "bg-[#071426]" : "bg-white", mobileMenuOpen && "rotate-45 translate-x-1")} />
+                <span className={cn("w-full h-0.5 transition-opacity", isDay ? "bg-[#071426]" : "bg-white", mobileMenuOpen && "opacity-0")} />
+                <span className={cn("w-full h-0.5 transition-transform origin-left", isDay ? "bg-[#071426]" : "bg-white", mobileMenuOpen && "-rotate-45 translate-x-1")} />
               </div>
             </button>
           </motion.div>
