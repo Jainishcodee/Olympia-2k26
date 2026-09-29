@@ -1,0 +1,37 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isUnderMaxSize() {
+      return request.resource.size < 5 * 1024 * 1024; // 5MB max
+    }
+
+    match /branding/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isImage() && isUnderMaxSize();
+    }
+    match /teams/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isImage() && isUnderMaxSize();
+    }
+    match /players/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isImage() && isUnderMaxSize();
+    }
+    match /events/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isImage() && isUnderMaxSize();
+    }
+    match /sports/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isImage() && isUnderMaxSize();
+    }
+  }
+}

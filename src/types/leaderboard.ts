@@ -1,0 +1,21 @@
+import { Timestamp } from 'firebase/firestore';
+
+export interface LeaderboardEntry {
+  position: number;
+  entityId: string;
+  entityType: 'team' | 'player';
+  entityName: string;
+  logo: string;
+  sportId: string;
+  stats: Record<string, number>;
+  points: number;
+  wins: number;
+  losses: number;
+  draws: number;
+}
+
+export interface Leaderboard {
+  sportId: string;
+  entries: LeaderboardEntry[];
+  lastUpdated: Timestamp;
+}

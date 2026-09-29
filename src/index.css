@@ -1,0 +1,456 @@
+@import "tailwindcss";
+
+/* ============================================================
+   OLYMPIA 2K26 — Design tokens & dual theme (Day / Night)
+   ------------------------------------------------------------
+   NIGHT is the default (matches the original build 1:1).
+   DAY is opt-in via <html data-theme="day">, set by ThemeContext.
+   Every day-only override is scoped to :root[data-theme="day"],
+   so the night theme is byte-for-byte unchanged.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   1. Brand constants (kept for backwards compatibility)
+   ------------------------------------------------------------ */
+:root {
+  --olympia-navy: #071426;
+  --olympia-gold: #D9A441;
+  --electric-blue: #1264FF;
+  --royal-blue: #1747B8;
+  --bright-yellow: #FFD21F;
+  --olympia-orange: #FF6A00;
+  --olympia-coral: #FF4D3D;
+  --olympia-black: #080A0D;
+  --olympia-white: #FFFFFF;
+  --warm-white: #FAF9F5;
+}
+
+/* ------------------------------------------------------------
+   2a. NIGHT theme tokens (default)
+   ------------------------------------------------------------ */
+:root,
+:root[data-theme="night"] {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --page: #080a0d;
+  --surface: #071426;
+  --surface-2: #0b1b33;
+  --surface-3: #10233c;
+  --surface-soft: rgba(255, 255, 255, 0.05);
+  --surface-soft-2: rgba(255, 255, 255, 0.1);
+
+  /* Ink */
+  --ink: #ffffff;
+  --ink-muted: rgba(255, 255, 255, 0.62);
+  --ink-faint: rgba(255, 255, 255, 0.34);
+
+  /* Lines */
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.2);
+
+  /* Accents */
+  --accent: #d9a441;
+  --accent-ink: #071426;
+  --accent-soft: rgba(217, 164, 65, 0.14);
+  --gold: #d9a441;
+  --gold-ink: #d9a441;
+  --blue: #1264ff;
+  --royal: #1747b8;
+  --yellow: #ffd21f;
+  --coral: #ff4d3d;
+
+  /* Chrome */
+  --nav-scrim: rgba(8, 10, 13, 0.9);
+  --scrollbar-track: #080a0d;
+  --scrollbar-thumb: #1747b8;
+  --scrollbar-thumb-hover: #1264ff;
+  --selection-bg: #d9a441;
+  --selection-ink: #080a0d;
+}
+
+/* ------------------------------------------------------------
+   2b. DAY theme tokens — warm cream paper + electric blue,
+       per the reference designs (OLYMPIA 2K26 light system)
+   ------------------------------------------------------------ */
+:root[data-theme="day"] {
+  color-scheme: light;
+
+  /* Surfaces */
+  --page: #faf6ec;
+  --surface: #ffffff;
+  --surface-2: #f1f4fa;
+  --surface-3: #e6ebf6;
+  --surface-soft: rgba(11, 27, 51, 0.05);
+  --surface-soft-2: rgba(11, 27, 51, 0.1);
+
+  /* Ink */
+  --ink: #0b1b33;
+  --ink-muted: #4a5a75;
+  --ink-faint: #8a96aa;
+
+  /* Lines */
+  --line: rgba(11, 27, 51, 0.13);
+  --line-strong: rgba(11, 27, 51, 0.3);
+
+  /* Accents — day system leads with Electric Blue */
+  --accent: #1264ff;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(18, 100, 255, 0.1);
+  --gold: #d9a441;
+  --gold-ink: #a9761b;
+  --blue: #1264ff;
+  --royal: #1747b8;
+  --yellow: #ffd21f;
+  --coral: #ff4d3d;
+
+  /* Chrome */
+  --nav-scrim: rgba(250, 246, 236, 0.88);
+  --scrollbar-track: #efe9db;
+  --scrollbar-thumb: #b9c3d6;
+  --scrollbar-thumb-hover: #1264ff;
+  --selection-bg: #1264ff;
+  --selection-ink: #ffffff;
+}
+
+/* ------------------------------------------------------------
+   3. "Stays dark" scopes.
+   Some surfaces must remain dark in DAY (scoreboard panels,
+   photo scrims, saturated brand chips). Re-declaring the ink
+   tokens on those elements re-scopes every descendant that
+   resolves its colour from a token — no source edits needed.
+   ------------------------------------------------------------ */
+:root[data-theme="day"] .bg-black\/30,
+:root[data-theme="day"] .bg-black\/40,
+:root[data-theme="day"] .bg-black\/50,
+:root[data-theme="day"] .bg-black\/60,
+:root[data-theme="day"] .bg-\[\#1264FF\],
+:root[data-theme="day"] .bg-electric-blue,
+:root[data-theme="day"] .bg-\[\#1747B8\],
+:root[data-theme="day"] .bg-\[\#FF4D3D\],
+:root[data-theme="day"] .hover\:bg-\[\#1264FF\]:hover,
+:root[data-theme="day"] .hover\:bg-electric-blue:hover,
+:root[data-theme="day"] .hover\:bg-\[\#1747B8\]:hover,
+:root[data-theme="day"] .hover\:bg-\[\#FF4D3D\]:hover {
+  --ink: #ffffff;
+  --ink-muted: rgba(255, 255, 255, 0.74);
+  --ink-faint: rgba(255, 255, 255, 0.45);
+  --line: rgba(255, 255, 255, 0.16);
+  --line-strong: rgba(255, 255, 255, 0.3);
+  --surface-soft: rgba(255, 255, 255, 0.07);
+  --surface-soft-2: rgba(255, 255, 255, 0.14);
+  --gold-ink: #d9a441;
+  --selection-bg: #d9a441;
+  --selection-ink: #080a0d;
+}
+
+/* ------------------------------------------------------------
+   4. Tailwind theme bridge — generates the semantic utilities
+   (bg-page, text-ink, border-line, bg-navy, text-gold, …).
+   `inline` keeps var() references live so the utilities respond
+   to the active theme at runtime.
+   ------------------------------------------------------------ */
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-soft: var(--surface-soft);
+  --color-surface-soft-2: var(--surface-soft-2);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-gold: var(--gold);
+  --color-gold-ink: var(--gold-ink);
+  --color-electric-blue: var(--blue);
+  --color-royal-blue: var(--royal);
+  --color-bright-yellow: var(--yellow);
+  --color-coral: var(--coral);
+  --color-navy: var(--page);
+
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+}
+
+/* ------------------------------------------------------------
+   5. Base
+   ------------------------------------------------------------ */
+html {
+  background-color: var(--page);
+}
+
+body {
+  background-color: var(--page);
+  color: var(--ink);
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  margin: 0;
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+::selection {
+  background: var(--selection-bg);
+  color: var(--selection-ink);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Hide scrollbar class */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Text gradients */
+.text-gradient-gold {
+  background: linear-gradient(135deg, #d9a441 0%, #ffd21f 50%, #d9a441 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-blue {
+  background: linear-gradient(135deg, var(--blue) 0%, var(--royal) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ------------------------------------------------------------
+   6. Homepage motion primitives
+   ------------------------------------------------------------ */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Orbital drift for the floating sports objects */
+@keyframes ol-float {
+  0%,
+  100% {
+    transform: translate3d(0, -3.5%, 0) rotate(-3deg);
+  }
+  50% {
+    transform: translate3d(0, 4.5%, 0) rotate(4deg);
+  }
+}
+
+/* Flat ring rotation */
+@keyframes ol-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes ol-rotate-rev {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* Tilted ring rotation — the perspective lives in the keyframes so the
+   spin animation never overwrites the tilt transform. */
+@keyframes ol-tilt-spin-a {
+  from {
+    transform: perspective(760px) rotateX(66deg) rotateZ(0deg);
+  }
+  to {
+    transform: perspective(760px) rotateX(66deg) rotateZ(-360deg);
+  }
+}
+@keyframes ol-tilt-spin-b {
+  from {
+    transform: perspective(760px) rotateX(-58deg) rotateZ(18deg) rotate(0deg);
+  }
+  to {
+    transform: perspective(760px) rotateX(-58deg) rotateZ(18deg) rotate(360deg);
+  }
+}
+
+/* Emblem breathing bloom */
+@keyframes ol-breathe {
+  0%,
+  100% {
+    opacity: 0.62;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+/* Live indicator */
+@keyframes ol-live {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.82);
+  }
+}
+
+.ol-spin {
+  animation-name: ol-rotate;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.ol-spin-rev {
+  animation-name: ol-rotate-rev;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.ol-tilt-a {
+  animation-name: ol-tilt-spin-a;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.ol-tilt-b {
+  animation-name: ol-tilt-spin-b;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.ol-sheen {
+  animation: ol-rotate 14s linear infinite;
+  will-change: transform;
+}
+.ol-bloom {
+  animation: ol-breathe 7s ease-in-out infinite;
+}
+.ol-pulse {
+  animation: ol-live 1.4s ease-in-out infinite;
+}
+
+/* ------------------------------------------------------------
+   6. DAY bridge — remaps the hard-coded dark utilities that the
+   existing components use. Everything here is scoped to
+   [data-theme="day"], so NIGHT rendering is untouched.
+   ------------------------------------------------------------ */
+
+/* --- Page & panel shells ------------------------------------ */
+:root[data-theme="day"] .bg-\[\#080A0D\] { background-color: var(--page); }
+:root[data-theme="day"] .bg-\[\#080A0D\]\/90 { background-color: var(--nav-scrim); }
+:root[data-theme="day"] .bg-\[\#071426\] { background-color: var(--surface); }
+:root[data-theme="day"] .bg-slate-900,
+:root[data-theme="day"] .bg-slate-950,
+:root[data-theme="day"] .bg-gray-900,
+:root[data-theme="day"] .bg-gray-800,
+:root[data-theme="day"] .bg-slate-800 { background-color: var(--surface); }
+:root[data-theme="day"] .hover\:bg-slate-800:hover,
+:root[data-theme="day"] .hover\:bg-gray-800:hover { background-color: var(--surface-3); }
+
+/* --- Translucent cards -------------------------------------- */
+:root[data-theme="day"] .bg-white\/5,
+:root[data-theme="day"] .hover\:bg-white\/5:hover,
+:root[data-theme="day"] .group-hover\:bg-white\/5:is(:where(.group):hover *) {
+  background-color: var(--surface-soft);
+}
+:root[data-theme="day"] .bg-white\/10,
+:root[data-theme="day"] .hover\:bg-white\/10:hover,
+:root[data-theme="day"] .group-hover\:bg-white\/10:is(:where(.group):hover *) {
+  background-color: var(--surface-soft-2);
+}
+
+/* --- Text ---------------------------------------------------- */
+:root[data-theme="day"] .text-white { color: var(--ink); }
+:root[data-theme="day"] .hover\:text-white:hover { color: var(--ink); }
+:root[data-theme="day"] .group-hover\:text-white:is(:where(.group):hover *) { color: var(--ink); }
+
+:root[data-theme="day"] .text-white\/10 { color: color-mix(in oklab, var(--ink) 10%, transparent); }
+:root[data-theme="day"] .text-white\/20 { color: color-mix(in oklab, var(--ink) 20%, transparent); }
+:root[data-theme="day"] .text-white\/30 { color: color-mix(in oklab, var(--ink) 32%, transparent); }
+:root[data-theme="day"] .text-white\/40 { color: color-mix(in oklab, var(--ink) 42%, transparent); }
+:root[data-theme="day"] .text-white\/50 { color: color-mix(in oklab, var(--ink) 55%, transparent); }
+:root[data-theme="day"] .text-white\/60 { color: var(--ink-muted); }
+:root[data-theme="day"] .text-white\/70 { color: color-mix(in oklab, var(--ink) 78%, transparent); }
+:root[data-theme="day"] .text-white\/80 { color: color-mix(in oklab, var(--ink) 85%, transparent); }
+:root[data-theme="day"] .text-white\/90 { color: color-mix(in oklab, var(--ink) 92%, transparent); }
+:root[data-theme="day"] .hover\:text-white\/40:hover { color: color-mix(in oklab, var(--ink) 42%, transparent); }
+:root[data-theme="day"] .hover\:text-white\/70:hover { color: color-mix(in oklab, var(--ink) 78%, transparent); }
+:root[data-theme="day"] .placeholder-white\/40::placeholder { color: color-mix(in oklab, var(--ink) 45%, transparent); }
+
+/* Light-on-dark neutrals (admin shells, muted labels) */
+:root[data-theme="day"] .text-slate-300 { color: var(--ink); }
+:root[data-theme="day"] .text-slate-400,
+:root[data-theme="day"] .text-gray-400,
+:root[data-theme="day"] .text-gray-300 { color: var(--ink-muted); }
+:root[data-theme="day"] .hover\:text-white:hover.text-slate-400 { color: var(--ink); }
+
+/* Brand gold text needs more contrast on paper */
+:root[data-theme="day"] .text-\[\#D9A441\] { color: var(--gold-ink); }
+:root[data-theme="day"] .hover\:text-\[\#D9A441\]:hover { color: var(--gold-ink); }
+
+/* --- Borders & rings ---------------------------------------- */
+:root[data-theme="day"] .border-white\/5,
+:root[data-theme="day"] .border-white\/10 { border-color: var(--line); }
+:root[data-theme="day"] .border-white\/20,
+:root[data-theme="day"] .border-white\/30,
+:root[data-theme="day"] .border-white\/50,
+:root[data-theme="day"] .hover\:border-white\/20:hover { border-color: var(--line-strong); }
+:root[data-theme="day"] .border-t-white { border-top-color: var(--line); }
+:root[data-theme="day"] .border-slate-800,
+:root[data-theme="day"] .border-slate-700 { border-color: var(--line); }
+:root[data-theme="day"] .focus\:ring-white:focus { --tw-ring-color: var(--line-strong); }
+:root[data-theme="day"] .focus\:ring-offset-\[\#080A0D\]:focus { --tw-ring-offset-color: var(--page); }
+
+/* --- Gradient stops ----------------------------------------- */
+:root[data-theme="day"] .via-\[\#080A0D\] { --tw-gradient-via: var(--page); }
+:root[data-theme="day"] .to-\[\#080A0D\] { --tw-gradient-to: var(--page); }
+:root[data-theme="day"] .via-\[\#071426\] { --tw-gradient-via: var(--surface); }
+:root[data-theme="day"] .to-\[\#071426\] { --tw-gradient-to: var(--surface); }
+:root[data-theme="day"] .from-\[\#071426\]\/50 {
+  --tw-gradient-from: color-mix(in oklab, var(--surface) 50%, transparent);
+}
+:root[data-theme="day"] .to-gray-900 { --tw-gradient-to: var(--surface); }
+:root[data-theme="day"] .from-gray-800,
+:root[data-theme="day"] .from-gray-700 { --tw-gradient-from: var(--surface-3); }
+:root[data-theme="day"] .from-white { --tw-gradient-from: var(--ink); }
+:root[data-theme="day"] .from-white\/30 {
+  --tw-gradient-from: color-mix(in oklab, var(--ink) 30%, transparent);
+}
+:root[data-theme="day"] .to-white\/40 {
+  --tw-gradient-to: color-mix(in oklab, var(--ink) 40%, transparent);
+}
+:root[data-theme="day"] .to-white\/50 {
+  --tw-gradient-to: color-mix(in oklab, var(--ink) 50%, transparent);
+}
+
+/* ------------------------------------------------------------
+   7. Accessibility — respect reduced motion for CSS animation
+   ------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
