@@ -55,6 +55,7 @@ export interface Match {
   allowRatings: boolean;
   allowReviews: boolean;
   archived: boolean;
+  isHidden?: boolean;
   createdBy: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;

@@ -37,5 +37,6 @@ export interface Fixture {
   scheduledAt: Timestamp;
   venueId: string;
   status: string;
+  isHidden?: boolean;
   createdAt: Timestamp;
 }

@@ -12,6 +12,7 @@ import {
   FormGrid,
   FormSection,
   PageLoading,
+  Toggle,
 } from '@/components/admin/kit';
 import FormField from '@/components/admin/FormField';
 import { useAuditLog } from '@/hooks/useAuditLog';
@@ -401,7 +402,7 @@ const FixtureEditor: React.FC = () => {
           <div className="mt-4 pt-4 border-t border-slate-200/60 dark:border-white/10">
             <Toggle
               label="Hide fixture from public website"
-              description="When enabled, this fixture is saved as draft/private and will NOT be shown on public sports schedule and matches pages."
+              hint="When enabled, this fixture is saved as draft/private and will NOT be shown on public sports schedule and matches pages."
               checked={form.isHidden}
               onChange={(checked) => set('isHidden', checked)}
             />

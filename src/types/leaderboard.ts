@@ -19,6 +19,7 @@ export interface Leaderboard {
   sportId: string;
   sportName?: string;
   category?: 'team' | 'individual';
+  isHidden?: boolean;
   entries: LeaderboardEntry[];
   lastUpdated: Timestamp;
 }
