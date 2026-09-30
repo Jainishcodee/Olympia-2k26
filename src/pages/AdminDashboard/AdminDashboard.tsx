@@ -84,7 +84,6 @@ const AdminDashboard: React.FC = () => {
   const matches = useCollection<Match>('matches', { sortBy: 'scheduledAt', direction: 'desc' });
   const teams = useCollection<Team>('teams', { sortBy: 'name' });
   const players = useCollection<{ id: string }>('players');
-  const tournaments = useCollection<{ id: string; status?: string }>('tournaments');
   const votes = useCollection<{ id: string }>('votes');
   const reviews = useCollection<{ id: string; rating?: number }>('reviews');
   const reactions = useCollection<{ id: string }>('reactions');
@@ -100,10 +99,10 @@ const AdminDashboard: React.FC = () => {
     matches.isLoading ||
     teams.isLoading ||
     players.isLoading ||
-    tournaments.isLoading;
+    fixtures.isLoading;
 
   const firstError =
-    matches.error ?? teams.error ?? players.error ?? tournaments.error ?? null;
+    matches.error ?? teams.error ?? players.error ?? fixtures.error ?? null;
 
   const teamById = useMemo(
     () => new Map(teams.data.map((team) => [team.id, team])),
@@ -220,12 +219,12 @@ const AdminDashboard: React.FC = () => {
               to="/admin/players" 
             />
             <StatTile
-              label="Tournaments"
-              value={tournaments.data.length}
+              label="Active Fixtures"
+              value={fixtures.data.length}
               accent="slate"
               icon={<FiAward />}
               isLoading={isLoading}
-              to="/admin/tournaments"
+              to="/admin/fixtures"
             />
           </div>
         </Card>

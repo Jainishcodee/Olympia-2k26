@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { motion, MotionValue, useMotionValue, useTransform } from 'framer-motion';
 import { ACCENTS, BRAND, IDENTITY, useImageSrc } from './BrandAssets';
+import { SportBallArt } from './SportBallArt';
 
 /* ------------------------------------------------------------------ */
 /*  Metallic fallback — Olympia 2K26 Championship Badge               */
@@ -80,8 +81,8 @@ export interface OlympiaEmblemProps {
 }
 
 /**
- * The hero object. A metallic, orbiting, pointer-reactive Olympia mark.
- * Everything is driven by MotionValues so pointer movement never re-renders.
+ * The hero object. A metallic, orbiting, pointer-reactive Olympia mark
+ * surrounded by celestial orbiting sports balls (football, tennis, volleyball, badminton, cricket).
  */
 export const OlympiaEmblem: React.FC<OlympiaEmblemProps> = ({
   mx,
@@ -122,42 +123,66 @@ export const OlympiaEmblem: React.FC<OlympiaEmblemProps> = ({
         style={{ background: marks.glow }}
       />
 
-      {/* --- orbit system with revolving light ball -------------- */}
+      {/* --- Orbit System with Revolving Sports Balls & Equipment -------------- */}
       {orbits && (
         <div aria-hidden className="absolute inset-0 pointer-events-none" style={{ transformStyle: 'preserve-3d' }}>
           {/* Equatorial gold ring */}
-          <div className="absolute inset-[-6%] rounded-full border border-[#D9A441]/50 ol-spin" style={{ animationDuration: '24s' }} />
+          <div className="absolute inset-[-6%] rounded-full border border-[#D9A441]/40 ol-spin" style={{ animationDuration: '24s' }} />
           <div className="absolute inset-[-6%] rounded-full border border-transparent border-t-[#FFD21F] ol-spin" style={{ animationDuration: '8s' }} />
 
-          {/* Primary Revolving Light Ball (smooth continuous 360° celestial orbit) */}
+          {/* Primary Revolving Orbit 1: Football ⚽ & Tennis Ball 🎾 (360° celestial rotation) */}
           <motion.div
             animate={{ rotate: 360 }}
-            transition={{ duration: 9, repeat: Infinity, ease: 'linear' }}
-            className="absolute inset-[-6%] rounded-full pointer-events-none z-20"
+            transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
+            className="absolute inset-[-8%] rounded-full pointer-events-none z-20"
           >
+            {/* Top: Revolving Football */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
-              {/* Brilliant core light ball */}
-              <div className="w-3.5 h-3.5 rounded-full bg-white shadow-[0_0_14px_4px_#FFD21F,0_0_24px_8px_rgba(255,210,31,0.7),0_0_35px_12px_rgba(255,255,255,0.9)]" />
-              {/* Soft luminous corona aura */}
-              <div className="absolute w-8 h-8 rounded-full bg-[#FFD21F]/25 blur-xs pointer-events-none" />
+              <div className="w-6 h-6 sm:w-7 sm:h-7 filter drop-shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-transform hover:scale-125">
+                <SportBallArt sportSlug="football" />
+              </div>
+            </div>
+
+            {/* Bottom: Revolving Tennis Ball */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 flex items-center justify-center">
+              <div className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 filter drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)] transition-transform hover:scale-125">
+                <SportBallArt sportSlug="tennis" />
+              </div>
             </div>
           </motion.div>
 
-          {/* Tilted planetary ring — gold with secondary orbiting satellite */}
-          <div className="absolute inset-[-18%] rounded-full border border-[#D9A441]/60 ol-tilt-a" style={{ animationDuration: '28s' }}>
+          {/* Orbit 2: Tilted Planetary Gold Ring — Cricket Ball 🏏 & Volleyball 🏐 */}
+          <div className="absolute inset-[-18%] rounded-full border border-[#D9A441]/55 ol-tilt-a" style={{ animationDuration: '26s' }}>
+            {/* Top-Left: Revolving Cricket Ball */}
             <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
-              <span className="w-3 h-3 rounded-full bg-[#FFD21F] shadow-[0_0_16px_4px_#FFD21F,0_0_28px_6px_rgba(255,255,255,0.9)]" />
-              <span className="absolute w-6 h-6 rounded-full bg-[#D9A441]/35 blur-[2px]" />
+              <div className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 filter drop-shadow-[0_2px_10px_rgba(217,30,24,0.45)]">
+                <SportBallArt sportSlug="cricket" />
+              </div>
+            </div>
+            {/* Bottom-Right: Revolving Volleyball */}
+            <div className="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2 flex items-center justify-center">
+              <div className="w-6 h-6 sm:w-7 sm:h-7 filter drop-shadow-[0_2px_10px_rgba(18,100,255,0.45)]">
+                <SportBallArt sportSlug="volleyball" />
+              </div>
             </div>
           </div>
 
-          {/* Tilted dashed ring — electric blue with twilight satellite */}
+          {/* Orbit 3: Tilted Dashed Ring — Badminton Shuttlecock 🏸 & Table Tennis 🏓 */}
           <div
-            className="absolute inset-[-28%] rounded-full border border-dashed border-[#1264FF]/45 ol-tilt-b"
-            style={{ animationDuration: '40s' }}
+            className="absolute inset-[-28%] rounded-full border border-dashed border-[#1264FF]/40 ol-tilt-b"
+            style={{ animationDuration: '36s' }}
           >
+            {/* Right: Revolving Badminton Shuttlecock */}
             <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 flex items-center justify-center">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#1264FF] shadow-[0_0_14px_4px_#1264FF,0_0_22px_6px_rgba(255,255,255,0.8)]" />
+              <div className="w-6.5 h-6.5 sm:w-7.5 sm:h-7.5 filter drop-shadow-[0_2px_10px_rgba(255,255,255,0.85)]">
+                <SportBallArt sportSlug="badminton" />
+              </div>
+            </div>
+            {/* Left: Revolving Table Tennis Paddle/Ball */}
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 flex items-center justify-center">
+              <div className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 filter drop-shadow-[0_2px_10px_rgba(255,167,38,0.45)]">
+                <SportBallArt sportSlug="table-tennis" />
+              </div>
             </div>
           </div>
 

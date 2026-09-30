@@ -17,13 +17,11 @@ export const TournamentSection: React.FC = () => {
       <Container>
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10">
           <SectionTitle 
-            title={
-              <SplitText 
-                text="ACTIVE TOURNAMENTS" 
-                charClassName={isDay ? 'text-[#071426]' : 'text-white'}
-              />
-            } 
-            subtitle="The road to glory · Championship brackets & progression" 
+            eyebrow="04 / CHAMPIONSHIP BRACKETS"
+            tagline="THE PATH TO GLORY"
+            title="ACTIVE"
+            highlightTitle="TOURNAMENTS."
+            subtitle="Championship brackets, progression, and knockout ladders" 
             className="mb-0"
           />
           <Magnetic strength={0.3} radius={80}>

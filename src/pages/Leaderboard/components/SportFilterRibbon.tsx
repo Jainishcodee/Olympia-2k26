@@ -31,7 +31,7 @@ export const SportFilterRibbon: React.FC<{
   const isDay = theme === 'day';
 
   return (
-    <div className="relative mb-12">
+    <div className="relative mb-8 sm:mb-12 overflow-hidden">
       {/* Horizontal scrollable sport pills */}
       <div className="flex items-center gap-2 overflow-x-auto pb-4 hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
         {SPORTS_LIST.map((sport) => {

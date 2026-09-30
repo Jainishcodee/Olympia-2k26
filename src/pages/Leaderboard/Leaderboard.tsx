@@ -399,7 +399,7 @@ export const Leaderboard: React.FC = () => {
 
         {/* 4. The Field / The Pack (Main Ranking Posters) */}
         <section className="mb-20">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-8 gap-2">
             <div>
               <span
                 className={`text-[10px] font-black uppercase tracking-[0.3em] ${
@@ -409,7 +409,7 @@ export const Leaderboard: React.FC = () => {
                 {mode === 'players' ? 'ATHLETE PACK' : 'TEAM PACK'}
               </span>
               <h3
-                className={`text-2xl md:text-3xl font-black uppercase tracking-tight ${
+                className={`text-2xl sm:text-3xl font-black uppercase tracking-tight ${
                   isDay ? 'text-[#071426]' : 'text-white'
                 }`}
               >

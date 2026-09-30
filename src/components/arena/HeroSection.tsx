@@ -1,23 +1,42 @@
 import React, { useCallback, useEffect } from 'react';
-import { motion, useMotionValue, useScroll, useSpring, useTransform } from 'framer-motion';
+import { motion, MotionValue, useMotionValue, useScroll, useSpring, useTransform } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { OlympiaEmblem } from './OlympiaEmblem';
-import { SportsObjects } from './SportsObjects';
-import { LiveScoreHUD } from './LiveScoreHUD';
-import { BRAND, useImageSrc } from './BrandAssets';
 import { useTheme } from '@/contexts/ThemeContext';
 
 const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
+const RevealText: React.FC<{
+  text: string[];
+  delay?: number;
+  className?: string;
+  letterClassName?: string;
+}> = ({ text, delay = 0, className = '', letterClassName = '' }) => (
+  <span className={`inline-flex flex-wrap ${className}`}>
+    {text.map((char, i) => (
+      <motion.span
+        key={i}
+        initial={{ y: '108%', opacity: 0 }}
+        animate={{ y: '0%', opacity: 1 }}
+        transition={{
+          duration: 0.85,
+          delay: delay + i * 0.04,
+          ease: EASE_OUT,
+        }}
+        className={`inline-block overflow-hidden ${letterClassName}`}
+      >
+        {char === ' ' ? '\u00A0' : char}
+      </motion.span>
+    ))}
+  </span>
+);
 
 export const HeroSection: React.FC = () => {
   const { scrollY } = useScroll();
   const { theme } = useTheme();
   const isDay = theme === 'day';
-  const nightBackdrop = useImageSrc(BRAND.heroBackdrop);
-  const backdrop = isDay ? BRAND.arena : nightBackdrop;
 
-  /* ---- pointer: raw values are written imperatively so the hero
-         never re-renders on mousemove. Springs do the smoothing. --- */
+  /* ---- pointer motion smoothing ---------------------------------- */
   const rawX = useMotionValue(0);
   const rawY = useMotionValue(0);
   const mx = useSpring(rawX, { stiffness: 55, damping: 20, mass: 0.7 });
@@ -37,320 +56,138 @@ export const HeroSection: React.FC = () => {
     return () => window.removeEventListener('mousemove', onPointerMove);
   }, [onPointerMove]);
 
-  /* ---- scroll: one shared scroll value, many different rates ------- */
-  const backdropY = useTransform(scrollY, [0, 900], [0, 150]);
-  const backdropScale = useTransform(scrollY, [0, 900], [1.08, 1.2]);
-  const backdropOpacity = useTransform(scrollY, [0, 720], [1, 0.15]);
-  // opposite sign to the emblem: the far layer recoils from the pointer
-  const backdropX = useTransform(mx, [-1, 1], [16, -16]);
-  const backdropMY = useTransform(my, [-1, 1], [10, -10]);
-
-  const atmosphereY = useTransform(scrollY, [0, 900], [0, 70]);
-  const atmosphereOpacity = useTransform(scrollY, [0, 620], [1, 0]);
-
-  const emblemY = useTransform(scrollY, [0, 900], [0, 300]);
-  const emblemScale = useTransform(scrollY, [0, 900], [1, 0.76]);
-  const emblemRotate = useTransform(scrollY, [0, 900], [0, -9]);
-  const emblemOpacity = useTransform(scrollY, [0, 640], [1, 0]);
-  const emblemBlur = useTransform(scrollY, (v: number) => {
-    const t = Math.min(1, Math.max(0, (v - 240) / 400));
-    return `blur(${(t * 9).toFixed(2)}px)`;
-  });
-
-  const copyY = useTransform(scrollY, [0, 900], [0, 470]);
-  const copyOpacity = useTransform(scrollY, [0, 430], [1, 0]);
-
-  const hudY = useTransform(scrollY, [0, 900], [0, 560]);
-  const hudOpacity = useTransform(scrollY, [0, 400], [1, 0]);
-
-  const cueOpacity = useTransform(scrollY, [0, 160], [1, 0]);
+  /* ---- scroll animations ----------------------------------------- */
+  const copyY = useTransform(scrollY, [0, 800], [0, 220]);
+  const copyOpacity = useTransform(scrollY, [0, 480], [1, 0]);
+  const emblemY = useTransform(scrollY, [0, 800], [0, 160]);
+  const emblemRotate = useTransform(scrollY, [0, 800], [0, -7]);
+  const ringX = useTransform(mx, [-1, 1], [-18, 18]);
+  const ringY = useTransform(my, [-1, 1], [-12, 12]);
 
   return (
     <section
-      className={`relative h-[100svh] min-h-[640px] w-full overflow-hidden transition-colors duration-500 ${
-        isDay ? 'bg-gradient-to-b from-[#7FA2C7] via-[#A9C4DF] via-35% via-[#D6E5F1] via-70% to-[#F5F8FA] text-[#071426]' : 'bg-[#040B17] text-white'
+      className={`relative h-[100svh] min-h-[720px] overflow-hidden transition-colors duration-500 ${
+        isDay ? 'bg-[#F7F6F1] text-[#071426]' : 'bg-[#040B17] text-white'
       }`}
     >
-      {/* ============ L0 — environment (slowest, drifts against the pointer) ============ */}
-      <motion.div style={{ y: backdropY, scale: backdropScale, opacity: backdropOpacity }} className="absolute inset-0">
-        <motion.div style={{ x: backdropX, y: backdropMY }} className="absolute inset-0">
-          {backdrop ? (
-            <img
-              src={backdrop}
-              alt=""
-              draggable={false}
-              className={`h-full w-full object-cover ${isDay ? 'opacity-[0.32] mix-blend-multiply' : 'opacity-[0.42]'}`}
-            />
-          ) : (
-            <div
-              className="h-full w-full"
-              style={{
-                background: isDay
-                  ? 'radial-gradient(ellipse 130% 90% at 50% 100%, rgba(255, 255, 255, 0.95) 0%, rgba(245, 248, 250, 0.7) 35%, rgba(214, 229, 241, 0.5) 65%, #A9C4DF 100%)'
-                  : 'radial-gradient(ellipse 120% 80% at 50% 118%, rgba(18,100,255,0.42) 0%, rgba(7,20,38,0.9) 46%, #040B17 78%)',
-              }}
-            />
-          )}
+      {/* Background field lines */}
+      <div
+        aria-hidden
+        className={`absolute inset-0 pointer-events-none ${
+          isDay ? 'opacity-70 ol-day-field' : 'opacity-40 ol-night-field'
+        }`}
+      />
 
-          {/* stadium floor haze & soft blue-hour horizon blend */}
-          <div
-            className="absolute inset-x-0 bottom-0 h-[48%]"
-            style={{
-              background: isDay
-                ? 'linear-gradient(0deg, rgba(245,248,250,0.98) 5%, rgba(245,248,250,0.65) 45%, rgba(245,248,250,0) 100%)'
-                : 'linear-gradient(0deg, #040B17 4%, rgba(4,11,23,0.55) 45%, rgba(4,11,23,0) 100%)',
-            }}
-          />
-          <div
-            className="absolute inset-x-0 top-0 h-[36%]"
-            style={{
-              background: isDay
-                ? 'linear-gradient(180deg, rgba(95,130,181,0.5) 0%, rgba(127,162,199,0.25) 45%, rgba(214,229,241,0) 100%)'
-                : 'linear-gradient(180deg, #040B17 0%, rgba(4,11,23,0.6) 45%, rgba(4,11,23,0) 100%)',
-            }}
-          />
-        </motion.div>
-      </motion.div>
-
-      {/* ============ L1 — atmosphere (Blue Hour Sky + Soft Sunlight Diffusion) ============ */}
-      <motion.div style={{ y: atmosphereY, opacity: atmosphereOpacity }} className="absolute inset-0 pointer-events-none">
-        {/* Luminous Sunlight Core */}
-        <div
-          className="absolute left-1/2 top-[24%] h-[75vmin] w-[75vmin] -translate-x-1/2 rounded-full blur-[85px]"
-          style={{
-            background: isDay
-              ? 'radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(245, 248, 250, 0.65) 40%, rgba(214, 229, 241, 0) 75%)'
-              : 'radial-gradient(circle, rgba(18,100,255,0.35) 0%, rgba(18,100,255,0) 70%)',
-          }}
-        />
-        {/* Soft Twilight Blue Haze */}
-        <div
-          className="absolute -left-[10%] bottom-[8%] h-[60vmin] w-[60vmin] rounded-full blur-[100px]"
-          style={{
-            background: isDay
-              ? 'radial-gradient(circle, rgba(169, 196, 223, 0.35) 0%, rgba(214, 229, 241, 0.2) 50%, transparent 75%)'
-              : 'radial-gradient(circle, rgba(255,210,31,0.22) 0%, rgba(255,210,31,0) 70%)',
-          }}
-        />
-        {/* Subtle Warm Horizon Ambient */}
-        <div
-          className="absolute -right-[8%] top-[28%] h-[50vmin] w-[50vmin] rounded-full blur-[100px]"
-          style={{
-            background: isDay
-              ? 'radial-gradient(circle, rgba(255, 248, 232, 0.45) 0%, rgba(245, 248, 250, 0.25) 50%, transparent 75%)'
-              : 'radial-gradient(circle, rgba(255,106,0,0.18) 0%, rgba(255,106,0,0) 70%)',
-          }}
-        />
-        {/* Horizon Line */}
-        <div
-          className={`absolute inset-x-0 top-[64%] h-px ${
-            isDay
-              ? 'bg-gradient-to-r from-transparent via-[#D9A441]/40 to-transparent'
-              : 'bg-gradient-to-r from-transparent via-[#D9A441]/25 to-transparent'
-          }`}
-        />
-      </motion.div>
-
-      {/* ============ L2 — sports objects (mid) ============ */}
-      <SportsObjects mx={mx} my={my} scrollY={scrollY} />
-
-      {/* ============ L3 — the emblem (hero object) ============ */}
+      {/* Subtle orbital atmosphere rings (clean, zero random stones) */}
       <motion.div
-        style={{
-          y: emblemY,
-          scale: emblemScale,
-          rotate: emblemRotate,
-          opacity: emblemOpacity,
-          filter: emblemBlur,
-        }}
-        className="pointer-events-none absolute left-1/2 top-[42%] z-10 w-[min(54vh,74vw,490px)] -translate-x-1/2 -translate-y-1/2"
+        style={{ x: ringX, y: ringY }}
+        aria-hidden
+        className={`absolute rounded-full border pointer-events-none transition-all duration-500
+          left-1/2 -translate-x-1/2 top-[16%] h-[320px] w-[320px] sm:h-[420px] sm:w-[420px]
+          lg:left-auto lg:translate-x-0 lg:-right-[16vw] lg:top-[8%] lg:h-[62vw] lg:w-[62vw] lg:max-h-[820px] lg:max-w-[820px] ${
+          isDay ? 'border-[#155EEF]/15' : 'border-[#1264FF]/20'
+        }`}
+      />
+      <div
+        aria-hidden
+        className={`absolute rounded-full border border-dashed pointer-events-none transition-all duration-500
+          left-1/2 -translate-x-1/2 top-[20%] h-[240px] w-[240px] sm:h-[320px] sm:w-[320px]
+          lg:left-auto lg:translate-x-0 lg:right-[7%] lg:top-[18%] lg:h-[44vw] lg:w-[44vw] lg:max-h-[570px] lg:max-w-[570px] ${
+          isDay ? 'border-[#155EEF]/20' : 'border-[#D9A441]/25'
+        }`}
+      />
+
+      {/* Olympia Emblem: Positioned in the MIDDLE on mobile (< lg), and on the SIDE on desktop (lg:) */}
+      <motion.div
+        style={{ y: emblemY, rotate: emblemRotate }}
+        className="pointer-events-none absolute z-10 transition-all duration-500
+          left-1/2 -translate-x-1/2 top-[21%] sm:top-[23%] w-[240px] sm:w-[310px] opacity-100
+          lg:left-auto lg:right-[4%] lg:top-[24%] lg:translate-x-0 lg:w-[min(48vw,560px)] lg:z-20"
       >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.82, filter: 'blur(18px)' }}
-          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-          transition={{ duration: 1.4, delay: 0.15, ease: EASE_OUT }}
-          className="interactive"
-          data-cursor-label="OLYMPIA"
-        >
-          <OlympiaEmblem mx={mx} my={my} depth={34} tilt={14} />
-        </motion.div>
+        <OlympiaEmblem mx={mx} my={my} depth={22} tilt={10} />
       </motion.div>
 
-      {/* ============ L4 — typography (fastest) ============ */}
+      {/* Main Editorial Content */}
       <motion.div
         style={{ y: copyY, opacity: copyOpacity }}
-        className="relative z-20 flex h-full w-full flex-col items-center justify-between px-5 pb-[8vh] pt-[12vh] text-center pointer-events-none"
+        className="relative z-20 flex h-full flex-col justify-between px-5 pb-8 pt-24 sm:px-10 lg:px-14 lg:pt-32"
       >
-        {/* eyebrow at top */}
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.7, ease: EASE_OUT }}
-          className="relative mb-4 flex items-center gap-3 sm:gap-4 pointer-events-auto"
+        {/* Top Eyebrow Header Line */}
+        <div
+          className={`flex items-center justify-between border-y py-3 text-[9px] font-black uppercase tracking-[0.26em] sm:text-[10px] ${
+            isDay ? 'border-[#071426]/15 text-[#071426]' : 'border-white/15 text-white/80'
+          }`}
         >
-          <span className={`h-px w-6 sm:w-14 ${isDay ? 'bg-[#071426]/30' : 'bg-[#D9A441]/60'}`} />
-          <span
-            className={`text-[9px] sm:text-[11px] font-black uppercase tracking-[0.42em] sm:tracking-[0.5em] ${
-              isDay ? 'text-[#071426]' : 'text-[#D9A441]'
+          <span>OLYMPIA 2K26 / ANNUAL SPORTS FESTIVAL</span>
+          <span className="hidden sm:block">SWIPE / SELECT / EXPLORE ↗</span>
+        </div>
+
+        {/* Main Headline & Information */}
+        <div className="relative flex flex-1 flex-col justify-end lg:justify-center items-center lg:items-start text-center lg:text-left lg:max-w-[65%] pb-4 lg:pb-0">
+          <motion.p
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35, ease: EASE_OUT }}
+            className={`mb-3 lg:mb-5 text-[10px] font-black uppercase tracking-[0.32em] sm:text-xs ${
+              isDay ? 'text-[#155EEF]' : 'text-[#D9A441]'
             }`}
           >
-            THE STAGE IS SET / 2026
-          </span>
-          <span className={`h-px w-6 sm:w-14 ${isDay ? 'bg-[#071426]/30' : 'bg-[#D9A441]/60'}`} />
-        </motion.div>
+            The stage is set / 2026
+          </motion.p>
 
-        {/* Center spacer so emblem breathes in the center */}
-        <div className="flex-1" />
+          <div className="relative z-10 text-[clamp(3.4rem,10.5vw,14rem)] font-black leading-[0.8] tracking-[-0.08em] flex flex-col items-center lg:items-start">
+            <RevealText
+              text={'YOUR'.split('')}
+              delay={0.45}
+              className="justify-center lg:justify-start"
+              letterClassName={isDay ? 'text-[#155EEF]' : 'text-[#1264FF]'}
+            />
+            <RevealText
+              text={'PLAY.'.split('')}
+              delay={0.7}
+              className="justify-center lg:justify-start"
+              letterClassName={isDay ? 'text-[#071426]' : 'text-white'}
+            />
+          </div>
 
-        {/* bottom info & CTA */}
-        <div className="relative flex flex-col items-center pointer-events-auto">
-          {/* tagline */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.2, ease: EASE_OUT }}
-            className="relative max-w-xl"
+            transition={{ delay: 1.05, ease: EASE_OUT }}
+            className="mt-6 sm:mt-8 lg:mt-10 flex flex-col lg:flex-row items-center lg:items-end gap-y-4 gap-x-10"
           >
             <p
-              className={`text-[11px] sm:text-sm font-black uppercase tracking-[0.26em] ${
-                isDay ? 'text-[#071426]' : 'text-white/80'
+              className={`max-w-[280px] sm:max-w-[340px] text-xs sm:text-sm leading-relaxed ${
+                isDay ? 'text-[#071426]/70' : 'text-white/70'
               }`}
             >
-              One festival. Every sport. All heart.
+              One festival. Every sport. Live scores, rivalry, and the moments that matter.
             </p>
-            <p className={`mt-1 text-xs sm:text-sm ${isDay ? 'text-[#071426]/70' : 'text-white/50'}`}>
-              The arena is alive. Make your moment count.
-            </p>
-          </motion.div>
-
-          {/* CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 1.5, ease: EASE_OUT }}
-            className="relative mt-6"
-          >
             <Link
               to="/live"
-              data-cursor-label="ENTER"
-              className={`group relative inline-flex items-center gap-3 overflow-hidden px-8 py-4 backdrop-blur-md focus:outline-none transition-all duration-300 ${
+              className={`inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-lg ${
                 isDay
-                  ? 'border border-[#071426]/20 bg-white/75 shadow-[0_12px_35px_rgba(7,20,38,0.12)] hover:shadow-[0_16px_45px_rgba(18,100,255,0.22)]'
-                  : 'border border-[#D9A441]/70 bg-[#040B17]/40 shadow-[0_12px_35px_rgba(0,0,0,0.6)]'
+                  ? 'bg-[#071426] text-white hover:bg-[#1264FF] shadow-[0_10px_30px_rgba(7,20,38,0.25)] hover:scale-105'
+                  : 'bg-gradient-to-r from-[#1264FF] to-[#1747B8] text-white shadow-[0_10px_35px_rgba(18,100,255,0.4)] hover:brightness-110 hover:scale-105'
               }`}
             >
-              <span
-                className={`absolute inset-0 origin-left scale-x-0 transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:scale-x-100 ${
-                  isDay ? 'bg-[#071426]' : 'bg-[#D9A441]'
-                }`}
-              />
-              <span
-                className={`relative z-10 text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] transition-colors duration-300 ${
-                  isDay
-                    ? 'text-[#071426] group-hover:text-[#FFD21F]'
-                    : 'text-[#D9A441] group-hover:text-[#040B17]'
-                }`}
-              >
-                EXPLORE LIVE SCORES
-              </span>
-              <motion.span
-                className={`relative z-10 transition-colors duration-300 ${
-                  isDay
-                    ? 'text-[#155EEF] group-hover:text-[#FFD21F]'
-                    : 'text-[#D9A441] group-hover:text-[#040B17]'
-                }`}
-                animate={{ y: [0, 4, 0] }}
-                transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                ↓
-              </motion.span>
+              <span>Enter the arena</span>
+              <span>↘</span>
             </Link>
           </motion.div>
         </div>
-      </motion.div>
 
-      {/* ============ L5 — broadcast HUD ============ */}
-      <motion.div
-        style={{ y: hudY, opacity: hudOpacity }}
-        initial={{ opacity: 0, x: -40 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.9, delay: 2, ease: EASE_OUT }}
-        className="absolute bottom-8 left-5 z-30 hidden w-[330px] sm:block lg:bottom-12 lg:left-10 lg:w-[380px]"
-      >
-        <LiveScoreHUD />
-      </motion.div>
-
-      {/* ============ scroll cue ============ */}
-      <motion.div
-        style={{ opacity: cueOpacity }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2.3, duration: 1 }}
-        className="absolute bottom-8 left-1/2 z-30 hidden -translate-x-1/2 flex-col items-center md:flex"
-      >
-        <span
-          className={`mb-3 text-[9px] font-black uppercase tracking-[0.34em] ${
-            isDay ? 'text-[#071426]/50' : 'text-white/35'
-          }`}
-        >
-          Scroll
-        </span>
-        <span
-          className={`relative block h-14 w-px overflow-hidden ${
-            isDay ? 'bg-[#071426]/15' : 'bg-white/10'
-          }`}
-        >
-          <motion.span
-            animate={{ y: ['-100%', '100%'] }}
-            transition={{ duration: 1.9, repeat: Infinity, ease: 'easeInOut' }}
-            className={`absolute inset-x-0 h-full bg-gradient-to-b from-transparent ${
-              isDay ? 'via-[#155EEF]' : 'via-[#D9A441]'
-            } to-transparent`}
-          />
-        </span>
-      </motion.div>
-
-      {/* ============ edge meta ============ */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2.4, duration: 1 }}
-        className="pointer-events-none absolute bottom-8 right-5 z-30 hidden text-right lg:block lg:right-10"
-      >
+        {/* Bottom Status Bar */}
         <div
-          className={`text-[9px] font-black uppercase tracking-[0.3em] ${
-            isDay ? 'text-[#155EEF]' : 'text-[#D9A441]/80'
+          className={`relative z-10 flex items-end justify-between border-t pt-4 text-[9px] font-black uppercase tracking-[0.24em] sm:text-[10px] ${
+            isDay ? 'border-[#071426]/15' : 'border-white/15'
           }`}
         >
-          10 DISCIPLINES
-        </div>
-        <div
-          className={`mt-1 text-[9px] font-black uppercase tracking-[0.3em] ${
-            isDay ? 'text-[#071426]/40' : 'text-white/25'
-          }`}
-        >
-          01 / THE ARENA
+          <span>01 / 10 DISCIPLINES</span>
+          <span className={isDay ? 'text-[#155EEF]' : 'text-[#D9A441]'}>Live scoring / Real time</span>
+          <span className="hidden sm:block">Scroll to enter ↓</span>
         </div>
       </motion.div>
-
-      {/* ============ grade & grain (static) ============ */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-40"
-        style={{
-          background: isDay
-            ? 'radial-gradient(ellipse 82% 70% at 50% 50%, rgba(255,255,255,0) 40%, rgba(200,222,246,0.3) 100%)'
-            : 'radial-gradient(ellipse 82% 70% at 50% 50%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%)',
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-40 opacity-[0.045] mix-blend-overlay"
-        style={{
-          backgroundImage:
-            'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%224%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E")',
-        }}
-      />
     </section>
   );
 };

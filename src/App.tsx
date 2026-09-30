@@ -249,6 +249,7 @@ const App: React.FC = () => {
                         <PublicLayout><MatchDetail /></PublicLayout>
                       </Suspense>
                     } />
+                    <Route path="/tournaments" element={<Navigate to="/matches" replace />} />
                     <Route path="/sports" element={
                       <Suspense fallback={<PublicLoadingFallback />}>
                         <PublicLayout><Sports /></PublicLayout>

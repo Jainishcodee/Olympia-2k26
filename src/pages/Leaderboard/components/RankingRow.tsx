@@ -87,7 +87,7 @@ export const RankingRow: React.FC<{
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.3 }}
             aria-hidden
-            className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 select-none flex items-center gap-6 text-[clamp(4rem,10vw,8rem)] font-black leading-none tracking-tighter opacity-[0.06] text-[#155EEF] dark:text-[#D9A441]"
+            className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 select-none hidden lg:flex items-center gap-6 text-[clamp(4rem,8vw,7rem)] font-black leading-none tracking-tighter opacity-[0.05] text-[#155EEF] dark:text-[#D9A441]"
           >
             <span>{formattedRank}</span>
             <span>{formattedRank}</span>
@@ -96,13 +96,13 @@ export const RankingRow: React.FC<{
       </AnimatePresence>
 
       {/* Main Row Content */}
-      <div className="p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+      <div className="p-3.5 sm:p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 relative z-10">
         {/* Left: Rank Number + Photo Cutout + Names */}
-        <div className="flex items-center gap-5 sm:gap-6 min-w-0">
+        <div className="flex items-center gap-3 sm:gap-5 min-w-0 flex-1">
           {/* Rank + Trend */}
-          <div className="flex flex-col items-center justify-center w-12 sm:w-14 shrink-0 text-center">
+          <div className="flex flex-col items-center justify-center w-10 sm:w-14 shrink-0 text-center">
             <span
-              className={`text-2xl sm:text-3xl font-black tracking-tight leading-none ${
+              className={`text-xl sm:text-2xl md:text-3xl font-black tracking-tight leading-none ${
                 isMilestone
                   ? 'text-[#155EEF] dark:text-[#FFD21F]'
                   : isDay
@@ -116,7 +116,7 @@ export const RankingRow: React.FC<{
           </div>
 
           {/* Portrait Image Cutout */}
-          <div className="relative h-14 w-14 sm:h-16 sm:w-16 rounded-xl overflow-hidden shrink-0 border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
+          <div className="relative h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 rounded-xl overflow-hidden shrink-0 border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
             <img
               src={item.photo || item.logo || fallbackAvatar}
               alt={item.name}
@@ -125,10 +125,10 @@ export const RankingRow: React.FC<{
           </div>
 
           {/* Name + Team/Affiliation + Sport Badge */}
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap mb-0.5 sm:mb-1">
               <span
-                className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
+                className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 sm:px-2.5 py-0.5 rounded-full ${
                   isDay
                     ? 'bg-[#071426]/5 text-[#155EEF]'
                     : 'bg-white/5 text-[#D9A441]'
@@ -137,14 +137,14 @@ export const RankingRow: React.FC<{
                 {item.sportId}
               </span>
               {item.position && (
-                <span className={`text-[10px] font-bold ${isDay ? 'text-[#071426]/50' : 'text-white/50'}`}>
+                <span className={`text-[9px] sm:text-[10px] font-bold truncate max-w-[120px] sm:max-w-none ${isDay ? 'text-[#071426]/50' : 'text-white/50'}`}>
                   • {item.position}
                 </span>
               )}
             </div>
 
             <h4
-              className={`text-lg sm:text-xl font-black uppercase tracking-tight truncate ${
+              className={`text-base sm:text-lg md:text-xl font-black uppercase tracking-tight truncate ${
                 isDay ? 'text-[#071426]' : 'text-white'
               }`}
             >
@@ -157,42 +157,42 @@ export const RankingRow: React.FC<{
         </div>
 
         {/* Right: Points + Statistics + Action */}
-        <div className="flex items-center justify-between md:justify-end gap-6 sm:gap-10 border-t md:border-t-0 pt-3 md:pt-0 border-black/5 dark:border-white/5">
+        <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-6 md:gap-8 lg:gap-10 border-t md:border-t-0 pt-3 md:pt-0 border-black/5 dark:border-white/5 shrink-0">
           {/* Record */}
-          <div className="text-left md:text-center">
-            <span className={`text-[10px] font-bold uppercase tracking-wider block ${isDay ? 'text-[#071426]/50' : 'text-white/50'}`}>
+          <div className="text-left md:text-center min-w-[55px] sm:min-w-0">
+            <span className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-wider block ${isDay ? 'text-[#071426]/50' : 'text-white/50'}`}>
               Matches
             </span>
-            <span className={`text-sm sm:text-base font-black ${isDay ? 'text-[#071426]' : 'text-white'}`}>
+            <span className={`text-xs sm:text-sm md:text-base font-black ${isDay ? 'text-[#071426]' : 'text-white'}`}>
               {item.wins}W - {item.losses}L
             </span>
           </div>
 
           {/* Win Rate / Rating */}
-          <div className="text-left md:text-center">
-            <span className={`text-[10px] font-bold uppercase tracking-wider block ${isDay ? 'text-[#071426]/50' : 'text-white/50'}`}>
+          <div className="text-left md:text-center min-w-[45px] sm:min-w-0">
+            <span className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-wider block ${isDay ? 'text-[#071426]/50' : 'text-white/50'}`}>
               Rating
             </span>
-            <span className="text-sm sm:text-base font-black text-emerald-500">
+            <span className="text-xs sm:text-sm md:text-base font-black text-emerald-500">
               {item.rating ? `${item.rating}★` : `${item.matches > 0 ? Math.round((item.wins / item.matches) * 100) : 0}%`}
             </span>
           </div>
 
           {/* Points */}
-          <div className="text-right">
-            <span className={`text-[10px] font-bold uppercase tracking-wider block ${isDay ? 'text-[#071426]/50' : 'text-white/50'}`}>
-              Championship PTS
+          <div className="text-right min-w-[70px] sm:min-w-0">
+            <span className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-wider block ${isDay ? 'text-[#071426]/50' : 'text-white/50'}`}>
+              <span className="hidden sm:inline">Championship </span>PTS
             </span>
-            <div className="text-xl sm:text-2xl font-black text-[#D9A441] tabular-nums">
+            <div className="text-lg sm:text-xl md:text-2xl font-black text-[#D9A441] tabular-nums">
               <RollingScore value={item.points} />
             </div>
           </div>
 
           {/* Magnetic View Profile Button */}
-          <div className="hidden sm:block">
+          <div className="hidden md:block">
             <Magnetic strength={0.3} radius={70}>
               <span
-                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5 transition-all ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5 transition-all ${
                   isDay
                     ? 'bg-[#071426] text-white group-hover:bg-[#155EEF]'
                     : 'bg-white/10 text-white group-hover:bg-[#D9A441] group-hover:text-[#071426]'

@@ -130,20 +130,11 @@ export const ArenaLeaderboardPreview: React.FC = () => {
         {/* Header and Link */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
           <div>
-            <span
-              className={`text-[10px] font-black uppercase tracking-[0.3em] ${
-                isDay ? 'text-[#155EEF]' : 'text-[#D9A441]'
-              }`}
-            >
-              ARENA PERFORMANCE SNAPSHOT
-            </span>
             <SectionTitle
-              title={
-                <SplitText
-                  text="LEADERBOARD PREVIEW"
-                  charClassName={isDay ? 'text-[#071426]' : 'text-white'}
-                />
-              }
+              eyebrow="04 / ARENA STANDINGS"
+              tagline="RANKINGS & REPUTATION"
+              title="WHO LEADS"
+              highlightTitle="THE PACK?"
               subtitle="Top 5 contenders per discipline · Synchronized with live match outcomes"
               className="mb-0"
             />

@@ -686,3 +686,144 @@ App runs at `http://localhost:5173`.
 
 ### 20d. Build Verification
 - Verified with `tsc -b && vite build` — **0 errors**, production build passed cleanly in 1.08s.
+
+---
+
+## ⚽ Phase 21: Sports Banner 3D Ball Integration, Plain White Day Background, Mobile Rollout Interaction & Revolving Sports Objects on Logo
+
+> **Completed on September 30, 2026**
+
+### 21a. "View All Sports" Button Day Mode Font Fix (`SportsUniverse.tsx`, `index.css`)
+- **Explicit White Typography:** Corrected day-mode CSS where `text-white` was being mapped to dark ink by index.css day-bridge rules. Applied `!text-white` and inline `color: '#FFFFFF'` with `.text-white-force` so the "View All Sports" CTA button always renders with crisp white typography and motion arrow across all themes.
+
+### 21b. 3D Sport Equipment Vector Art & Background Ball Layout (`SportBallArt.tsx`, `SportsUniverse.tsx`)
+- **Created `SportBallArt.tsx`:** High-fidelity 3D-styled vector illustration system representing every discipline:
+  - ⚽ **Football / Soccer:** 3D shaded sphere with pastel blue & white hexagonal panels, realistic seams, and specular highlights (matching the user reference image).
+  - 🏐 **Volleyball:** 3-color aerodynamic swirl panels with electric blue & olympia yellow.
+  - 🏏 **Cricket:** Deep crimson leather sphere with white center stitched seam and specular gloss.
+  - 🎾 **Tennis / Hand-Tennis:** Optic yellow sphere with curved white tennis seams.
+  - 🏸 **Badminton:** 3D feather skirt shuttlecock with cork base and gold trim.
+  - 🏓 **Table Tennis:** Pure matte celluloid ball with racket.
+  - ♚ **Chess:** Obsidian & gold championship king piece.
+  - 🎯 **Carrom:** Acrylic striker with golden star.
+  - 🏎️ **Smash Karts:** High-speed racing helmet with tinted visor.
+  - 🎮 **LAN Games / Counter-Strike:** Cyber gaming controller with glowing thumbsticks.
+- **Card Background Placement:** Positioned each sport's 3D ball in the top-right background of the row, letting the huge bold sport name sit in the foreground.
+- **Plain White Background in Day Mode:** Replaced any twilight blue atmospheric tint in the "Choose Your Play" section with pure clean plain white (`bg-white`) for a crisp editorial finish.
+
+### 21c. Tactile Mobile Rollout & Hover Sweep Animation
+- **Desktop Hover:** Electric blue banner sweeps in from behind across the entire card width while the sport ball floats, scales up (`scale-110`), and rotates smoothly (`rotate-12`).
+- **Mobile Touch Interaction:** When tapped on mobile or clicked, the ball executes a physical roll-out animation (`x: [0, 35, 120]`, `rotate: [0, 180, 360]`, `scale: [1, 1.25, 0.9]`) before navigating to the sport page in ~0.65s.
+
+### 21d. Revolving Sports Balls on Olympia Emblem (`OlympiaEmblem.tsx`)
+- **Celestial Sports Orbit System:** Replaced generic geometric dots on the orbital rings with real revolving 3D sports balls:
+  - **Equatorial Ring Orbit:** Revolving ⚽ **Football** and 🎾 **Tennis Ball** orbiting in 360° continuous motion.
+  - **Tilted Gold Ring Orbit:** Revolving 🏏 **Cricket Ball** and 🏐 **Volleyball** orbiting along the celestial path.
+  - **Tilted Blue Outer Ring:** Revolving 🏸 **Badminton Shuttlecock** and 🏓 **Table Tennis / Basketball** with perspective drop-shadows.
+
+### 21e. Build Verification
+- Verified with `tsc -b && vite build` — **0 errors**, production build passed cleanly in 1.10s.
+
+---
+
+## 🎨 Phase 22: Editorial Side-by-Side Hero Restoration, Stone Orb Removal & Inspirational Section Eyebrows
+
+> **Completed on September 30, 2026**
+
+### 22a. Restored Editorial Side-by-Side Hero Layout (`HeroSection.tsx`)
+- **Restored User-Favorite Side-by-Side Arena Layout:**
+  - Left column: The high-impact typography with `OLYMPIA 2K26 / ANNUAL SPORTS FESTIVAL`, huge editorial `YOUR PLAY.` (`#155EEF` and `#071426`/`#FFFFFF`), tagline, and `Enter the arena ↘` action button.
+  - Right column: The `OlympiaEmblem` positioned cleanly on the side (`right-[4%] top-[24%]`) with revolving celestial sports balls.
+  - Bottom bar: `01 / 10 DISCIPLINES` --- `Live scoring / Real time` --- `Scroll to enter ↓`.
+- **Removed Drifting Stones & Random Orbs:** Completely eliminated `<SportsObjects />` and miscellaneous stone shapes from the hero section so only the clean logo with its revolving balls animation remains.
+
+### 22b. Inspirational Eyebrow Section Headers (`SectionTitle.tsx`, `SportsUniverse.tsx`, `LiveNowSection.tsx`, etc.)
+- **Matching User Reference (`media_1790750937112.png`):**
+  - Added the exact high-end eyebrow header bar with a horizontal rule across all main sections:
+    - **Choose Your Play:** `05 / THE LINEUP` (left) ----------- `ALL THE WAYS TO PLAY` (right) above huge punchy `WHAT'S` / `HAPPENING?` (in electric blue `#1264FF`).
+    - **Live Now:** `01 / LIVE BROADCAST` ----------- `REAL-TIME ARENA TELEMETRY` above `THE ARENA` / `IS LIVE.`.
+    - **Upcoming Battles:** `03 / BATTLE SCHEDULE` ----------- `NEXT ON THE ROSTER` above `UPCOMING` / `FIXTURES.`.
+    - **Tournaments:** `04 / CHAMPIONSHIP BRACKETS` ----------- `THE PATH TO GLORY` above `ACTIVE` / `TOURNAMENTS.`.
+    - **Leaderboard:** `06 / ARENA STANDINGS` ----------- `RANKINGS & REPUTATION` above `WHO LEADS` / `THE PACK?`.
+
+### 22c. Clean Artwork & Image Support (`SportBallArt.tsx`, `SportsUniverse.tsx`)
+- **Subtle Soft Vector Soccer Ball:** Matched the exact soft-shaded pastel blue and white soccer ball from the user's reference image.
+- **Minimalist Geometric Motifs:** Replaced cluttered illustrations with clean geometric insignias (such as the 8-point geometric star for cricket).
+- **Direct Custom Image Support:** Added `customImageUrl` support to `SportBallArt`, allowing instant plug-and-play whenever the user provides custom artwork files.
+
+### 22d. Clean Background Restoration (`Home.tsx`)
+- Removed the heavy blue gradient soup from `Home.tsx` that was washing out day mode and interfering with dark mode, restoring clean `#F7F6F1` in Day and `#080A0D` in Night.
+
+### 22e. Build Verification
+- Verified with `tsc -b && vite build` — **0 errors**, production build passed cleanly in 1.34s.
+
+---
+
+## 🏆 Phase 23: Complete Tournament Section Elimination, Leaderboard Responsive Overlap Fixes & Dual-Theme CSS Audit
+
+> **Completed on September 30, 2026**
+
+### 23a. Complete Elimination of "Tournaments" Across the App
+- **Navbar & Navigation (`Navbar.tsx` & `MobileMenu.tsx`):** Removed `{ label: 'TOURNAMENTS', href: '/tournaments' }` from `NAV_ITEMS`, completely cleaning both desktop and mobile navigation.
+- **Arena Home Page (`Home.tsx`):** Removed `<TournamentSection />` component and import from the main digital arena flow.
+- **Eyebrow Resequencing (`ArenaLeaderboardPreview.tsx`):** Resequenced Arena Standings to `04 / ARENA STANDINGS` for seamless sequential progression (`01 Live Broadcast` → `02 Active Arenas` → `03 Battle Schedule` → `04 Arena Standings`).
+- **Public Route Safety (`App.tsx`):** Added permanent `<Route path="/tournaments" element={<Navigate to="/matches" replace />} />` redirect so any legacy links or bookmarks gracefully land on `/matches`.
+- **Admin Navigation (`adminNav.ts`):** Removed `Tournaments` from the Competition navigation menu.
+- **Admin Dashboard (`AdminDashboard.tsx`):** Replaced the unused Tournaments StatTile with live `Active Fixtures`, keeping the competition metrics grid balanced at 4 tiles.
+
+### 23b. Leaderboard Alignment & Full Viewport Responsiveness (Mobile, Tablet & PC)
+- **Podium Hero (`PodiumHero.tsx`):**
+  - **Dynamic Multi-Device Grid:** Replaced rigid stacking with `grid-cols-1 md:grid-cols-2 lg:grid-cols-12`. On tablets (`md`), #1 Champion takes the full top banner (`col-span-2`) while #2 and #3 sit side-by-side (`col-span-1`). On desktop (`lg`), #1 sits prominently in the center flanked by #2 and #3.
+  - **Watermark Clamping:** Scaled watermarks down from overflowing `text-[14rem]` to responsive, low-opacity architectural layers (`text-5xl sm:text-7xl md:text-8xl` on contenders, `text-6xl sm:text-8xl lg:text-[10rem]` on champion) constrained inside `overflow-hidden`.
+  - **Performance HUD Metric Balance:** Restructured the 3-column stats matrix with fluid padding (`p-3 sm:p-5`) and font scaling (`text-base sm:text-xl lg:text-3xl`), ensuring points, wins, and win rates never collide.
+  - **Contender Imagery:** Scaled cutout frames (`h-40 sm:h-48 md:h-52` and `h-48 sm:h-60 md:h-72`) with smooth transitions.
+  - **Crown Banner:** Added `flex-wrap gap-2` to the champion badge row to prevent clipping on screens under 380px.
+- **Ranking Rows (`RankingRow.tsx`):**
+  - **Fluid Column Allocation:** Added `flex-1 min-w-0` to the athlete identity container, guaranteeing long names and club affiliations truncate cleanly with zero overlap.
+  - **Metric Shield:** Added `shrink-0` to the stats container and abbreviated "Championship PTS" to "PTS" on narrow mobile viewports (`hidden sm:inline`).
+  - **Touch Safety:** Restricted the background hover watermark to desktop viewports (`hidden lg:flex`) to avoid touch occlusion.
+  - **Compact Mobile Padding:** Reduced outer container padding to `p-3.5 sm:p-5 md:p-6` to free up 16px of horizontal real estate for phone screens.
+- **Leaderboard Hero (`LeaderboardHero.tsx`):** Added `flex-wrap` and responsive font clamp (`text-[clamp(2.4rem,8vw,7.5rem)]`) to ensure headers and live status pills never overlap.
+- **The Field Header (`Leaderboard.tsx`):** Restructured "THE FIELD" section title and rank range badge to `flex-col sm:flex-row sm:items-end` with `gap-2`.
+- **Discipline Summit (`MultiSportLeaderboardGrid.tsx`):** Adjusted heading typography (`text-xl sm:text-2xl md:text-3xl lg:text-4xl`) and replaced the heavy 3D emblem inside card corners with a crisp, performant Olympia logo.
+- **Contender Modal (`EntityProfileModal.tsx`):** Added `overflow-x-hidden` and scaled watermarks to eliminate horizontal scrolling on mobile.
+
+### 23c. Day & Night Mode CSS Audit & Structural Fixes
+- **Tailwind v4 `@custom-variant dark` Integration (`index.css`):**
+  - Declared `@custom-variant dark (&:where([data-theme="night"], [data-theme="night"] *, .dark, .dark *));`.
+  - Bound all `dark:*` Tailwind classes directly to `[data-theme="night"]` and `.dark`, preventing dark mode from failing on light OS setups or vice versa.
+- **Dynamic `.dark` Class Synchronization (`ThemeContext.tsx` & `index.html`):**
+  - Updated `applyTheme()` and `index.html` inline script to reliably add `.dark` in night mode and remove `.dark` in day mode on `document.documentElement`.
+- **Eliminated Destructive Day-Bridge Overrides (`index.css`):**
+  - Removed `.bg-[#071426]` override to preserve the signature Olympia Navy background for footers, dark ribbons, and high-contrast buttons in day mode.
+  - Removed global `.text-white` hijacking so white text on dark buttons, badges, pills, and footers remains pure white in day mode.
+  - Removed `.from-white` gradient overrides that were turning light-mode card gradients into muddy dark navy/brown bands.
+- **Navbar Theme Logo Integration (`Navbar.tsx`):**
+  - Connected the navbar brand mark to `useTheme()` to automatically display `logoLight` in day mode and `logoDark` in night mode.
+  - Ensured the brand logo is persistently visible on all inner pages (`/leaderboard`, `/matches`, etc.) while gracefully animating on scroll on the homepage.
+
+### 23d. Build Verification
+- Verified with `tsc -b && vite build` — **0 errors**, production build compiled cleanly in 1.50s.
+
+---
+
+## 🏟️ Phase 24: Premium Arena Stadium Backdrop Integration (Live Section & Live Page)
+
+> **Completed on September 30, 2026**
+
+### 24a. Cinematic Stadium Atmosphere Behind Live Section (`LiveNowSection.tsx`)
+- **Visual Integration:** Embedded `arena.jpeg` (`src/assets/arena.jpeg` / `dist/images/arena.jpeg`) behind the live match section with gentle breathing motion (`scale: [1.05, 1.08, 1.05]` over 25s).
+- **Dual-Theme Refinement:**
+  - **Day Mode:** Balanced at `opacity: 0.15` with subtle saturation and contrast, blended under a sunlit soft gradient (`#F7F6F1`) and soft stadium floodlight radial spot (`rgba(18,100,255,0.08)`).
+  - **Night Mode:** Rendered at `opacity: 0.28` with heightened contrast and deep navy stadium lighting (`#080A0D` / `#040B17`), gold pitch illumination (`#D9A441`), and live radar beacon glow (`#FF4D3D`).
+- **Seamless Edge Fades:** Applied feathered vertical gradient masks so the stadium architecture blends seamlessly into adjacent sections with zero harsh borders.
+- **Micro-Detailing:** Added an architectural broadcast telemetry grid pattern in 3.5% opacity for cyber-luxury athletic depth.
+
+### 24b. Full-Page Stadium Environment on Live Arena Page (`Live.tsx`)
+- **Full Viewport Backdrop:** Implemented the matching cinematic `arena.jpeg` backdrop across the dedicated `/live` page with fixed background positioning (`bg-fixed`) and smooth scaling.
+- **Editorial Eyebrow Header:** Enhanced the section title with `01 / LIVE BROADCAST TELEMETRY` and `REAL-TIME ARENA CLASHES`.
+- **Contrast & Hierarchy:** Ensured live match cards (`MatchCard`), empty-state broadcasting status cards, and live radar indicators float with elevated legibility above the stadium backdrop.
+- **Copy Cleanup:** Replaced legacy "tournament administrator" copy with "competition administrator" in the broadcast empty state.
+
+### 24c. Build Verification
+- Verified with `tsc -b && vite build` — **0 errors**, production build compiled cleanly in 1.24s.

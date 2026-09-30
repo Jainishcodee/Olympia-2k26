@@ -60,12 +60,10 @@ export const UpcomingMatches: React.FC = () => {
       <Container className="relative z-10">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
           <SectionTitle 
-            title={
-              <SplitText 
-                text="UPCOMING BATTLES" 
-                charClassName={isDay ? 'text-[#071426]' : 'text-white'}
-              />
-            } 
+            eyebrow="03 / BATTLE SCHEDULE"
+            tagline="NEXT ON THE ROSTER"
+            title="UPCOMING"
+            highlightTitle="FIXTURES."
             subtitle="Prepare for the next scheduled arena encounters" 
             className="mb-0"
           />

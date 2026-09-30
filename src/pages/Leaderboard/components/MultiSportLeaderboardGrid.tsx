@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
 import { TiltCard, RollingScore } from '@/components/motion';
-import { OlympiaEmblem } from '@/components/arena/OlympiaEmblem';
+import olympiaLogo from '@/assets/olympia.png';
 
 interface DisciplineLeader {
   sportId: string;
@@ -103,7 +103,7 @@ export const MultiSportLeaderboardGrid: React.FC<{
             DISCIPLINE SUMMIT
           </span>
           <h3
-            className={`text-3xl md:text-4xl font-black uppercase tracking-tight ${
+            className={`text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black uppercase tracking-tight ${
               isDay ? 'text-[#071426]' : 'text-white'
             }`}
           >
@@ -150,8 +150,8 @@ export const MultiSportLeaderboardGrid: React.FC<{
                     </span>
                   </div>
 
-                  <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-[#D9A441]/40 shadow-sm">
-                    <OlympiaEmblem orbits={false} breathe={false} depth={0} tilt={0} />
+                  <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 flex items-center justify-center border border-[#D9A441]/40 shadow-sm bg-black/5 dark:bg-white/5">
+                    <img src={olympiaLogo} alt="Olympia" className="w-5 h-5 object-contain" />
                   </div>
                 </div>
 

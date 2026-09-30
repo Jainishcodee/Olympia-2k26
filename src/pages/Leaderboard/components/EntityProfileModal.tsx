@@ -43,7 +43,7 @@ export const EntityProfileModal: React.FC<{
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.92, y: 30 }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className={`relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl border shadow-2xl p-6 sm:p-10 z-10 ${
+          className={`relative w-full max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden rounded-3xl border shadow-2xl p-6 sm:p-10 z-10 ${
             isDay
               ? 'bg-[#FAF6EC] border-[#071426]/15 text-[#071426]'
               : 'bg-[#071426] border-white/10 text-white'
@@ -52,7 +52,7 @@ export const EntityProfileModal: React.FC<{
           {/* Giant Rank Watermark */}
           <span
             aria-hidden
-            className="pointer-events-none absolute right-4 top-2 text-[10rem] sm:text-[14rem] font-black leading-none select-none opacity-5 text-[#155EEF] dark:text-[#D9A441]"
+            className="pointer-events-none absolute right-4 top-2 text-[7rem] sm:text-[10rem] md:text-[14rem] font-black leading-none select-none opacity-5 text-[#155EEF] dark:text-[#D9A441]"
           >
             {formattedRank}
           </span>

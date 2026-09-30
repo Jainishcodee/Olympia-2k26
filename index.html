@@ -18,6 +18,11 @@
           t = (t === 'day' || t === 'night') ? t : 'night';
           document.documentElement.setAttribute('data-theme', t);
           document.documentElement.style.colorScheme = t === 'day' ? 'light' : 'dark';
+          if (t === 'night') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
           var m = document.querySelector('meta[name="theme-color"]');
           if (m) m.setAttribute('content', t === 'day' ? '#FAF6EC' : '#071426');
         } catch (e) {}

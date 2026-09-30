@@ -4,7 +4,6 @@ import { LiveNowSection } from '@/components/arena/LiveNowSection';
 import { SportsUniverse } from '@/components/arena/SportsUniverse';
 import { FeaturedMatch } from '@/components/arena/FeaturedMatch';
 import { UpcomingMatches } from '@/components/arena/UpcomingMatches';
-import { TournamentSection } from '@/components/arena/TournamentSection';
 import { ArenaLeaderboardPreview } from '@/components/arena/ArenaLeaderboardPreview';
 import { ArenaMotivationalBanner } from '@/components/arena/ArenaMotivationalBanner';
 import { Footer } from '@/components/arena/Footer';
@@ -31,19 +30,9 @@ export const Home: React.FC = () => {
   return (
     <div
       className={`relative min-h-screen overflow-x-hidden transition-colors duration-500 ${
-        isDay
-          ? 'bg-gradient-to-b from-[#7FA2C7] via-[#A9C4DF] via-25% via-[#D6E5F1] via-60% via-[#F5F8FA] via-85% to-[#FFFFFF] text-[#071426]'
-          : 'bg-[#080A0D] text-white'
+        isDay ? 'bg-[#F7F6F1] text-[#071426]' : 'bg-[#080A0D] text-white'
       }`}
     >
-      {/* Blue-Hour Atmospheric Ambient Blooms */}
-      {isDay && (
-        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden z-0">
-          <div className="absolute top-[12%] left-1/4 h-[700px] w-[700px] -translate-x-1/2 rounded-full bg-gradient-to-br from-white/80 via-[#D6E5F1]/30 to-transparent blur-[130px]" />
-          <div className="absolute top-[38%] right-10 h-[600px] w-[600px] rounded-full bg-gradient-to-bl from-[#A9C4DF]/35 via-white/50 to-transparent blur-[140px]" />
-          <div className="absolute top-[65%] left-10 h-[650px] w-[650px] rounded-full bg-gradient-to-tr from-[#FFF8E8]/40 via-[#F5F8FA]/60 to-transparent blur-[140px]" />
-        </div>
-      )}
 
       <ScrollProgress />
       <InteractiveParticleCanvas />
@@ -95,7 +84,6 @@ export const Home: React.FC = () => {
 
       <FeaturedMatch />
       <UpcomingMatches />
-      <TournamentSection />
       
       {/* Live Leaderboard Preview for the Arena */}
       <ArenaLeaderboardPreview />

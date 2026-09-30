@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="night"], [data-theme="night"] *, .dark, .dark *));
+
 /* ============================================================
    OLYMPIA 2K26 — Design tokens & dual theme (Day / Night)
    ------------------------------------------------------------
@@ -477,7 +479,6 @@ body {
 /* --- Page & panel shells ------------------------------------ */
 :root[data-theme="day"] .bg-\[\#080A0D\] { background-color: var(--page); }
 :root[data-theme="day"] .bg-\[\#080A0D\]\/90 { background-color: var(--nav-scrim); }
-:root[data-theme="day"] .bg-\[\#071426\] { background-color: var(--surface); }
 :root[data-theme="day"] .bg-slate-900,
 :root[data-theme="day"] .bg-slate-950,
 :root[data-theme="day"] .bg-gray-900,
@@ -498,23 +499,8 @@ body {
   background-color: var(--surface-soft-2);
 }
 
-/* --- Text ---------------------------------------------------- */
-:root[data-theme="day"] .text-white { color: var(--ink); }
-:root[data-theme="day"] .hover\:text-white:hover { color: var(--ink); }
-:root[data-theme="day"] .group-hover\:text-white:is(:where(.group):hover *) { color: var(--ink); }
-
-:root[data-theme="day"] .text-white\/10 { color: color-mix(in oklab, var(--ink) 10%, transparent); }
-:root[data-theme="day"] .text-white\/20 { color: color-mix(in oklab, var(--ink) 20%, transparent); }
-:root[data-theme="day"] .text-white\/30 { color: color-mix(in oklab, var(--ink) 32%, transparent); }
-:root[data-theme="day"] .text-white\/40 { color: color-mix(in oklab, var(--ink) 42%, transparent); }
-:root[data-theme="day"] .text-white\/50 { color: color-mix(in oklab, var(--ink) 55%, transparent); }
-:root[data-theme="day"] .text-white\/60 { color: var(--ink-muted); }
-:root[data-theme="day"] .text-white\/70 { color: color-mix(in oklab, var(--ink) 78%, transparent); }
-:root[data-theme="day"] .text-white\/80 { color: color-mix(in oklab, var(--ink) 85%, transparent); }
-:root[data-theme="day"] .text-white\/90 { color: color-mix(in oklab, var(--ink) 92%, transparent); }
-:root[data-theme="day"] .hover\:text-white\/40:hover { color: color-mix(in oklab, var(--ink) 42%, transparent); }
-:root[data-theme="day"] .hover\:text-white\/70:hover { color: color-mix(in oklab, var(--ink) 78%, transparent); }
-:root[data-theme="day"] .placeholder-white\/40::placeholder { color: color-mix(in oklab, var(--ink) 45%, transparent); }
+/* --- Text helpers & utility guarantees ---------------------- */
+.text-white-force { color: #FFFFFF !important; }
 
 /* Light-on-dark neutrals (admin shells, muted labels) */
 :root[data-theme="day"] .text-slate-300 { color: var(--ink); }
@@ -543,24 +529,9 @@ body {
 /* --- Gradient stops ----------------------------------------- */
 :root[data-theme="day"] .via-\[\#080A0D\] { --tw-gradient-via: var(--page); }
 :root[data-theme="day"] .to-\[\#080A0D\] { --tw-gradient-to: var(--page); }
-:root[data-theme="day"] .via-\[\#071426\] { --tw-gradient-via: var(--surface); }
-:root[data-theme="day"] .to-\[\#071426\] { --tw-gradient-to: var(--surface); }
-:root[data-theme="day"] .from-\[\#071426\]\/50 {
-  --tw-gradient-from: color-mix(in oklab, var(--surface) 50%, transparent);
-}
 :root[data-theme="day"] .to-gray-900 { --tw-gradient-to: var(--surface); }
 :root[data-theme="day"] .from-gray-800,
 :root[data-theme="day"] .from-gray-700 { --tw-gradient-from: var(--surface-3); }
-:root[data-theme="day"] .from-white { --tw-gradient-from: var(--ink); }
-:root[data-theme="day"] .from-white\/30 {
-  --tw-gradient-from: color-mix(in oklab, var(--ink) 30%, transparent);
-}
-:root[data-theme="day"] .to-white\/40 {
-  --tw-gradient-to: color-mix(in oklab, var(--ink) 40%, transparent);
-}
-:root[data-theme="day"] .to-white\/50 {
-  --tw-gradient-to: color-mix(in oklab, var(--ink) 50%, transparent);
-}
 
 /* ------------------------------------------------------------
    7. Accessibility — respect reduced motion for CSS animation

@@ -49,7 +49,6 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     items: [
       { label: 'Matches', path: '/admin/matches', icon: HiOutlineCalendar },
       { label: 'Fixtures', path: '/admin/fixtures', icon: HiOutlineClock },
-      { label: 'Tournaments', path: '/admin/tournaments', icon: HiOutlineTrophy },
       { label: 'Sports', path: '/admin/sports', icon: HiOutlineLightningBolt },
     ],
   },

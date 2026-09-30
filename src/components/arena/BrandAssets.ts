@@ -4,6 +4,32 @@ import logoLight from '@/assets/logo_light.png';
 import logoDark from '@/assets/logo_dark.png';
 import arena from '@/assets/arena.jpeg';
 import olympiaLogo from '@/assets/olympia.png';
+import carromImg from '@/assets/sports/carrom.png';
+import smashKartsImg from '@/assets/sports/smash_karts.png';
+import footballImg from '@/assets/sports/football.png';
+import volleyballImg from '@/assets/sports/volleyball.png';
+import cricketImg from '@/assets/sports/cricket.png';
+import counterStrikeImg from '@/assets/sports/counter_strike.png';
+import tennisImg from '@/assets/sports/tennis.png';
+import badmintonImg from '@/assets/sports/badminton.png';
+import tableTennisImg from '@/assets/sports/table_tennis.png';
+import chessImg from '@/assets/sports/chess.png';
+
+/**
+ * High-definition 3D Sport Artifacts (Transparent Assets)
+ */
+export const SPORTS_ART = {
+  carrom: carromImg,
+  smashKarts: smashKartsImg,
+  football: footballImg,
+  volleyball: volleyballImg,
+  cricket: cricketImg,
+  counterStrike: counterStrikeImg,
+  tennis: tennisImg,
+  badminton: badmintonImg,
+  tableTennis: tableTennisImg,
+  chess: chessImg,
+} as const;
 
 /**
  * Every image the homepage is allowed to load.

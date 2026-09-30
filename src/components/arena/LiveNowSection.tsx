@@ -7,6 +7,7 @@ import { useCollection } from '@/hooks/useCollection';
 import { useTheme } from '@/contexts/ThemeContext';
 import { TiltCard, RollingScore, SplitText, Magnetic } from '@/components/motion';
 import type { Match, Team } from '@/types';
+import arenaImg from '@/assets/arena.jpeg';
 
 export const LiveNowSection: React.FC = () => {
   const { theme } = useTheme();
@@ -46,33 +47,78 @@ export const LiveNowSection: React.FC = () => {
   };
 
   return (
-    <section className={`py-20 relative overflow-hidden backdrop-blur-md transition-colors duration-500 border-t ${
+    <section className={`py-24 relative overflow-hidden transition-colors duration-500 border-t ${
       isDay 
-        ? 'bg-gradient-to-b from-white/85 via-[#F3F8FE]/80 to-white/85 border-[#071426]/10 text-[#071426]' 
-        : 'bg-[#080A0D]/90 border-white/5 text-white'
+        ? 'bg-[#F7F6F1] border-[#071426]/10 text-[#071426]' 
+        : 'bg-[#080A0D] border-white/5 text-white'
     }`}>
-      {/* Radar ambient glow */}
-      <div 
-        aria-hidden 
-        className="absolute top-0 left-1/4 w-96 h-96 bg-[#FF4D3D]/10 rounded-full blur-[140px] pointer-events-none" 
-      />
-      
-      <Container>
+      {/* Cinematic Premium Arena Stadium Backdrop */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
+        <motion.div
+          initial={{ scale: 1.05 }}
+          animate={{ scale: [1.05, 1.08, 1.05] }}
+          transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url(${arenaImg})`,
+            opacity: isDay ? 0.15 : 0.28,
+            filter: isDay ? 'saturate(1.1) contrast(1.05)' : 'brightness(0.85) contrast(1.2) saturate(1.15)',
+          }}
+        />
+
+        {/* Atmospheric Top & Bottom Fade */}
+        <div
+          aria-hidden
+          className={`absolute inset-0 ${
+            isDay
+              ? 'bg-gradient-to-b from-[#F7F6F1] via-[#F7F6F1]/55 to-[#F7F6F1]'
+              : 'bg-gradient-to-b from-[#080A0D] via-[#040B17]/65 to-[#080A0D]'
+          }`}
+        />
+
+        {/* Stadium Floodlight Radial Spotlight */}
+        <div
+          aria-hidden
+          className={`absolute inset-0 ${
+            isDay
+              ? 'bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,rgba(18,100,255,0.08),transparent_70%)]'
+              : 'bg-[radial-gradient(ellipse_80%_60%_at_50%_35%,rgba(18,100,255,0.22),transparent_75%)]'
+          }`}
+        />
+
+        {/* Pitch Warm Illumination Glow */}
+        <div
+          aria-hidden
+          className={`absolute top-0 right-1/4 w-[500px] h-[350px] rounded-full blur-[130px] opacity-40 ${
+            isDay ? 'bg-[#D9A441]/15' : 'bg-[#D9A441]/20'
+          }`}
+        />
+
+        {/* Live Broadcast Signal Radar Beacon */}
+        <div 
+          aria-hidden 
+          className="absolute top-0 left-10 w-96 h-96 bg-[#FF4D3D]/12 rounded-full blur-[140px]" 
+        />
+
+        {/* Fine Architectural Grid Lines */}
+        <div
+          aria-hidden
+          className={`absolute inset-0 opacity-[0.035] ${
+            isDay
+              ? 'bg-[linear-gradient(to_right,#071426_1px,transparent_1px),linear-gradient(to_bottom,#071426_1px,transparent_1px)] bg-[size:4rem_4rem]'
+              : 'bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:4rem_4rem]'
+          }`}
+        />
+      </div>
+
+      <Container className="relative z-10">
         <div className="flex items-end justify-between mb-10">
           <SectionTitle 
-            title={
-              <div className="flex items-center">
-                <SplitText 
-                  text="LIVE ARENA" 
-                  charClassName={isDay ? 'text-[#071426]' : 'text-white'}
-                />
-                <span className="relative flex h-3.5 w-3.5 md:h-4 md:w-4 ml-4">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FF4D3D] opacity-75" />
-                  <span className="relative inline-flex h-3.5 w-3.5 md:h-4 md:w-4 rounded-full bg-[#FF4D3D] shadow-[0_0_15px_#FF4D3D]" />
-                </span>
-              </div>
-            } 
-            subtitle="Real-time broadcast action directly from the tournament floor" 
+            eyebrow="01 / LIVE BROADCAST"
+            tagline="REAL-TIME ARENA TELEMETRY"
+            title="THE ARENA"
+            highlightTitle="IS LIVE."
+            subtitle="Real-time broadcast action directly from the championship floor" 
             className="mb-0"
           />
           

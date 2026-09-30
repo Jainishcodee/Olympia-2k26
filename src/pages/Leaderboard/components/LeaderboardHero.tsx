@@ -38,23 +38,23 @@ export const LeaderboardHero: React.FC<{
       <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
         {/* Title Block */}
         <div>
-          <div className="flex items-center gap-3 mb-3">
-            <span className="h-px w-8 bg-[#D9A441]" />
+          <div className="flex items-center gap-2 sm:gap-3 mb-3 flex-wrap">
+            <span className="h-px w-6 sm:w-8 bg-[#D9A441] shrink-0" />
             <span
-              className={`text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] ${
+              className={`text-[9px] sm:text-[10px] md:text-xs font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] ${
                 isDay ? 'text-[#155EEF]' : 'text-[#D9A441]'
               }`}
             >
-              OLYMPIA 2K26 · CHAMPIONSHIP PERFORMANCE INDEX
+              OLYMPIA 2K26 · PERFORMANCE INDEX
             </span>
-            <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-[9px] font-black uppercase tracking-widest">
+            <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-[9px] font-black uppercase tracking-widest shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
               RANKINGS LIVE
             </span>
           </div>
 
           <h1
-            className={`text-[clamp(2.8rem,8vw,7.5rem)] font-black leading-[0.88] tracking-[-0.04em] uppercase ${
+            className={`text-[clamp(2.4rem,8vw,7.5rem)] font-black leading-[0.88] tracking-[-0.04em] uppercase ${
               isDay ? 'text-[#071426]' : 'text-white'
             }`}
           >

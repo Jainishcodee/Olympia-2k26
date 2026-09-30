@@ -29,6 +29,11 @@ function applyTheme(theme: Theme) {
   const root = document.documentElement;
   root.setAttribute('data-theme', theme);
   root.style.colorScheme = theme === 'day' ? 'light' : 'dark';
+  if (theme === 'night') {
+    root.classList.add('dark');
+  } else {
+    root.classList.remove('dark');
+  }
 
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', theme === 'day' ? '#FAF6EC' : '#071426');

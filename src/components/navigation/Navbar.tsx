@@ -6,13 +6,13 @@ import { MobileMenu } from './MobileMenu';
 import { ThemeToggle } from './ThemeToggle';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Magnetic } from '@/components/motion';
+import { BRAND } from '@/components/arena/BrandAssets';
 
 const NAV_ITEMS = [
   { label: 'ARENA', href: '/' },
   { label: 'LIVE', href: '/live' },
   { label: 'MATCHES', href: '/matches' },
   { label: 'SPORTS', href: '/sports' },
-  { label: 'TOURNAMENTS', href: '/tournaments' },
   { label: 'LEADERBOARD', href: '/leaderboard' },
   { label: 'RESULTS', href: '/results' },
 ];
@@ -23,6 +23,7 @@ export const Navbar: React.FC = () => {
   const location = useLocation();
   const { theme } = useTheme();
   const isDay = theme === 'day';
+  const isHome = location.pathname === '/';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -56,16 +57,20 @@ export const Navbar: React.FC = () => {
         />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          {/* Left side - OLYMPIA wordmark only on scroll */}
+          {/* Left side - OLYMPIA brand mark */}
           <Link to="/" className="z-50 relative group flex items-center">
-            <motion.span
-              className={cn("text-xl md:text-2xl font-black tracking-[0.2em] transition-colors", isDay ? "text-[#071426]/60 group-hover:text-[#071426]" : "text-white/60 group-hover:text-white")}
-              style={{ letterSpacing: '0.2em' }}
-              animate={{ opacity: isScrolled ? 1 : 0, x: isScrolled ? 0 : -20 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            <motion.div
+              animate={{ opacity: (!isHome || isScrolled) ? 1 : 0, x: (!isHome || isScrolled) ? 0 : -15 }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              className="flex items-center gap-2.5"
             >
-              OLYMPIA
-            </motion.span>
+              <img src={isDay ? BRAND.logoLight : BRAND.logoDark} alt="Olympia 2K26" className="h-8 w-auto object-contain" />
+              <span
+                className={cn("text-lg md:text-xl font-black tracking-[0.2em] transition-colors", isDay ? "text-[#071426]" : "text-white")}
+              >
+                OLYMPIA
+              </span>
+            </motion.div>
           </Link>
 
           {/* Desktop Nav */}

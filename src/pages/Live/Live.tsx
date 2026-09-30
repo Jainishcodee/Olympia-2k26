@@ -8,7 +8,9 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Link } from 'react-router-dom';
 import type { Match, Team } from '@/types';
 import { FiRadio, FiCalendar, FiArrowRight } from 'react-icons/fi';
+import { motion } from 'framer-motion';
 import { cn } from '@/utils/cn';
+import arenaImg from '@/assets/arena.jpeg';
 
 export const Live: React.FC = () => {
   const { theme } = useTheme();
@@ -43,24 +45,76 @@ export const Live: React.FC = () => {
   return (
     <div
       className={cn(
-        'min-h-screen pt-28 sm:pt-32 flex flex-col justify-between transition-colors duration-300',
+        'min-h-screen pt-28 sm:pt-32 flex flex-col justify-between transition-colors duration-300 relative overflow-hidden',
         isDay ? 'bg-[#F7F6F1] text-[#071426]' : 'bg-[#080A0D] text-white'
       )}
     >
-      <Container className="pb-24 flex-1">
+      {/* Cinematic Premium Arena Stadium Backdrop */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
+        <motion.div
+          initial={{ scale: 1.04 }}
+          animate={{ scale: [1.04, 1.07, 1.04] }}
+          transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+          style={{
+            backgroundImage: `url(${arenaImg})`,
+            opacity: isDay ? 0.15 : 0.28,
+            filter: isDay ? 'saturate(1.1) contrast(1.05)' : 'brightness(0.85) contrast(1.2) saturate(1.15)',
+          }}
+        />
+
+        {/* Atmospheric Top & Bottom Fade */}
+        <div
+          aria-hidden
+          className={`absolute inset-0 ${
+            isDay
+              ? 'bg-gradient-to-b from-[#F7F6F1] via-[#F7F6F1]/60 to-[#F7F6F1]'
+              : 'bg-gradient-to-b from-[#080A0D] via-[#040B17]/70 to-[#080A0D]'
+          }`}
+        />
+
+        {/* Stadium Floodlight Radial Spotlight */}
+        <div
+          aria-hidden
+          className={`absolute inset-0 ${
+            isDay
+              ? 'bg-[radial-gradient(ellipse_80%_60%_at_50%_35%,rgba(18,100,255,0.08),transparent_70%)]'
+              : 'bg-[radial-gradient(ellipse_80%_60%_at_50%_30%,rgba(18,100,255,0.22),transparent_75%)]'
+          }`}
+        />
+
+        {/* Ambient Warm Pitch Accent Bloom */}
+        <div
+          aria-hidden
+          className={`absolute top-20 right-1/4 w-[500px] h-[350px] rounded-full blur-[140px] opacity-40 ${
+            isDay ? 'bg-[#D9A441]/15' : 'bg-[#D9A441]/20'
+          }`}
+        />
+
+        {/* Live Broadcast Signal Beacon */}
+        <div 
+          aria-hidden 
+          className="absolute top-28 left-8 w-96 h-96 bg-[#FF4D3D]/12 rounded-full blur-[140px]" 
+        />
+
+        {/* Fine Architectural Grid Lines */}
+        <div
+          aria-hidden
+          className={`absolute inset-0 opacity-[0.035] ${
+            isDay
+              ? 'bg-[linear-gradient(to_right,#071426_1px,transparent_1px),linear-gradient(to_bottom,#071426_1px,transparent_1px)] bg-[size:4rem_4rem]'
+              : 'bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:4rem_4rem]'
+          }`}
+        />
+      </div>
+
+      <Container className="pb-24 flex-1 relative z-10">
         <SectionTitle 
-          title={
-            <div className="flex items-center">
-              <span>LIVE ARENA</span>
-              {liveMatches.length > 0 && (
-                <span className="relative flex h-3.5 w-3.5 ml-3 sm:ml-4">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FF4D3D] opacity-75" />
-                  <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-[#FF4D3D] shadow-[0_0_15px_#FF4D3D]" />
-                </span>
-              )}
-            </div>
-          } 
-          subtitle="Real-time broadcast telemetry across all disciplines" 
+          eyebrow="01 / LIVE BROADCAST TELEMETRY"
+          tagline="REAL-TIME ARENA CLASHES"
+          title="LIVE"
+          highlightTitle="ARENA."
+          subtitle="Real-time broadcast telemetry across all active disciplines" 
         />
         
         {matches.isLoading ? (
@@ -101,7 +155,7 @@ export const Live: React.FC = () => {
                 isDay ? 'text-slate-600' : 'text-slate-400'
               )}
             >
-              Matches will stream live as soon as the tournament administrator starts the next fixture in the scoring console.
+              Matches will stream live as soon as the competition administrator starts the next fixture in the scoring console.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto">
               <Link 
