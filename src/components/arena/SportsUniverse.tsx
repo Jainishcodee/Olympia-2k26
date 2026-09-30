@@ -77,10 +77,10 @@ const SportRow: React.FC<SportRowProps> = ({ sport, index, total, isDay }) => {
           className="absolute inset-0 -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-t from-black/20 via-transparent to-white/15 pointer-events-none"
         />
 
-        {/* Left Side: Numbering & Sport Name */}
-        <div className="flex items-baseline sm:items-center gap-3.5 sm:gap-5 min-w-0">
+        {/* Left Side: Numbering & Sport Name (Wraps to 2nd line naturally without truncation) */}
+        <div className="flex items-start sm:items-center gap-3.5 sm:gap-5 flex-1 min-w-0 pr-2">
           <span
-            className={`text-[10px] sm:text-xs font-black tracking-[0.24em] uppercase transition-colors duration-300 shrink-0 ${
+            className={`text-[10px] sm:text-xs font-black tracking-[0.24em] uppercase transition-colors duration-300 shrink-0 mt-1.5 sm:mt-0 ${
               isDay ? 'text-[#071426]/45 group-hover:text-white/80' : 'text-white/40 group-hover:text-white/80'
             }`}
           >
@@ -88,7 +88,7 @@ const SportRow: React.FC<SportRowProps> = ({ sport, index, total, isDay }) => {
           </span>
 
           <h3
-            className={`font-black uppercase tracking-[-0.05em] text-[clamp(1.75rem,2.8vw,3.4rem)] leading-[0.9] transition-colors duration-300 truncate ${
+            className={`font-black uppercase tracking-[-0.04em] text-[clamp(1.5rem,2.4vw,3.1rem)] leading-[0.95] sm:leading-[0.9] transition-colors duration-300 break-words ${
               isDay ? 'text-[#071426] group-hover:text-white' : 'text-white group-hover:text-white'
             }`}
           >

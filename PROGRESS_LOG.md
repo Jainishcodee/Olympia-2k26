@@ -636,3 +636,18 @@ App runs at `http://localhost:5173`.
 
 ### 18c. Build Verification
 - Verified with `tsc -b && vite build` — **0 errors**, production build passed cleanly in 1.11s.
+
+---
+
+## 🏷️ Phase 19: Full Sport Name Multi-Line Text Wrapping (Zero Ellipsis Truncation)
+
+> **Completed on September 30, 2026**
+
+### 19a. Multi-Line Text Wrapping in "Choose Your Play" (`SportsUniverse.tsx`)
+- **Removed Ellipsis Truncation:** Removed the `truncate` class on the discipline `<h3>` title that was cutting off names like "Badminton", "Table Tennis", "Hand Tennis", and "Smash Karts" with `...` (e.g., `Badmi...`).
+- **Responsive Multi-Line Flow:** Added `break-words`, `leading-[0.95] sm:leading-[0.9]`, and responsive typography (`text-[clamp(1.5rem,2.4vw,3.1rem)]`) so all discipline names wrap naturally onto a second line across smartphones, tablets, and desktop viewports.
+- **Balanced Index Counter Alignment:** Configured the numbering container (`01 / 10`) with `items-start sm:items-center` and top margin adjustments to maintain visual alignment when sport titles wrap.
+- **SportDetail Roster Wrapping:** Removed `truncate` from team cards in [`SportDetail.tsx`](file:///g:/Project/Sports%20Scoring/olympia-2k26/src/pages/Sports/SportDetail.tsx) to ensure team names wrap cleanly without clipping.
+
+### 19b. Build Verification
+- Verified with `tsc -b && vite build` — **0 errors**, production build passed cleanly in 1.52s.

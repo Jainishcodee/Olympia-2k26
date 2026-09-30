@@ -211,7 +211,7 @@ export const SportDetail: React.FC = () => {
                     <div className="w-16 h-16 mx-auto bg-gradient-to-br from-[#1264FF] to-[#0D47A1] rounded-2xl flex items-center justify-center text-xl font-black text-white mb-3 shadow-md group-hover:scale-105 transition-transform">
                       {t.shortName || t.name.slice(0, 3).toUpperCase()}
                     </div>
-                    <h3 className={cn("font-black text-base truncate", isDay ? "text-[#071426]" : "text-white")}>
+                    <h3 className={cn("font-black text-base break-words", isDay ? "text-[#071426]" : "text-white")}>
                       {t.name}
                     </h3>
                   </div>
