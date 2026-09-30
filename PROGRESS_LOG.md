@@ -466,3 +466,40 @@ App runs at `http://localhost:5173`.
 - **Scoring/broadcast surfaces use literal hexes**, never day-remapped classes.
 - **Tailwind v4 important is a suffix** (`bg-red-500!`).
 - Nav changes go in `src/components/admin/adminNav.ts` — never in the sidebar directly.
+
+---
+
+## 📱 Phase 13: Smartphone Butter Smoothness, Extreme Leaderboard & Total Day/Night Consistency
+
+> **Completed on September 30, 2026**
+
+### 13a. Smartphone Responsiveness & Mobile Bottom Dock
+1. **Floating Mobile Glass Dock (`MobileBottomNav.tsx`):**
+   - Built a sleek bottom glass navigation dock for viewport widths `< 1024px` (`lg:hidden`).
+   - Includes quick navigation to **Arena**, **Live**, **Matches**, **Rankings**, and **Sports**.
+   - Features a glowing live-indicator pulse when active matches are broadcasting.
+   - Designed with safe area bottom insets (`env(safe-area-inset-bottom)`) and spring-animated tab pills.
+2. **Mobile Menu Upgrade (`MobileMenu.tsx`):**
+   - Day / Night theme toggle integration with seamless visual state sync.
+   - Touch targets configured with 48px+ touch padding and `active:scale-95` tap feedback.
+3. **Mobile CSS & Performance Optimization (`src/index.css`):**
+   - Added `-webkit-tap-highlight-color: transparent` and `touch-action: manipulation` globally.
+   - Fixed iOS Safari auto-zoom on inputs by ensuring standard `font-size: 16px` on `<input>` and `<select>`.
+   - Added `.smooth-scroll-x` with `-webkit-overflow-scrolling: touch` for momentum-driven horizontal ribbons.
+   - Throttled particle nodes in `InteractiveParticleCanvas.tsx` to 18 nodes on mobile devices with passive `touchmove` listeners for continuous 60fps/120fps scrolling.
+
+### 13b. Extreme Leaderboard Architecture (`/leaderboard`)
+- **Immersive Title Intro:** Cinematic opening sequence with drawing metallic gold and electric blue laser lines.
+- **Top 3 Podium Arena (`PodiumHero.tsx`):** Abstract editorial podium with layered depth, rank watermarks, and athlete/team switcher.
+- **Multi-Sport Grid (`MultiSportLeaderboardGrid.tsx`):** Multi-discipline live standings with animated medal chips.
+- **Live Search & Filter Ribbon (`SportFilterRibbon.tsx`):** Real-time client-side search and horizontal sports filter.
+- **Arena Preview Integration:** Live ranking snapshot banner seamlessly integrated into the public Arena Home view.
+
+### 13c. Complete Day & Night Theme Polish Across All Subpages
+- **`MatchDetail.tsx`:** Full `useTheme()` integration, `useMatch()` live document hook, responsive score display, match timeline, match statistics telemetry, voting panel, and reaction bar.
+- **`ReactionBar.tsx` & `VotingPanel.tsx`:** Initialized default count values to 0 (clean initial slate before live interactions), added safe vote percentage division to prevent NaN.
+- **`Results.tsx`:** Connected to live Firestore `matches` collection, sport filter chips, search bar, and dual Day/Night empty states.
+- **`SportDetail.tsx`, `TeamDetail.tsx`, `PlayerDetail.tsx`:** Replaced all hardcoded `bg-navy` styling with fluid `useTheme()` support and live Firestore data fallbacks.
+
+### 13d. Build & TypeScript Verification
+- Verified with `tsc -b && vite build` — **0 errors**, production build succeeded cleanly.

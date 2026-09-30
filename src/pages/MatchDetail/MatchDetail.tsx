@@ -17,22 +17,23 @@ export const MatchDetail: React.FC = () => {
   const { matchId } = useParams<{ matchId: string }>();
   const { theme } = useTheme();
   const isDay = theme === 'day';
-  const { match: liveMatch, events: liveEvents, isLoading } = useMatch(matchId || '');
+  const { match: liveMatch, events: liveEvents } = useMatch(matchId || '');
 
-  // Fallback match data if no firestore match or still loading
-  const match = liveMatch || {
-    id: matchId || '1',
-    teamA: 'Thunderbolts',
-    teamB: 'Iron Titans',
-    sport: 'Basketball',
-    venue: 'Olympia Grand Coliseum',
-    status: 'live' as const,
-    time: "3rd Quarter",
-    score: { teamA: 64, teamB: 58 },
-  };
+  const teamAName = liveMatch?.participantA?.name || liveMatch?.teamAId || 'Thunderbolts';
+  const teamBName = liveMatch?.participantB?.name || liveMatch?.teamBId || 'Iron Titans';
+  const sportName = 'Basketball';
+  const venueName = 'Olympia Grand Coliseum';
+  const status = liveMatch?.status || 'live';
+  const timeStr = liveMatch?.liveState?.clock || '3rd Quarter';
+  const scoreA = liveMatch?.score?.teamA ?? 64;
+  const scoreB = liveMatch?.score?.teamB ?? 58;
 
-  const scoreA = match.score?.teamA ?? 0;
-  const scoreB = match.score?.teamB ?? 0;
+  const mappedEvents = liveEvents.length > 0 ? liveEvents.map(e => ({
+    id: e.id,
+    time: e.period ? `P${e.period}` : 'LIVE',
+    description: (e as any).description || (e as any).detail || 'Match play update',
+    type: 'info' as const,
+  })) : undefined;
 
   return (
     <div
@@ -57,14 +58,14 @@ export const MatchDetail: React.FC = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b" style={{ borderColor: isDay ? 'rgba(7,20,38,0.08)' : 'rgba(255,255,255,0.1)' }}>
             <div>
               <div className="flex flex-wrap items-center gap-3 mb-2">
-                <Badge sport>{match.sport || 'Match'}</Badge>
+                <Badge sport>{sportName}</Badge>
                 <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest opacity-60">
                   <MapPin size={13} />
-                  <span>{match.venue || 'Coliseum'}</span>
+                  <span>{venueName}</span>
                 </div>
               </div>
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-black uppercase tracking-tighter">
-                {match.teamA} <span className="text-[#D9A441]">vs</span> {match.teamB}
+                {teamAName} <span className="text-[#D9A441]">vs</span> {teamBName}
               </h1>
             </div>
 
@@ -75,19 +76,19 @@ export const MatchDetail: React.FC = () => {
         </Container>
 
         <ScoreDisplay
-          teamA={match.teamA}
-          teamB={match.teamB}
+          teamA={teamAName}
+          teamB={teamBName}
           scoreA={scoreA}
           scoreB={scoreB}
-          status={match.status || 'live'}
-          time={match.time}
+          status={status}
+          time={timeStr}
         />
 
         <Container className="py-10 sm:py-16 px-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
             <div className="lg:col-span-2 space-y-6 sm:space-y-8">
-              <VotingPanel teamA={match.teamA} teamB={match.teamB} />
-              <MatchTimeline events={liveEvents.length > 0 ? liveEvents : undefined} />
+              <VotingPanel teamA={teamAName} teamB={teamBName} />
+              <MatchTimeline events={mappedEvents} />
             </div>
             <div className="space-y-6 sm:space-y-8">
               <MatchStats />

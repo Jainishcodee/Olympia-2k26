@@ -5,7 +5,7 @@ import { ArrowLeft, Star, Activity, Shield, Award, Calendar } from 'lucide-react
 import { cn } from '@/utils/cn';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCollection } from '@/hooks/useCollection';
-import { Player, Team, Match } from '@/types';
+import { Player, Team, Match, Sport } from '@/types';
 import { MatchCard } from '@/components/matches/MatchCard';
 
 export const PlayerDetail: React.FC = () => {
@@ -15,25 +15,40 @@ export const PlayerDetail: React.FC = () => {
 
   const { data: allPlayers, isLoading } = useCollection<Player>('players');
   const { data: allTeams } = useCollection<Team>('teams');
-  const { data: allMatches } = useCollection<Match>('matches');
+  const { data: allSports } = useCollection<Sport>('sports');
 
-  const player = allPlayers?.find(p => p.id === playerId) || {
+  const fallbackPlayer: Player = {
     id: playerId || '1',
     name: 'Marcus Vance',
+    photo: '',
     jerseyNumber: 23,
     teamId: '1',
-    sport: 'Basketball',
+    sportId: 'basketball',
     position: 'Power Forward',
     role: 'captain',
-    gender: 'Male',
+    gender: 'male',
     bio: 'Lead scorer and defensive anchor for Olympia 2K26. Known for high basketball IQ, clutch 3-pointers, and relentless court leadership.',
-    stats: { matches: 12, points: 284, assists: 65, rebounds: 110 },
-    rating: 4.9,
-    ratingCount: 88,
+    active: true,
+    stats: {
+      matchesPlayed: 12,
+      goals: 0,
+      assists: 65,
+      runs: 0,
+      wickets: 0,
+      points: 284,
+      wins: 10,
+      losses: 2,
+      rating: 4.9,
+    },
+    createdAt: {} as any,
+    updatedAt: {} as any,
   };
 
-  const team = allTeams?.find(t => t.id === player.teamId || t.name === player.team);
-  const playerTeamName = team?.name || player.team || 'Thunderbolts';
+  const player = allPlayers?.find(p => p.id === playerId) || fallbackPlayer;
+  const team = allTeams?.find(t => t.id === player.teamId);
+  const sport = allSports?.find(s => s.id === player.sportId);
+  const playerTeamName = team?.name || 'Thunderbolts';
+  const playerSportName = sport?.name || player.sportId || 'Basketball';
 
   return (
     <div
@@ -93,9 +108,9 @@ export const PlayerDetail: React.FC = () => {
 
               <div className="flex items-center justify-center gap-2 text-[#D9A441] bg-[#D9A441]/10 py-2.5 px-4 rounded-2xl border border-[#D9A441]/20">
                 <Star className="fill-[#D9A441]" size={18} />
-                <span className="text-xl font-black">{player.rating ? player.rating.toFixed(1) : '5.0'}</span>
+                <span className="text-xl font-black">{player.stats?.rating ? player.stats.rating.toFixed(1) : '5.0'}</span>
                 <span className={cn("text-xs font-medium", isDay ? "text-[#071426]/50" : "text-white/40")}>
-                  ({player.ratingCount || 0} reviews)
+                  (Arena Verified)
                 </span>
               </div>
             </div>
@@ -121,7 +136,7 @@ export const PlayerDetail: React.FC = () => {
                   <div className={cn("text-xs font-bold uppercase tracking-wider mb-1", isDay ? "text-[#071426]/50" : "text-white/40")}>
                     Sport
                   </div>
-                  <div className="font-black text-sm sm:text-base">{player.sport || 'Sports'}</div>
+                  <div className="font-black text-sm sm:text-base">{playerSportName}</div>
                 </div>
                 <div>
                   <div className={cn("text-xs font-bold uppercase tracking-wider mb-1", isDay ? "text-[#071426]/50" : "text-white/40")}>

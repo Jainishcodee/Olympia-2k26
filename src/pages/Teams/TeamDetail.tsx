@@ -5,7 +5,7 @@ import { ArrowLeft, User, Users, Trophy, Calendar, Shield } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCollection } from '@/hooks/useCollection';
-import { Team, Player, Match } from '@/types';
+import { Team, Player, Match, Sport } from '@/types';
 import { MatchCard } from '@/components/matches/MatchCard';
 
 export const TeamDetail: React.FC = () => {
@@ -16,17 +16,26 @@ export const TeamDetail: React.FC = () => {
   const { data: teams, isLoading } = useCollection<Team>('teams');
   const { data: allPlayers } = useCollection<Player>('players');
   const { data: allMatches } = useCollection<Match>('matches');
+  const { data: allSports } = useCollection<Sport>('sports');
 
   const team = teams?.find(t => t.id === teamId) || {
     id: teamId || '1',
     name: 'Thunderbolts',
     shortName: 'THN',
-    sport: 'Basketball',
-    stats: { wins: 8, losses: 2, draws: 0, points: 24 },
+    sportId: 'basketball',
+    wins: 8,
+    losses: 2,
+    draws: 0,
+    points: 24,
+    playerIds: [] as string[],
   };
 
-  const teamPlayers = allPlayers?.filter(p => p.teamId === teamId) || [];
-  const teamMatches = allMatches?.filter(m => m.teamA === team.name || m.teamB === team.name) || [];
+  const sportsMap = new Map<string, string>();
+  allSports?.forEach(s => sportsMap.set(s.id, s.name));
+  const sportName = sportsMap.get(team.sportId) || team.sportId || 'Tournament Squad';
+
+  const teamPlayers = allPlayers?.filter(p => p.teamId === teamId || (Array.isArray(team.playerIds) && (team.playerIds as string[]).includes(p.id))) || [];
+  const teamMatches = allMatches?.filter(m => m.teamAId === team.id || m.teamBId === team.id || m.participantA?.id === team.id || m.participantB?.id === team.id) || [];
 
   return (
     <div
@@ -73,7 +82,7 @@ export const TeamDetail: React.FC = () => {
                   isDay ? "bg-[#155EEF]/10 text-[#155EEF] border-[#155EEF]/20" : "bg-white/10 text-white/80 border-white/10"
                 )}
               >
-                {team.sport || 'Tournament Squad'}
+                {sportName}
               </div>
               <h1 className="text-3xl sm:text-5xl md:text-6xl font-black uppercase tracking-tight mb-6">
                 {team.name}
@@ -87,7 +96,7 @@ export const TeamDetail: React.FC = () => {
                     isDay ? "bg-white border-[#071426]/10" : "bg-white/5 border-white/10"
                   )}
                 >
-                  <span className="text-xl sm:text-2xl font-black text-[#155EEF]">{team.stats?.wins ?? 0}</span>
+                  <span className="text-xl sm:text-2xl font-black text-[#155EEF]">{team.wins ?? 0}</span>
                   <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Wins</span>
                 </div>
                 <div
@@ -96,7 +105,7 @@ export const TeamDetail: React.FC = () => {
                     isDay ? "bg-white border-[#071426]/10" : "bg-white/5 border-white/10"
                   )}
                 >
-                  <span className="text-xl sm:text-2xl font-black text-[#FF4D3D]">{team.stats?.losses ?? 0}</span>
+                  <span className="text-xl sm:text-2xl font-black text-[#FF4D3D]">{team.losses ?? 0}</span>
                   <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Losses</span>
                 </div>
                 <div
@@ -105,7 +114,7 @@ export const TeamDetail: React.FC = () => {
                     isDay ? "bg-white border-[#071426]/10" : "bg-white/5 border-white/10"
                   )}
                 >
-                  <span className="text-xl sm:text-2xl font-black opacity-80">{team.stats?.draws ?? 0}</span>
+                  <span className="text-xl sm:text-2xl font-black opacity-80">{team.draws ?? 0}</span>
                   <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Draws</span>
                 </div>
                 <div
@@ -114,7 +123,7 @@ export const TeamDetail: React.FC = () => {
                     isDay ? "bg-white border-[#D9A441]/40 shadow-sm" : "bg-white/5 border-[#D9A441]/30"
                   )}
                 >
-                  <span className="text-xl sm:text-2xl font-black text-[#D9A441]">{team.stats?.points ?? 0}</span>
+                  <span className="text-xl sm:text-2xl font-black text-[#D9A441]">{team.points ?? 0}</span>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#D9A441]">Points</span>
                 </div>
               </div>
@@ -187,13 +196,13 @@ export const TeamDetail: React.FC = () => {
                 <MatchCard
                   key={m.id}
                   id={m.id}
-                  sport={m.sport || team.sport || 'Sports'}
-                  teamA={m.teamA}
-                  teamB={m.teamB}
+                  sport={sportName}
+                  teamA={m.participantA?.name || m.teamAId || 'Team A'}
+                  teamB={m.participantB?.name || m.teamBId || 'Team B'}
                   scoreA={m.score?.teamA ?? 0}
                   scoreB={m.score?.teamB ?? 0}
-                  status={m.status || 'upcoming'}
-                  time={m.time || 'Scheduled'}
+                  status={m.status === 'live' ? 'live' : m.status === 'completed' ? 'completed' : m.status === 'cancelled' ? 'cancelled' : 'upcoming'}
+                  time={m.status === 'live' ? (m.liveState?.clock || 'LIVE') : 'Scheduled'}
                 />
               ))}
             </div>
