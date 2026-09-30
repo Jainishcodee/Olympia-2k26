@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ADMIN_NAV } from './adminNav';
 import { FiX, FiLogOut } from 'react-icons/fi';
-import olympiaLogo from '@/assets/olympia.png';
+import { BRAND } from '@/components/arena/BrandAssets';
 
 interface Props {
   /** Mobile drawer visibility */
@@ -71,13 +71,13 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, setIsOpen, collapsed, setCollap
         >
           <div className="relative flex shrink-0 items-center justify-center">
             <img
-              src={olympiaLogo}
+              src={isDay ? BRAND.logo : BRAND.olympiaDark}
               alt="Olympia 2K26"
               className={cn(
                 'h-10 w-auto object-contain transition-transform duration-300 hover:scale-105',
                 isDay
                   ? 'drop-shadow-[0_2px_10px_rgba(217,164,65,0.45)]'
-                  : 'drop-shadow-[0_0_14px_rgba(217,164,65,0.55)]',
+                  : 'drop-shadow-[0_0_14px_rgba(56,189,248,0.55)]',
               )}
             />
           </div>

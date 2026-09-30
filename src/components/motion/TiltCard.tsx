@@ -32,6 +32,11 @@ export const TiltCard: React.FC<TiltCardProps> = ({
   const rotateX = useSpring(useTransform(rawY, [-0.5, 0.5], [tiltAngle, -tiltAngle]), springConfig);
   const rotateY = useSpring(useTransform(rawX, [-0.5, 0.5], [-tiltAngle, tiltAngle]), springConfig);
 
+  const backgroundSheen = useTransform(
+    [mouseX, mouseY],
+    ([x, y]) => `radial-gradient(circle 240px at ${x}px ${y}px, ${glowColor}, transparent 80%)`,
+  );
+
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
@@ -82,11 +87,7 @@ export const TiltCard: React.FC<TiltCardProps> = ({
           className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-300"
           style={{
             opacity: isHovered ? 1 : 0,
-            background: useTransform(
-              [mouseX, mouseY],
-              ([x, y]) =>
-                `radial-gradient(circle 240px at ${x}px ${y}px, ${glowColor}, transparent 80%)`,
-            ),
+            background: backgroundSheen,
           }}
         />
       </motion.div>

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/utils/cn';
 import { useTheme } from '@/contexts/ThemeContext';
 import { FiX, FiSun, FiMoon } from 'react-icons/fi';
-import olympiaLogo from '@/assets/olympia.png';
+import { BRAND } from '@/components/arena/BrandAssets';
 
 interface MobileMenuProps {
   items: { label: string; href: string; }[];
@@ -32,9 +32,23 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ items, onClose, currentP
       {/* Top Bar with Brand & Close Button */}
       <div className="flex items-center justify-between pt-4 pb-2 border-b border-black/5 dark:border-white/10">
         <div className="flex items-center gap-2.5">
-          <img src={olympiaLogo} alt="Olympia 2K26" className="h-8 w-auto object-contain" />
-          <span className="text-xs font-black uppercase tracking-[0.2em]">
-            OLYMPIA <span className={isDay ? 'text-[#1264FF]' : 'text-[#D9A441]'}>2K26</span>
+          <img
+            src={isDay ? BRAND.logo : BRAND.olympiaDark}
+            alt="Olympia 2K26"
+            className={cn(
+              "h-8 w-auto object-contain",
+              isDay
+                ? "drop-shadow-[0_2px_8px_rgba(217,164,65,0.35)]"
+                : "drop-shadow-[0_0_12px_rgba(56,189,248,0.5)]"
+            )}
+          />
+          <span
+            className={cn(
+              "text-xs font-black uppercase tracking-[0.2em]",
+              !isDay && "bg-gradient-to-r from-white via-[#E2E8F0] to-[#93C5FD] bg-clip-text text-transparent"
+            )}
+          >
+            OLYMPIA <span className={isDay ? 'text-[#1264FF]' : 'text-[#38BDF8]'}>2K26</span>
           </span>
         </div>
 

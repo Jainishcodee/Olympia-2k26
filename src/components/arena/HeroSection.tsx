@@ -85,7 +85,7 @@ export const HeroSection: React.FC = () => {
         className={`absolute rounded-full border pointer-events-none transition-all duration-500
           left-1/2 -translate-x-1/2 top-[16%] h-[320px] w-[320px] sm:h-[420px] sm:w-[420px]
           lg:left-auto lg:translate-x-0 lg:-right-[16vw] lg:top-[8%] lg:h-[62vw] lg:w-[62vw] lg:max-h-[820px] lg:max-w-[820px] ${
-          isDay ? 'border-[#155EEF]/15' : 'border-[#1264FF]/20'
+          isDay ? 'border-[#155EEF]/15' : 'border-[#1264FF]/30 shadow-[0_0_40px_rgba(18,100,255,0.25)]'
         }`}
       />
       <div
@@ -93,7 +93,7 @@ export const HeroSection: React.FC = () => {
         className={`absolute rounded-full border border-dashed pointer-events-none transition-all duration-500
           left-1/2 -translate-x-1/2 top-[20%] h-[240px] w-[240px] sm:h-[320px] sm:w-[320px]
           lg:left-auto lg:translate-x-0 lg:right-[7%] lg:top-[18%] lg:h-[44vw] lg:w-[44vw] lg:max-h-[570px] lg:max-w-[570px] ${
-          isDay ? 'border-[#155EEF]/20' : 'border-[#D9A441]/25'
+          isDay ? 'border-[#155EEF]/20' : 'border-[#38BDF8]/35 shadow-[0_0_30px_rgba(56,189,248,0.2)]'
         }`}
       />
 

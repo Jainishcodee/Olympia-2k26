@@ -4,6 +4,7 @@ import logoLight from '@/assets/logo_light.png';
 import logoDark from '@/assets/logo_dark.png';
 import arena from '@/assets/arena.jpeg';
 import olympiaLogo from '@/assets/olympia.png';
+import olympiaDark from '@/assets/olympia-dark.png';
 import carromImg from '@/assets/sports/carrom.png';
 import smashKartsImg from '@/assets/sports/smash_karts.png';
 import footballImg from '@/assets/sports/football.png';
@@ -40,19 +41,21 @@ export const SPORTS_ART = {
 export const BRAND = {
   logo: olympiaLogo,
   olympia: olympiaLogo,
+  olympiaLight: olympiaLogo,
+  olympiaDark,
   logoSvg: '/olympia.png',
   wordmark: '/images/brand/olympia-wordmark.png',
   heroBackdrop: '/images/backgrounds/hero-stadium.jpg',
   heroGlow: '/images/backgrounds/hero-glow.jpg',
   grain: '/images/backgrounds/grain.png',
   logoLight,
-  logoDark,
+  logoDark: olympiaDark,
   arena,
 } as const;
 
 export function useThemeLogo(): string {
   const { theme } = useTheme();
-  return theme === 'day' ? BRAND.logoLight : BRAND.logoDark;
+  return theme === 'day' ? BRAND.logoLight : BRAND.olympiaDark;
 }
 
 /** Palette — brand identity. Never let accents leak into these. */

@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useMotionValue, useTransform } from 'framer-mo
 import { useNavigate } from 'react-router-dom';
 import { OlympiaEmblem } from './OlympiaEmblem';
 import { BRAND } from './BrandAssets';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
 const EASE_BLAST: [number, number, number, number] = [0.12, 0.95, 0.28, 1];
@@ -75,7 +76,9 @@ const MIRROR_SHARDS: ShardDef[] = [
  * - Branching crystalline fracture cracks
  * - 28 faceted mirror shards scattering with 3D rotation and specular reflection
  */
-const AtomBurstMirrorBlast: React.FC = () => {
+const AtomBurstMirrorBlast: React.FC<{ isDay?: boolean }> = ({ isDay = true }) => {
+  const logoSrc = isDay ? (BRAND.logo || '/olympia.png') : (BRAND.olympiaDark || '/olympia-dark.png');
+
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ perspective: 1200 }}>
       {/* 1. Blinding atomic core flash across full viewport */}
@@ -92,9 +95,12 @@ const AtomBurstMirrorBlast: React.FC = () => {
         aria-hidden
         className="absolute rounded-full pointer-events-none z-40"
         style={{
-          background:
-            'radial-gradient(circle, #FFFFFF 0%, #FFE9A8 30%, #FFD21F 55%, #1264FF 80%, transparent 100%)',
-          boxShadow: '0 0 100px 30px #FFFFFF, 0 0 180px 60px #FFD21F',
+          background: isDay
+            ? 'radial-gradient(circle, #FFFFFF 0%, #FFE9A8 30%, #FFD21F 55%, #1264FF 80%, transparent 100%)'
+            : 'radial-gradient(circle, #FFFFFF 0%, #BAE6FD 30%, #38BDF8 55%, #1264FF 80%, transparent 100%)',
+          boxShadow: isDay
+            ? '0 0 100px 30px #FFFFFF, 0 0 180px 60px #FFD21F'
+            : '0 0 100px 30px #FFFFFF, 0 0 180px 60px #38BDF8, 0 0 250px 80px #1264FF',
         }}
         initial={{ width: 16, height: 16, scale: 0.2, opacity: 0 }}
         animate={{
@@ -104,7 +110,7 @@ const AtomBurstMirrorBlast: React.FC = () => {
         transition={{ duration: 1.25, delay: 0.12, ease: EASE_OUT }}
       />
 
-      {/* 3. Concentric Shockwave Rings (White-Hot Plasma, Gold, and Electric Blue) */}
+      {/* 3. Concentric Shockwave Rings (White-Hot Plasma, Gold/Cyan Corona, and Electric Blue) */}
       {/* Shockwave A: Primary White Plasma Wave */}
       <motion.div
         aria-hidden
@@ -123,12 +129,16 @@ const AtomBurstMirrorBlast: React.FC = () => {
         transition={{ duration: 1.25, delay: 0.15, ease: [0.14, 0.96, 0.25, 1] }}
       />
 
-      {/* Shockwave B: Golden Corona Blast Wave */}
+      {/* Shockwave B: Golden Corona Blast Wave in Day / Cyan Starlight Wave in Night */}
       <motion.div
         aria-hidden
-        className="absolute rounded-full border-2 border-[#FFD21F] pointer-events-none z-30"
+        className={`absolute rounded-full border-2 pointer-events-none z-30 ${
+          isDay ? 'border-[#FFD21F]' : 'border-[#38BDF8]'
+        }`}
         style={{
-          boxShadow: '0 0 65px 22px rgba(255, 210, 31, 0.9), inset 0 0 25px rgba(217, 164, 65, 0.6)',
+          boxShadow: isDay
+            ? '0 0 65px 22px rgba(255, 210, 31, 0.9), inset 0 0 25px rgba(217, 164, 65, 0.6)'
+            : '0 0 65px 22px rgba(56, 189, 248, 0.95), inset 0 0 25px rgba(18, 100, 255, 0.7)',
         }}
         initial={{ width: 10, height: 10, opacity: 0 }}
         animate={{
@@ -216,7 +226,7 @@ const AtomBurstMirrorBlast: React.FC = () => {
         </g>
         <defs>
           <filter id="crack-filter" x="-50%" y="-50%" width="200%" height="200%">
-            <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#FFD21F" floodOpacity="0.9" />
+            <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor={isDay ? "#FFD21F" : "#38BDF8"} floodOpacity="0.9" />
           </filter>
         </defs>
       </motion.svg>
@@ -236,7 +246,9 @@ const AtomBurstMirrorBlast: React.FC = () => {
                 clipPath: shard.clipPath,
                 transformStyle: 'preserve-3d',
                 backfaceVisibility: 'hidden',
-                filter: 'drop-shadow(0 0 10px rgba(255, 210, 31, 0.75))',
+                filter: isDay
+                  ? 'drop-shadow(0 0 10px rgba(255, 210, 31, 0.75))'
+                  : 'drop-shadow(0 0 12px rgba(56, 189, 248, 0.85))',
               }}
               initial={{
                 x: 0,
@@ -263,9 +275,15 @@ const AtomBurstMirrorBlast: React.FC = () => {
               }}
             >
               {/* Emblem content within shard */}
-              <div className="relative w-full h-full rounded-full overflow-hidden bg-[#071426] flex items-center justify-center border border-[#D9A441]">
+              <div
+                className={`relative w-full h-full rounded-full overflow-hidden flex items-center justify-center border transition-all ${
+                  isDay
+                    ? 'bg-[#071426] border-[#D9A441]'
+                    : 'bg-[#040B17] border-[#38BDF8] shadow-[0_0_14px_rgba(56,189,248,0.6)]'
+                }`}
+              >
                 <img
-                  src={BRAND.logo || '/olympia.png'}
+                  src={logoSrc}
                   alt=""
                   draggable={false}
                   className="w-full h-full object-contain p-2 select-none"
@@ -275,8 +293,9 @@ const AtomBurstMirrorBlast: React.FC = () => {
                   aria-hidden
                   className="absolute inset-0 pointer-events-none"
                   style={{
-                    background:
-                      'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.05) 45%, rgba(255,210,31,0.55) 75%, rgba(18,100,255,0.4) 100%)',
+                    background: isDay
+                      ? 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.05) 45%, rgba(255,210,31,0.55) 75%, rgba(18,100,255,0.4) 100%)'
+                      : 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(226,232,240,0.1) 45%, rgba(56,189,248,0.65) 75%, rgba(18,100,255,0.5) 100%)',
                     mixBlendMode: 'overlay',
                   }}
                 />
@@ -285,7 +304,9 @@ const AtomBurstMirrorBlast: React.FC = () => {
                   aria-hidden
                   className="absolute inset-0 pointer-events-none border border-white/70"
                   style={{
-                    boxShadow: 'inset 0 0 12px rgba(255,255,255,0.85), 0 0 8px rgba(255,210,31,0.7)',
+                    boxShadow: isDay
+                      ? 'inset 0 0 12px rgba(255,255,255,0.85), 0 0 8px rgba(255,210,31,0.7)'
+                      : 'inset 0 0 14px rgba(255,255,255,0.95), 0 0 12px rgba(56,189,248,0.85)',
                   }}
                 />
               </div>
@@ -298,6 +319,8 @@ const AtomBurstMirrorBlast: React.FC = () => {
 };
 
 export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
   const [progress, setProgress] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -382,9 +405,10 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
       transition={isBlasting ? { duration: 1.5, ease: EASE_OUT } : { duration: 0.35 }}
       className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden"
       style={{
-        backgroundColor: '#D6E5F1',
-        backgroundImage:
-          'linear-gradient(180deg, #5F82B5 0%, #7FA2C7 20%, #8FAFCE 38%, #B5CCE1 58%, #D6E5F1 78%, #F5F8FA 100%)',
+        backgroundColor: isDay ? '#D6E5F1' : '#040B17',
+        backgroundImage: isDay
+          ? 'linear-gradient(180deg, #5F82B5 0%, #7FA2C7 20%, #8FAFCE 38%, #B5CCE1 58%, #D6E5F1 78%, #F5F8FA 100%)'
+          : 'radial-gradient(ellipse 100% 80% at 50% 10%, rgba(18,100,255,0.18) 0%, rgba(7,20,38,0.92) 50%, #040B17 100%)',
       }}
     >
       {/* --- Soft Atmospheric Corner Depth --- */}
@@ -392,8 +416,9 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
         aria-hidden
         className="absolute inset-0 pointer-events-none"
         style={{
-          background:
-            'radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0) 38%, rgba(127, 162, 199, 0.22) 72%, rgba(73, 107, 153, 0.32) 100%)',
+          background: isDay
+            ? 'radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0) 38%, rgba(127, 162, 199, 0.22) 72%, rgba(73, 107, 153, 0.32) 100%)'
+            : 'radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0) 38%, rgba(18, 100, 255, 0.15) 72%, rgba(4, 11, 23, 0.7) 100%)',
         }}
       />
 
@@ -402,8 +427,9 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
         aria-hidden
         className="absolute inset-x-0 bottom-[10%] h-[50%] pointer-events-none blur-[80px]"
         style={{
-          background:
-            'radial-gradient(ellipse 120% 70% at 50% 100%, rgba(255, 255, 255, 0.92) 0%, rgba(255, 248, 232, 0.5) 30%, rgba(214, 229, 241, 0.4) 62%, transparent 88%)',
+          background: isDay
+            ? 'radial-gradient(ellipse 120% 70% at 50% 100%, rgba(255, 255, 255, 0.92) 0%, rgba(255, 248, 232, 0.5) 30%, rgba(214, 229, 241, 0.4) 62%, transparent 88%)'
+            : 'radial-gradient(ellipse 120% 70% at 50% 100%, rgba(56, 189, 248, 0.4) 0%, rgba(18, 100, 255, 0.25) 30%, rgba(4, 11, 23, 0.6) 62%, transparent 88%)',
         }}
       />
 
@@ -412,8 +438,9 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
         aria-hidden
         className="absolute left-1/2 top-[44%] -translate-x-1/2 -translate-y-1/2 h-[560px] w-[560px] rounded-full blur-[85px] pointer-events-none"
         style={{
-          background:
-            'radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(245, 248, 250, 0.7) 35%, rgba(169, 196, 223, 0.35) 65%, transparent 85%)',
+          background: isDay
+            ? 'radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(245, 248, 250, 0.7) 35%, rgba(169, 196, 223, 0.35) 65%, transparent 85%)'
+            : 'radial-gradient(circle, rgba(255, 255, 255, 0.98) 0%, rgba(56, 189, 248, 0.45) 30%, rgba(18, 100, 255, 0.22) 60%, transparent 85%)',
         }}
       />
 
@@ -427,7 +454,7 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
         }}
       />
 
-      {/* --- Gentle Sunlight Sweep --- */}
+      {/* --- Gentle Sunlight / Starlight Sweep --- */}
       <motion.div
         aria-hidden
         initial={{ x: '-40%', opacity: 0 }}
@@ -435,12 +462,13 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
         transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
         className="absolute -top-1/4 h-[150%] w-[40%] blur-3xl pointer-events-none"
         style={{
-          background:
-            'linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%)',
+          background: isDay
+            ? 'linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%)'
+            : 'linear-gradient(100deg, rgba(56,189,248,0) 0%, rgba(255,255,255,0.3) 50%, rgba(56,189,248,0) 100%)',
         }}
       />
 
-      {/* --- Corner Framing & Header Details (Olympia Navy & Gold) --- */}
+      {/* --- Corner Framing & Header Details --- */}
       <motion.div
         aria-hidden
         animate={isBlasting ? { opacity: 0 } : { opacity: 1 }}
@@ -451,9 +479,11 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.8 }}
-          className="absolute left-8 top-8 flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-[#071426]"
+          className={`absolute left-8 top-8 flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] ${
+            isDay ? 'text-[#071426]' : 'text-white'
+          }`}
         >
-          <span className="w-6 h-px bg-[#D9A441]" />
+          <span className={`w-6 h-px ${isDay ? 'bg-[#D9A441]' : 'bg-[#38BDF8]'}`} />
           OLYMPIA 2K26
         </motion.div>
         <motion.button
@@ -462,7 +492,9 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.45, duration: 0.8 }}
-          className="absolute right-8 top-8 text-[10px] font-black uppercase tracking-[0.3em] text-[#071426]/60 hover:text-[#1264FF] transition-colors pointer-events-auto cursor-pointer"
+          className={`absolute right-8 top-8 text-[10px] font-black uppercase tracking-[0.3em] transition-colors pointer-events-auto cursor-pointer ${
+            isDay ? 'text-[#071426]/60 hover:text-[#1264FF]' : 'text-white/60 hover:text-[#38BDF8]'
+          }`}
         >
           SPORTS SECRETARY ↗
         </motion.button>
@@ -470,13 +502,13 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
           transition={{ delay: 0.2, duration: 1.4, ease: EASE_OUT }}
-          className="absolute left-8 top-16 h-px w-24 origin-left bg-[#071426]/15"
+          className={`absolute left-8 top-16 h-px w-24 origin-left ${isDay ? 'bg-[#071426]/15' : 'bg-white/15'}`}
         />
         <motion.div
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
           transition={{ delay: 0.2, duration: 1.4, ease: EASE_OUT }}
-          className="absolute right-8 top-16 h-px w-24 origin-right bg-[#071426]/15"
+          className={`absolute right-8 top-16 h-px w-24 origin-right ${isDay ? 'bg-[#071426]/15' : 'bg-white/15'}`}
         />
       </motion.div>
 
@@ -490,7 +522,14 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
             viewBox="0 0 300 300"
             className="absolute inset-0 h-full w-full -rotate-90"
           >
-            <circle cx="150" cy="150" r={R} fill="none" stroke="rgba(7, 20, 38, 0.12)" strokeWidth="1.5" />
+            <circle
+              cx="150"
+              cy="150"
+              r={R}
+              fill="none"
+              stroke={isDay ? "rgba(7, 20, 38, 0.12)" : "rgba(255, 255, 255, 0.12)"}
+              strokeWidth="1.5"
+            />
             <motion.circle
               cx="150"
               cy="150"
@@ -504,15 +543,26 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
             />
             <defs>
               <linearGradient id="ol-ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#1264FF" />
-                <stop offset="45%" stopColor="#071426" />
-                <stop offset="75%" stopColor="#D9A441" />
-                <stop offset="100%" stopColor="#FFD21F" />
+                {isDay ? (
+                  <>
+                    <stop offset="0%" stopColor="#1264FF" />
+                    <stop offset="45%" stopColor="#071426" />
+                    <stop offset="75%" stopColor="#D9A441" />
+                    <stop offset="100%" stopColor="#FFD21F" />
+                  </>
+                ) : (
+                  <>
+                    <stop offset="0%" stopColor="#1264FF" />
+                    <stop offset="40%" stopColor="#040B17" />
+                    <stop offset="75%" stopColor="#38BDF8" />
+                    <stop offset="100%" stopColor="#FFFFFF" />
+                  </>
+                )}
               </linearGradient>
             </defs>
           </motion.svg>
 
-          {/* Counter-rotating subtle gold dashed ring */}
+          {/* Counter-rotating dashed ring */}
           <motion.svg
             viewBox="0 0 300 300"
             animate={isBlasting ? { opacity: 0, scale: 0.9 } : { rotate: -360 }}
@@ -524,7 +574,7 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
               cy="150"
               r="112"
               fill="none"
-              stroke="rgba(217, 164, 65, 0.55)"
+              stroke={isDay ? "rgba(217, 164, 65, 0.55)" : "rgba(56, 189, 248, 0.65)"}
               strokeWidth="1"
               strokeDasharray="2 14"
             />
@@ -561,7 +611,7 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
           </AnimatePresence>
 
           {/* The Atom Burst & Mirror Break Sequence (Smooth 1.5s explosion) */}
-          {isBlasting && <AtomBurstMirrorBlast />}
+          {isBlasting && <AtomBurstMirrorBlast isDay={isDay} />}
 
           {/* Percentage readout */}
           <AnimatePresence mode="wait">
@@ -572,7 +622,7 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
                 transition={{ duration: 0.4 }}
                 className="flex flex-col items-center"
               >
-                <div className="flex items-start font-black leading-none tracking-tighter text-[#071426]">
+                <div className={`flex items-start font-black leading-none tracking-tighter ${isDay ? 'text-[#071426]' : 'text-white'}`}>
                   <motion.span
                     key={Math.floor(progress)}
                     initial={{ y: 8, opacity: 0 }}
@@ -582,7 +632,7 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
                   >
                     {Math.floor(progress)}
                   </motion.span>
-                  <span className="ml-1 mt-1 text-lg font-bold text-[#D9A441]">%</span>
+                  <span className={`ml-1 mt-1 text-lg font-bold ${isDay ? 'text-[#D9A441]' : 'text-[#38BDF8]'}`}>%</span>
                 </div>
                 <div className="mt-3 h-4 overflow-hidden">
                   <AnimatePresence mode="wait">
@@ -592,7 +642,9 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
                       animate={{ y: 0, opacity: 1 }}
                       exit={{ y: -12, opacity: 0 }}
                       transition={{ duration: 0.3 }}
-                      className="text-[10px] font-black uppercase tracking-[0.28em] text-[#071426]/75 whitespace-nowrap"
+                      className={`text-[10px] font-black uppercase tracking-[0.28em] whitespace-nowrap ${
+                        isDay ? 'text-[#071426]/75' : 'text-white/80'
+                      }`}
                     >
                       {status}
                     </motion.p>
@@ -624,10 +676,16 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
                   onClick={enter}
                   disabled={isBlasting}
                   data-cursor-label="ARENA"
-                  className="group relative overflow-hidden px-8 py-3.5 sm:px-10 sm:py-4 rounded-xl border border-[#D9A441] bg-gradient-to-r from-[#FFD21F] via-[#FFE27A] to-[#D9A441] text-[#071426] font-black tracking-[0.22em] uppercase text-xs transition-all duration-300 hover:scale-[1.02] shadow-[0_8px_25px_rgba(217,164,65,0.35)] hover:shadow-[0_12px_32px_rgba(217,164,65,0.55)] focus:outline-none"
+                  className={`group relative overflow-hidden px-8 py-3.5 sm:px-10 sm:py-4 rounded-xl border font-black tracking-[0.22em] uppercase text-xs transition-all duration-300 hover:scale-[1.02] focus:outline-none ${
+                    isDay
+                      ? 'border-[#D9A441] bg-gradient-to-r from-[#FFD21F] via-[#FFE27A] to-[#D9A441] text-[#071426] shadow-[0_8px_25px_rgba(217,164,65,0.35)] hover:shadow-[0_12px_32px_rgba(217,164,65,0.55)]'
+                      : 'border-[#38BDF8] bg-gradient-to-r from-[#38BDF8] via-[#FFFFFF] to-[#1264FF] text-[#040B17] shadow-[0_8px_30px_rgba(56,189,248,0.45)] hover:shadow-[0_12px_36px_rgba(56,189,248,0.65)]'
+                  }`}
                 >
-                  <span className="absolute inset-0 origin-left scale-x-0 bg-gradient-to-r from-[#FFD21F] to-[#FFFFFF] transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:scale-x-100" />
-                  <span className="relative z-10 flex items-center gap-2.5 font-black text-[#071426]">
+                  <span className={`absolute inset-0 origin-left scale-x-0 transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:scale-x-100 ${
+                    isDay ? 'bg-gradient-to-r from-[#FFD21F] to-[#FFFFFF]' : 'bg-gradient-to-r from-white to-[#BAE6FD]'
+                  }`} />
+                  <span className="relative z-10 flex items-center gap-2.5 font-black">
                     <span>ENTER THE ARENA</span>
                     <span className="text-sm transition-transform duration-300 group-hover:translate-x-1.5">→</span>
                   </span>
@@ -638,12 +696,12 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
                   onClick={goToAdmin}
                   disabled={isBlasting}
                   data-cursor-label="ADMIN"
-                  className="group relative overflow-hidden px-7 py-3.5 sm:px-9 sm:py-4 rounded-xl border border-[#071426]/20 bg-[#071426] text-white font-black tracking-[0.2em] uppercase text-xs transition-all duration-300 hover:border-[#1264FF] hover:bg-[#1264FF] hover:scale-[1.02] shadow-[0_8px_25px_rgba(7,20,38,0.2)] hover:shadow-[0_10px_30px_rgba(18,100,255,0.35)] focus:outline-none"
+                  className="group relative overflow-hidden px-7 py-3.5 sm:px-9 sm:py-4 rounded-xl border border-slate-300/80 bg-[#F1F5F9] text-slate-800 font-black tracking-[0.2em] uppercase text-xs transition-all duration-300 hover:border-[#1264FF] hover:bg-[#1264FF] hover:scale-[1.02] shadow-[0_6px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_10px_30px_rgba(18,100,255,0.45)] focus:outline-none"
                 >
                   <span className="absolute inset-0 origin-left scale-x-0 bg-[#1264FF] transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:scale-x-100" />
-                  <span className="relative z-10 flex items-center gap-2">
+                  <span className="relative z-10 flex items-center gap-2 transition-colors duration-300 group-hover:text-white">
                     <span>SPORTS SECRETARY</span>
-                    <span className="text-sm transition-transform duration-300 group-hover:translate-x-1">↗</span>
+                    <span className="text-sm transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-0.5">↗</span>
                   </span>
                 </button>
               </motion.div>

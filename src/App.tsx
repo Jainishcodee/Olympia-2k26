@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useLocation, Outlet, Link } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { FirebaseProvider } from './contexts/FirebaseContext';
 import { LiveMatchProvider } from './contexts/LiveMatchContext';
@@ -100,9 +100,12 @@ const PublicLoadingFallback = () => (
   </div>
 );
 
-// Route-change sweep — a gold/blue hairline that runs across the top
+// Route-change sweep — adaptive gold/blue in day, starlight cyan/white in night
 const RouteSweep: React.FC = () => {
   const location = useLocation();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
+
   return (
     <motion.div
       key={location.pathname}
@@ -111,7 +114,11 @@ const RouteSweep: React.FC = () => {
       animate={{ scaleX: 1, opacity: 0 }}
       transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
       className="pointer-events-none fixed inset-x-0 top-0 z-[70] h-[2px] origin-left"
-      style={{ background: 'linear-gradient(90deg, #1264FF 0%, #D9A441 55%, #FFD21F 100%)' }}
+      style={{
+        background: isDay
+          ? 'linear-gradient(90deg, #1264FF 0%, #D9A441 55%, #FFD21F 100%)'
+          : 'linear-gradient(90deg, #1264FF 0%, #38BDF8 40%, #FFFFFF 65%, #93C5FD 100%)',
+      }}
     />
   );
 };
@@ -138,12 +145,12 @@ const GlobalBackground: React.FC = () => {
       <div 
         className="absolute inset-0"
         style={{
-          background: 'radial-gradient(ellipse 100% 80% at 50% 10%, rgba(18,100,255,0.15) 0%, rgba(7,20,38,0.85) 50%, #080A0D 100%)'
+          background: 'radial-gradient(ellipse 100% 80% at 50% 10%, rgba(18,100,255,0.18) 0%, rgba(7,20,38,0.88) 50%, #080A0D 100%)'
         }}
       />
       <div 
-        className="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[80vw] h-[500px] rounded-full blur-[140px] opacity-25"
-        style={{ background: 'radial-gradient(circle, #1264FF 0%, #D9A441 60%, transparent 80%)' }}
+        className="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[80vw] h-[500px] rounded-full blur-[140px] opacity-30"
+        style={{ background: 'radial-gradient(circle, #1264FF 0%, #38BDF8 35%, rgba(226,232,240,0.12) 65%, transparent 80%)' }}
       />
     </div>
   );
@@ -151,8 +158,8 @@ const GlobalBackground: React.FC = () => {
 
 import { MobileBottomNav } from './components/navigation/MobileBottomNav';
 
-// Public layout wrapper
-const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Public layout wrapper (persistent layout using Outlet for smooth, freeze-free route transitions)
+const PublicLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
 
   return (
@@ -160,16 +167,18 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       <GlobalBackground />
       <Navbar />
       <RouteSweep />
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" initial={false}>
         <motion.main
           key={location.pathname}
-          initial={{ opacity: 0, y: 22, filter: 'blur(6px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, y: -14, filter: 'blur(6px)' }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -12 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           className="min-h-screen pb-16 lg:pb-0"
         >
-          {children}
+          <Suspense fallback={<PublicLoadingFallback />}>
+            {children ?? <Outlet />}
+          </Suspense>
         </motion.main>
       </AnimatePresence>
       <MobileBottomNav />
@@ -227,69 +236,23 @@ const App: React.FC = () => {
 
                   <Routes>
                     {/* ============================================ */}
-                    {/* PUBLIC ROUTES */}
+                    {/* PUBLIC ROUTES (Persistent PublicLayout)      */}
                     {/* ============================================ */}
-                    <Route path="/" element={
-                      <Suspense fallback={<PublicLoadingFallback />}>
-                        <PublicLayout><Home /></PublicLayout>
-                      </Suspense>
-                    } />
-                    <Route path="/live" element={
-                      <Suspense fallback={<PublicLoadingFallback />}>
-                        <PublicLayout><Live /></PublicLayout>
-                      </Suspense>
-                    } />
-                    <Route path="/matches" element={
-                      <Suspense fallback={<PublicLoadingFallback />}>
-                        <PublicLayout><Matches /></PublicLayout>
-                      </Suspense>
-                    } />
-                    <Route path="/match/:matchId" element={
-                      <Suspense fallback={<PublicLoadingFallback />}>
-                        <PublicLayout><MatchDetail /></PublicLayout>
-                      </Suspense>
-                    } />
-                    <Route path="/tournaments" element={<Navigate to="/matches" replace />} />
-                    <Route path="/sports" element={
-                      <Suspense fallback={<PublicLoadingFallback />}>
-                        <PublicLayout><Sports /></PublicLayout>
-                      </Suspense>
-                    } />
-                    <Route path="/sports/:sportSlug" element={
-                      <Suspense fallback={<PublicLoadingFallback />}>
-                        <PublicLayout><SportDetail /></PublicLayout>
-                      </Suspense>
-                    } />
-                    <Route path="/teams" element={
-                      <Suspense fallback={<PublicLoadingFallback />}>
-                        <PublicLayout><Teams /></PublicLayout>
-                      </Suspense>
-                    } />
-                    <Route path="/teams/:teamId" element={
-                      <Suspense fallback={<PublicLoadingFallback />}>
-                        <PublicLayout><TeamDetail /></PublicLayout>
-                      </Suspense>
-                    } />
-                    <Route path="/players" element={
-                      <Suspense fallback={<PublicLoadingFallback />}>
-                        <PublicLayout><Players /></PublicLayout>
-                      </Suspense>
-                    } />
-                    <Route path="/players/:playerId" element={
-                      <Suspense fallback={<PublicLoadingFallback />}>
-                        <PublicLayout><PlayerDetail /></PublicLayout>
-                      </Suspense>
-                    } />
-                    <Route path="/leaderboard" element={
-                      <Suspense fallback={<PublicLoadingFallback />}>
-                        <PublicLayout><Leaderboard /></PublicLayout>
-                      </Suspense>
-                    } />
-                    <Route path="/results" element={
-                      <Suspense fallback={<PublicLoadingFallback />}>
-                        <PublicLayout><Results /></PublicLayout>
-                      </Suspense>
-                    } />
+                    <Route element={<PublicLayout />}>
+                      <Route path="/" element={<Home />} />
+                      <Route path="/live" element={<Live />} />
+                      <Route path="/matches" element={<Matches />} />
+                      <Route path="/match/:matchId" element={<MatchDetail />} />
+                      <Route path="/tournaments" element={<Navigate to="/matches" replace />} />
+                      <Route path="/sports" element={<Sports />} />
+                      <Route path="/sports/:sportSlug" element={<SportDetail />} />
+                      <Route path="/teams" element={<Teams />} />
+                      <Route path="/teams/:teamId" element={<TeamDetail />} />
+                      <Route path="/players" element={<Players />} />
+                      <Route path="/players/:playerId" element={<PlayerDetail />} />
+                      <Route path="/leaderboard" element={<Leaderboard />} />
+                      <Route path="/results" element={<Results />} />
+                    </Route>
 
                     {/* Admin Login (public access, no navbar) */}
                     <Route path="/admin/login" element={
@@ -388,9 +351,9 @@ const App: React.FC = () => {
                             <div className="text-center">
                               <h1 className="text-8xl font-black text-gradient-gold mb-4">404</h1>
                               <p className="text-xl text-white/60 mb-8">This arena doesn't exist</p>
-                              <a href="/" className="px-8 py-3 bg-[#D9A441] text-[#071426] font-bold rounded-lg hover:bg-[#FFD21F] transition-colors">
+                              <Link to="/" className="px-8 py-3 bg-[#D9A441] text-[#071426] font-bold rounded-lg hover:bg-[#FFD21F] transition-colors">
                                 RETURN TO ARENA
-                              </a>
+                              </Link>
                             </div>
                           </div>
                         </PublicLayout>

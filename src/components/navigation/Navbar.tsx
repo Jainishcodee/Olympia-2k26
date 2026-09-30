@@ -53,7 +53,11 @@ export const Navbar: React.FC = () => {
           animate={{ scaleX: isScrolled ? 1 : 0, opacity: isScrolled ? 1 : 0 }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           className="absolute inset-x-0 bottom-0 h-px origin-left"
-          style={{ background: 'linear-gradient(90deg, rgba(18,100,255,0) 0%, #D9A441 35%, #FFD21F 60%, rgba(18,100,255,0) 100%)' }}
+          style={{
+            background: isDay
+              ? 'linear-gradient(90deg, rgba(18,100,255,0) 0%, #D9A441 35%, #FFD21F 60%, rgba(18,100,255,0) 100%)'
+              : 'linear-gradient(90deg, rgba(18,100,255,0) 0%, #38BDF8 35%, #FFFFFF 50%, #1264FF 75%, rgba(18,100,255,0) 100%)',
+          }}
         />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
@@ -64,9 +68,25 @@ export const Navbar: React.FC = () => {
               transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
               className="flex items-center gap-2.5"
             >
-              <img src={isDay ? BRAND.logoLight : BRAND.logoDark} alt="Olympia 2K26" className="h-8 w-auto object-contain" />
+              <div className="relative flex items-center justify-center">
+                <img
+                  src={isDay ? BRAND.logoLight : BRAND.olympiaDark}
+                  alt="Olympia 2K26"
+                  className={cn(
+                    "h-8 sm:h-9 w-auto object-contain transition-transform duration-300 group-hover:scale-105",
+                    isDay
+                      ? "drop-shadow-[0_2px_8px_rgba(217,164,65,0.35)]"
+                      : "drop-shadow-[0_0_12px_rgba(56,189,248,0.55)]"
+                  )}
+                />
+              </div>
               <span
-                className={cn("text-lg md:text-xl font-black tracking-[0.2em] transition-colors", isDay ? "text-[#071426]" : "text-white")}
+                className={cn(
+                  "text-lg md:text-xl font-black tracking-[0.2em] transition-colors",
+                  isDay
+                    ? "text-[#071426]"
+                    : "bg-gradient-to-r from-white via-[#E2E8F0] to-[#93C5FD] bg-clip-text text-transparent drop-shadow-[0_0_14px_rgba(56,189,248,0.35)]"
+                )}
               >
                 OLYMPIA
               </span>

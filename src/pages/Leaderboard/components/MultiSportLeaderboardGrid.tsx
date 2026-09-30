@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
 import { TiltCard, RollingScore } from '@/components/motion';
-import olympiaLogo from '@/assets/olympia.png';
+import { BRAND } from '@/components/arena/BrandAssets';
 
 interface DisciplineLeader {
   sportId: string;
@@ -150,8 +150,18 @@ export const MultiSportLeaderboardGrid: React.FC<{
                     </span>
                   </div>
 
-                  <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 flex items-center justify-center border border-[#D9A441]/40 shadow-sm bg-black/5 dark:bg-white/5">
-                    <img src={olympiaLogo} alt="Olympia" className="w-5 h-5 object-contain" />
+                  <div
+                    className={`w-8 h-8 rounded-full overflow-hidden shrink-0 flex items-center justify-center border shadow-sm transition-all duration-300 ${
+                      isDay
+                        ? 'border-[#D9A441]/40 bg-black/5'
+                        : 'border-[#38BDF8]/40 bg-white/5 shadow-[0_0_10px_rgba(56,189,248,0.25)]'
+                    }`}
+                  >
+                    <img
+                      src={isDay ? BRAND.logo : BRAND.olympiaDark}
+                      alt="Olympia"
+                      className="w-5 h-5 object-contain"
+                    />
                   </div>
                 </div>
 
