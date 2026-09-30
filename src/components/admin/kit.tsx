@@ -1,16 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/utils/cn';
 import { FiSearch, FiAlertTriangle, FiInbox, FiChevronRight } from 'react-icons/fi';
 
 /* ============================================================================
- *  Olympia Admin — shared presentation kit.
+ *  Olympia Admin — High-Class Cyber-Luxury Sports Command Center Kit
  *
- *  Design language: PRECISE · FAST · OPERATIONAL · DATA-DENSE · CLEAR.
- *  Motion is deliberately restrained — colour transitions and one shared
- *  `layoutId` indicator. Nothing here animates on entry, so tables and forms
- *  never feel like they are performing for you.
+ *  Design language: UPSCALE · CINEMATIC · GLASSMORPHIC · ANIMATED · PRECISE
+ *  Featuring Framer Motion physics, radiant neon/gold accents, and dark glass.
  * ==========================================================================*/
 
 /* ---------------------------------------------------------------- buttons */
@@ -19,13 +17,15 @@ type Variant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'warn';
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    'bg-[#1264FF] text-white border border-[#1264FF] hover:bg-[#0B4FD1] hover:border-[#0B4FD1]',
+    'bg-gradient-to-r from-[#1264FF] to-[#1747B8] text-white border border-blue-400/40 hover:from-[#1747B8] hover:to-[#1264FF] shadow-[0_0_20px_rgba(18,100,255,0.35)] hover:shadow-[0_0_28px_rgba(18,100,255,0.55)]',
   secondary:
-    'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 hover:border-slate-400',
+    'bg-[#0B1A30]/80 text-slate-200 border border-white/15 hover:bg-[#102442] hover:border-white/30 hover:text-white backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.2)]',
   danger:
-    'bg-white text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300',
-  warn: 'bg-[#D9A441] text-slate-900 border border-[#D9A441] hover:bg-[#C4912F] hover:border-[#C4912F]',
-  ghost: 'bg-transparent text-slate-600 border border-transparent hover:bg-slate-100 hover:text-slate-900',
+    'bg-red-500/15 text-red-300 border border-red-500/30 hover:bg-red-500/25 hover:border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.2)]',
+  warn:
+    'bg-gradient-to-r from-[#D9A441] to-[#FFD21F] text-[#071426] font-bold border border-yellow-300/60 hover:brightness-110 shadow-[0_0_22px_rgba(217,164,65,0.45)]',
+  ghost:
+    'bg-transparent text-slate-400 border border-transparent hover:bg-white/5 hover:text-white hover:border-white/10',
 };
 
 export const Btn: React.FC<
@@ -37,32 +37,45 @@ export const Btn: React.FC<
   }
 > = ({ variant = 'secondary', size = 'sm', icon, to, className, children, ...rest }) => {
   const classes = cn(
-    'inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-colors duration-150 whitespace-nowrap disabled:pointer-events-none disabled:opacity-50',
+    'relative inline-flex items-center justify-center gap-2 rounded-lg font-bold transition-all duration-200 whitespace-nowrap disabled:pointer-events-none disabled:opacity-40 overflow-hidden group',
     size === 'xs'
-      ? 'h-7 px-2 text-[11px]'
+      ? 'h-7 px-2.5 text-[11px] tracking-wide'
       : size === 'md'
-        ? 'h-10 px-4 text-sm'
-        : 'h-9 px-3.5 text-[13px]',
+        ? 'h-10 px-5 text-sm tracking-wide'
+        : 'h-9 px-4 text-[13px] tracking-wide',
     VARIANTS[variant],
     className,
   );
+  
   const inner = (
     <>
-      {icon}
-      {children}
+      {/* Subtle shine on hover */}
+      <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
+      {icon && <span className="shrink-0 transition-transform duration-200 group-hover:scale-110">{icon}</span>}
+      <span className="relative z-10">{children}</span>
     </>
   );
+
   if (to) {
     return (
-      <Link to={to} className={classes}>
-        {inner}
-      </Link>
+      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="inline-block">
+        <Link to={to} className={classes}>
+          {inner}
+        </Link>
+      </motion.div>
     );
   }
+  
   return (
-    <button type="button" className={classes} {...rest}>
+    <motion.button
+      type="button"
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className={classes}
+      {...(rest as any)}
+    >
       {inner}
-    </button>
+    </motion.button>
   );
 };
 
@@ -80,32 +93,39 @@ export const AdminHeader: React.FC<{
   actions?: React.ReactNode;
   badge?: React.ReactNode;
 }> = ({ title, subtitle, breadcrumbs, actions, badge }) => (
-  <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+  <motion.div 
+    initial={{ opacity: 0, y: -12 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+    className="mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-5"
+  >
     <div className="min-w-0">
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav className="mb-1.5 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        <nav className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
           {breadcrumbs.map((crumb, index) => (
             <React.Fragment key={`${crumb.label}-${index}`}>
-              {index > 0 && <FiChevronRight className="h-3 w-3" />}
+              {index > 0 && <FiChevronRight className="h-3 w-3 text-[#D9A441]" />}
               {crumb.to ? (
-                <Link to={crumb.to} className="transition-colors hover:text-[#1264FF]">
+                <Link to={crumb.to} className="transition-colors hover:text-[#D9A441]">
                   {crumb.label}
                 </Link>
               ) : (
-                <span className="text-slate-500">{crumb.label}</span>
+                <span className="text-slate-300">{crumb.label}</span>
               )}
             </React.Fragment>
           ))}
         </nav>
       )}
-      <div className="flex items-center gap-3">
-        <h1 className="truncate text-xl font-bold tracking-tight text-slate-900">{title}</h1>
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+          <span>{title}</span>
+        </h1>
         {badge}
       </div>
-      {subtitle && <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-slate-500">{subtitle}</p>}
+      {subtitle && <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-slate-400 font-medium">{subtitle}</p>}
     </div>
-    {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
-  </div>
+    {actions && <div className="flex flex-wrap items-center gap-2.5">{actions}</div>}
+  </motion.div>
 );
 
 /* ----------------------------------------------------------------- cards */
@@ -117,62 +137,84 @@ export const Card: React.FC<{
   className?: string;
   bodyClassName?: string;
   flush?: boolean;
+  glow?: 'gold' | 'blue' | 'none';
   children: React.ReactNode;
-}> = ({ title, hint, actions, className, bodyClassName, flush, children }) => (
-  <section className={cn('rounded-lg border border-slate-200 bg-white', className)}>
-    {(title || actions) && (
-      <header className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-        <div className="min-w-0">
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">{title}</h2>
-          {hint && <p className="mt-0.5 text-[12px] text-slate-400">{hint}</p>}
-        </div>
-        {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
-      </header>
-    )}
-    <div className={cn(flush ? '' : 'p-4', bodyClassName)}>{children}</div>
-  </section>
-);
+}> = ({ title, hint, actions, className, bodyClassName, flush, glow = 'none', children }) => {
+  const glowStyle = {
+    gold: 'border-[#D9A441]/30 shadow-[0_12px_40px_rgba(217,164,65,0.12)]',
+    blue: 'border-[#1264FF]/30 shadow-[0_12px_40px_rgba(18,100,255,0.12)]',
+    none: 'border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.4)]',
+  }[glow];
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      className={cn(
+        'relative rounded-xl border bg-[#071426]/85 backdrop-blur-xl transition-all duration-300 hover:border-white/20',
+        glowStyle,
+        className,
+      )}
+    >
+      {(title || actions) && (
+        <header className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4 bg-white/[0.02]">
+          <div className="min-w-0">
+            <h2 className="text-xs font-black uppercase tracking-[0.18em] text-[#D9A441] flex items-center gap-2">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#D9A441] shadow-[0_0_8px_#D9A441]" />
+              {title}
+            </h2>
+            {hint && <p className="mt-0.5 text-xs text-slate-400">{hint}</p>}
+          </div>
+          {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+        </header>
+      )}
+      <div className={cn(flush ? '' : 'p-5', bodyClassName)}>{children}</div>
+    </motion.section>
+  );
+};
 
 /* ----------------------------------------------------------- status pills */
 
 const PILL_TONES: Record<string, string> = {
-  live: 'bg-red-50 text-red-700 border-red-200',
-  paused: 'bg-amber-50 text-amber-700 border-amber-200',
-  scheduled: 'bg-blue-50 text-blue-700 border-blue-200',
-  upcoming: 'bg-blue-50 text-blue-700 border-blue-200',
-  completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  ongoing: 'bg-blue-50 text-blue-700 border-blue-200',
-  finished: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  cancelled: 'bg-slate-100 text-slate-600 border-slate-200',
-  archived: 'bg-slate-100 text-slate-500 border-slate-200',
-  active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  inactive: 'bg-slate-100 text-slate-500 border-slate-200',
-  disabled: 'bg-slate-100 text-slate-500 border-slate-200',
-  open: 'bg-blue-50 text-blue-700 border-blue-200',
-  closed: 'bg-slate-100 text-slate-600 border-slate-200',
-  hidden: 'bg-amber-50 text-amber-700 border-amber-200',
-  published: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  draft: 'bg-slate-100 text-slate-600 border-slate-200',
-  featured: 'bg-[#FFF7E6] text-[#A9761B] border-[#F0DFB8]',
+  live: 'bg-red-500/20 text-red-300 border-red-500/40 shadow-[0_0_12px_rgba(239,68,68,0.3)]',
+  paused: 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.3)]',
+  scheduled: 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_12px_rgba(59,130,246,0.3)]',
+  upcoming: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-[0_0_12px_rgba(99,102,241,0.3)]',
+  completed: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.3)]',
+  ongoing: 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_12px_rgba(59,130,246,0.3)]',
+  finished: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.3)]',
+  cancelled: 'bg-slate-800 text-slate-400 border-slate-700',
+  archived: 'bg-slate-800/80 text-slate-500 border-slate-700/60',
+  active: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.3)]',
+  inactive: 'bg-slate-800 text-slate-400 border-slate-700',
+  disabled: 'bg-slate-800 text-slate-500 border-slate-700',
+  open: 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_12px_rgba(59,130,246,0.3)]',
+  closed: 'bg-slate-800 text-slate-400 border-slate-700',
+  hidden: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+  published: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+  draft: 'bg-slate-800 text-slate-400 border-slate-700',
+  featured: 'bg-[#D9A441]/25 text-[#FFD21F] border-[#D9A441]/50 shadow-[0_0_16px_rgba(217,164,65,0.35)]',
 };
 
 export const StatusPill: React.FC<{ value?: string; className?: string }> = ({ value, className }) => {
   if (!value) return null;
   const key = String(value).toLowerCase();
-  const tone = PILL_TONES[key] ?? 'bg-slate-100 text-slate-600 border-slate-200';
+  const tone = PILL_TONES[key] ?? 'bg-slate-800 text-slate-300 border-slate-700';
   const live = key === 'live';
+  
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider backdrop-blur-md',
         tone,
         className,
       )}
     >
       {live && (
-        <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500" />
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-90" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500 shadow-[0_0_8px_#EF4444]" />
         </span>
       )}
       {String(value)}
@@ -188,36 +230,81 @@ export const StatTile: React.FC<{
   hint?: string;
   accent?: 'blue' | 'gold' | 'red' | 'slate' | 'green';
   isLoading?: boolean;
+  icon?: React.ReactNode;
   to?: string;
-}> = ({ label, value, hint, accent = 'slate', isLoading, to }) => {
-  const bar = {
-    blue: 'bg-[#1264FF]',
-    gold: 'bg-[#D9A441]',
-    red: 'bg-red-500',
-    green: 'bg-emerald-500',
-    slate: 'bg-slate-400',
+}> = ({ label, value, hint, accent = 'gold', isLoading, icon, to }) => {
+  const accents = {
+    blue: {
+      bar: 'bg-[#1264FF] shadow-[0_0_15px_#1264FF]',
+      border: 'hover:border-[#1264FF]/40',
+      glow: 'from-[#1264FF]/15 to-transparent',
+      text: 'text-blue-400',
+    },
+    gold: {
+      bar: 'bg-[#D9A441] shadow-[0_0_15px_#D9A441]',
+      border: 'hover:border-[#D9A441]/40',
+      glow: 'from-[#D9A441]/15 to-transparent',
+      text: 'text-[#D9A441]',
+    },
+    red: {
+      bar: 'bg-red-500 shadow-[0_0_15px_#EF4444]',
+      border: 'hover:border-red-500/40',
+      glow: 'from-red-500/15 to-transparent',
+      text: 'text-red-400',
+    },
+    green: {
+      bar: 'bg-emerald-500 shadow-[0_0_15px_#10B981]',
+      border: 'hover:border-emerald-500/40',
+      glow: 'from-emerald-500/15 to-transparent',
+      text: 'text-emerald-400',
+    },
+    slate: {
+      bar: 'bg-slate-400',
+      border: 'hover:border-slate-500',
+      glow: 'from-slate-700/20 to-transparent',
+      text: 'text-slate-300',
+    },
   }[accent];
 
   const body = (
-    <>
-      <span className={cn('absolute inset-y-0 left-0 w-[3px]', bar)} />
-      <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">{label}</span>
-      <span className="mt-1.5 block text-2xl font-bold tabular-nums tracking-tight text-slate-900">
-        {isLoading ? <span className="inline-block h-7 w-12 animate-pulse rounded bg-slate-200" /> : value}
-      </span>
-      {hint && <span className="mt-1 block text-[11px] text-slate-400">{hint}</span>}
-    </>
+    <div className="relative overflow-hidden rounded-xl border border-white/10 bg-[#071426]/90 p-5 backdrop-blur-xl transition-all duration-300 hover:shadow-[0_12px_32px_rgba(0,0,0,0.5)] group">
+      {/* Accent edge light */}
+      <span className={cn('absolute inset-y-0 left-0 w-[4px]', accents.bar)} />
+      
+      {/* Background radiant glow */}
+      <div className={cn('absolute -right-10 -bottom-10 h-32 w-32 rounded-full blur-[45px] bg-gradient-to-br opacity-50 transition-opacity duration-300 group-hover:opacity-80', accents.glow)} />
+
+      <div className="flex items-center justify-between">
+        <span className="block text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
+          {label}
+        </span>
+        {icon && <span className={cn('text-lg opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all', accents.text)}>{icon}</span>}
+      </div>
+
+      <div className="mt-2.5 flex items-baseline gap-2">
+        <span className="text-3xl md:text-4xl font-black tabular-nums tracking-tight text-white drop-shadow-sm">
+          {isLoading ? (
+            <span className="inline-block h-9 w-16 animate-pulse rounded bg-white/10" />
+          ) : (
+            value
+          )}
+        </span>
+      </div>
+
+      {hint && <span className="mt-1.5 block text-xs font-semibold text-slate-400">{hint}</span>}
+    </div>
   );
 
-  const classes =
-    'relative rounded-lg border border-slate-200 bg-white px-4 py-3.5 transition-colors hover:border-slate-300';
-
   return to ? (
-    <Link to={to} className={cn(classes, 'block')}>
-      {body}
-    </Link>
+    <motion.div whileHover={{ y: -4, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+      <Link to={to} className="block">
+        {body}
+      </Link>
+    </motion.div>
   ) : (
-    <div className={classes}>{body}</div>
+    <motion.div whileHover={{ y: -3 }}>
+      {body}
+    </motion.div>
   );
 };
 
@@ -229,14 +316,14 @@ export const SearchInput: React.FC<{
   placeholder?: string;
   className?: string;
 }> = ({ value, onChange, placeholder = 'Search…', className }) => (
-  <div className={cn('relative', className)}>
-    <FiSearch className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+  <div className={cn('relative min-w-[200px]', className)}>
+    <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
     <input
       type="search"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="h-9 w-full rounded-md border border-slate-300 bg-white pl-8 pr-3 text-[13px] text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-[#1264FF] focus:ring-2 focus:ring-[#1264FF]/15"
+      className="h-10 w-full rounded-lg border border-white/15 bg-[#0B1A30]/80 pl-9 pr-3 text-sm text-white placeholder-slate-400 outline-none backdrop-blur-md transition-all duration-200 focus:border-[#D9A441] focus:ring-2 focus:ring-[#D9A441]/20"
     />
   </div>
 );
@@ -250,17 +337,17 @@ export const FilterSelect: React.FC<{
 }> = ({ value, onChange, label, options, className }) => (
   <label className={cn('inline-flex items-center gap-2', className)}>
     {label && (
-      <span className="whitespace-nowrap text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+      <span className="whitespace-nowrap text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">
         {label}
       </span>
     )}
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="h-9 rounded-md border border-slate-300 bg-white px-2.5 text-[13px] text-slate-700 outline-none transition-colors focus:border-[#1264FF] focus:ring-2 focus:ring-[#1264FF]/15"
+      className="h-10 rounded-lg border border-white/15 bg-[#0B1A30]/90 px-3 text-xs font-bold text-white outline-none backdrop-blur-md transition-all duration-200 focus:border-[#D9A441] focus:ring-2 focus:ring-[#D9A441]/20 cursor-pointer"
     >
       {options.map((option) => (
-        <option key={option.value} value={option.value}>
+        <option key={option.value} value={option.value} className="bg-[#071426] text-white">
           {option.label}
         </option>
       ))}
@@ -272,7 +359,9 @@ export const Toolbar: React.FC<{
   children: React.ReactNode;
   className?: string;
 }> = ({ children, className }) => (
-  <div className={cn('mb-4 flex flex-wrap items-center gap-2', className)}>{children}</div>
+  <div className={cn('mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-[#071426]/60 p-3 backdrop-blur-md', className)}>
+    {children}
+  </div>
 );
 
 /* ------------------------------------------------------------------ tabs */
@@ -289,7 +378,7 @@ export const AdminTabs: React.FC<{
   onChange: (id: string) => void;
   layoutPrefix?: string;
 }> = ({ items, active, onChange, layoutPrefix = 'admin-tab' }) => (
-  <div className="mb-5 flex gap-1 overflow-x-auto border-b border-slate-200">
+  <div className="mb-6 flex gap-2 overflow-x-auto border-b border-white/10 pb-px">
     {items.map((item) => {
       const isActive = item.id === active;
       return (
@@ -298,16 +387,20 @@ export const AdminTabs: React.FC<{
           type="button"
           onClick={() => onChange(item.id)}
           className={cn(
-            'relative -mb-px flex items-center gap-1.5 whitespace-nowrap px-3.5 py-2.5 text-[13px] font-semibold transition-colors',
-            isActive ? 'text-[#1264FF]' : 'text-slate-500 hover:text-slate-900',
+            'relative flex items-center gap-2 whitespace-nowrap rounded-t-lg px-4 py-3 text-xs font-black uppercase tracking-[0.16em] transition-all duration-200',
+            isActive
+              ? 'text-[#FFD21F] bg-white/[0.04]'
+              : 'text-slate-400 hover:text-white hover:bg-white/[0.02]',
           )}
         >
           {item.label}
           {item.count !== undefined && (
             <span
               className={cn(
-                'rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums',
-                isActive ? 'bg-[#1264FF]/10 text-[#1264FF]' : 'bg-slate-100 text-slate-500',
+                'rounded-full px-2 py-0.5 text-[10px] font-black tabular-nums transition-colors',
+                isActive
+                  ? 'bg-[#D9A441]/20 text-[#FFD21F] border border-[#D9A441]/40'
+                  : 'bg-slate-800 text-slate-400',
               )}
             >
               {item.count}
@@ -316,8 +409,8 @@ export const AdminTabs: React.FC<{
           {isActive && (
             <motion.span
               layoutId={`${layoutPrefix}-indicator`}
-              transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-              className="absolute inset-x-0 -bottom-px h-0.5 bg-[#1264FF]"
+              transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+              className="absolute inset-x-0 bottom-0 h-[2.5px] bg-gradient-to-r from-[#D9A441] via-[#FFD21F] to-[#D9A441] shadow-[0_0_12px_#D9A441]"
             />
           )}
         </button>
@@ -329,15 +422,17 @@ export const AdminTabs: React.FC<{
 /* ------------------------------------------------------------- feedback */
 
 export const ErrorNotice: React.FC<{ message: string; className?: string }> = ({ message, className }) => (
-  <div
+  <motion.div
+    initial={{ opacity: 0, scale: 0.96 }}
+    animate={{ opacity: 1, scale: 1 }}
     className={cn(
-      'flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 text-[13px] leading-relaxed text-amber-900',
+      'flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-950/40 px-4 py-3.5 text-xs font-medium leading-relaxed text-red-200 backdrop-blur-md shadow-[0_0_20px_rgba(239,68,68,0.15)]',
       className,
     )}
   >
-    <FiAlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+    <FiAlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
     <span>{message}</span>
-  </div>
+  </motion.div>
 );
 
 export const EmptyNotice: React.FC<{
@@ -345,25 +440,29 @@ export const EmptyNotice: React.FC<{
   message?: string;
   action?: React.ReactNode;
 }> = ({ title = 'Nothing here yet', message, action }) => (
-  <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
-    <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-      <FiInbox className="h-5 w-5" />
+  <motion.div 
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="flex flex-col items-center justify-center rounded-xl border border-white/10 bg-[#071426]/50 px-6 py-16 text-center backdrop-blur-md"
+  >
+    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white/5 border border-white/10 text-[#D9A441] shadow-[0_0_20px_rgba(217,164,65,0.15)]">
+      <FiInbox className="h-6 w-6" />
     </div>
-    <p className="text-sm font-semibold text-slate-700">{title}</p>
-    {message && <p className="mt-1 max-w-sm text-[13px] leading-relaxed text-slate-400">{message}</p>}
-    {action && <div className="mt-4">{action}</div>}
-  </div>
+    <p className="text-base font-black tracking-wide text-white">{title}</p>
+    {message && <p className="mt-1.5 max-w-sm text-xs leading-relaxed text-slate-400">{message}</p>}
+    {action && <div className="mt-5">{action}</div>}
+  </motion.div>
 );
 
 export const LoadingRows: React.FC<{ rows?: number; cols?: number }> = ({ rows = 6, cols = 5 }) => (
-  <div className="divide-y divide-slate-100">
+  <div className="divide-y divide-white/5">
     {Array.from({ length: rows }).map((_, rowIndex) => (
-      <div key={rowIndex} className="flex items-center gap-4 px-4 py-3">
+      <div key={rowIndex} className="flex items-center gap-4 px-4 py-3.5">
         {Array.from({ length: cols }).map((__, colIndex) => (
           <span
             key={colIndex}
-            className="h-3 animate-pulse rounded bg-slate-100"
-            style={{ width: `${((rowIndex + colIndex) % 4) * 12 + 24}%` }}
+            className="h-3.5 animate-pulse rounded-md bg-white/10"
+            style={{ width: `${((rowIndex + colIndex) % 4) * 15 + 20}%` }}
           />
         ))}
       </div>
@@ -371,10 +470,13 @@ export const LoadingRows: React.FC<{ rows?: number; cols?: number }> = ({ rows =
   </div>
 );
 
-export const PageLoading: React.FC<{ label?: string }> = ({ label = 'Loading…' }) => (
-  <div className="flex flex-col items-center justify-center gap-3 py-20 text-slate-400">
-    <span className="h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#1264FF]" />
-    <span className="text-[12px] font-semibold uppercase tracking-wider">{label}</span>
+export const PageLoading: React.FC<{ label?: string }> = ({ label = 'Loading Arena…' }) => (
+  <div className="flex flex-col items-center justify-center gap-4 py-24 text-slate-400">
+    <div className="relative flex h-10 w-10 items-center justify-center">
+      <span className="absolute h-full w-full animate-ping rounded-full bg-[#1264FF]/20" />
+      <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-[#D9A441] shadow-[0_0_15px_#D9A441]" />
+    </div>
+    <span className="text-xs font-black uppercase tracking-[0.2em] text-[#D9A441]">{label}</span>
   </div>
 );
 
@@ -387,16 +489,16 @@ export const FormSection: React.FC<{
   children: React.ReactNode;
   className?: string;
 }> = ({ step, title, description, children, className }) => (
-  <div className={cn('border-b border-slate-100 px-5 py-5 last:border-b-0', className)}>
-    <div className="mb-4 flex items-baseline gap-3">
+  <div className={cn('border-b border-white/10 px-6 py-6 last:border-b-0', className)}>
+    <div className="mb-5 flex items-baseline gap-3">
       {step && (
-        <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[#071426] px-1.5 text-[11px] font-bold text-[#D9A441]">
+        <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[#D9A441] text-xs font-black text-[#071426] shadow-[0_0_10px_#D9A441]">
           {step}
         </span>
       )}
       <div className="min-w-0">
-        <h3 className="text-sm font-bold text-slate-900">{title}</h3>
-        {description && <p className="mt-0.5 text-[12px] text-slate-400">{description}</p>}
+        <h3 className="text-base font-black tracking-wide text-white">{title}</h3>
+        {description && <p className="mt-0.5 text-xs text-slate-400">{description}</p>}
       </div>
     </div>
     {children}
@@ -410,7 +512,7 @@ export const FormGrid: React.FC<{
 }> = ({ cols = 2, children, className }) => (
   <div
     className={cn(
-      'grid gap-4',
+      'grid gap-5',
       cols === 1 && 'grid-cols-1',
       cols === 2 && 'sm:grid-cols-2',
       cols === 3 && 'sm:grid-cols-2 lg:grid-cols-3',
@@ -430,13 +532,13 @@ export const Toggle: React.FC<{
 }> = ({ checked, onChange, label, hint, disabled }) => (
   <label
     className={cn(
-      'flex items-start justify-between gap-4 py-3',
-      disabled ? 'opacity-50' : 'cursor-pointer',
+      'flex items-start justify-between gap-4 py-3 rounded-lg px-3 transition-colors hover:bg-white/[0.02]',
+      disabled ? 'opacity-40' : 'cursor-pointer',
     )}
   >
     <span className="min-w-0">
-      <span className="block text-[13px] font-semibold text-slate-800">{label}</span>
-      {hint && <span className="mt-0.5 block text-[12px] leading-relaxed text-slate-400">{hint}</span>}
+      <span className="block text-sm font-bold text-white">{label}</span>
+      {hint && <span className="mt-0.5 block text-xs leading-relaxed text-slate-400">{hint}</span>}
     </span>
     <button
       type="button"
@@ -446,14 +548,14 @@ export const Toggle: React.FC<{
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cn(
-        'relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition-colors duration-150',
-        checked ? 'bg-[#1264FF]' : 'bg-slate-300',
+        'relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-all duration-200 border border-white/20',
+        checked ? 'bg-[#D9A441] shadow-[0_0_12px_rgba(217,164,65,0.6)]' : 'bg-slate-800',
       )}
     >
       <span
         className={cn(
-          'absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform duration-150',
-          checked ? 'translate-x-4' : 'translate-x-0.5',
+          'absolute top-0.5 h-4.5 w-4.5 rounded-full bg-white shadow-md transition-transform duration-200',
+          checked ? 'translate-x-5 bg-[#071426]' : 'translate-x-0.5 bg-slate-400',
         )}
       />
     </button>
@@ -462,8 +564,8 @@ export const Toggle: React.FC<{
 
 /** Two-line definition row used across detail pages. */
 export const MetaRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <div className="flex items-baseline justify-between gap-4 border-b border-slate-100 py-2.5 last:border-b-0">
-    <dt className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-slate-400">{label}</dt>
-    <dd className="min-w-0 truncate text-right text-[13px] font-medium text-slate-800">{children}</dd>
+  <div className="flex items-baseline justify-between gap-4 border-b border-white/5 py-3 last:border-b-0">
+    <dt className="shrink-0 text-xs font-bold uppercase tracking-[0.16em] text-slate-400">{label}</dt>
+    <dd className="min-w-0 truncate text-right text-sm font-semibold text-white">{children}</dd>
   </div>
 );

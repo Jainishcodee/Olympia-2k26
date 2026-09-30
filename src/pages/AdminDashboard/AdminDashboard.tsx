@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useCollection } from '@/hooks/useCollection';
 import {
   AdminHeader,
@@ -13,14 +14,14 @@ import {
 } from '@/components/admin/kit';
 import { cn } from '@/utils/cn';
 import type { AuditEntry, Fixture, Match, MatchEvent, Team } from '@/types';
-import { FiArrowRight, FiClock } from 'react-icons/fi';
+import { FiArrowRight, FiClock, FiActivity, FiUsers, FiAward, FiRadio, FiShield, FiTrendingUp } from 'react-icons/fi';
 import { HiOutlineVideoCamera } from 'react-icons/hi';
 
 /** Accepts a Firestore Timestamp, a Date, an ISO string or nothing. */
 const toDate = (value: unknown): Date | null => {
   if (!value) return null;
   if (value instanceof Date) return value;
-  if (typeof value === 'object' && 'toDate' in (value as Date)) {
+  if (typeof value === 'object' && value !== null && 'toDate' in value && typeof (value as { toDate: () => Date }).toDate === 'function') {
     return (value as { toDate: () => Date }).toDate();
   }
   if (typeof value === 'number') return new Date(value);
@@ -57,11 +58,24 @@ const formatDay = (value: unknown) => {
 /** `score` is `{teamA, teamB}` for most sports but free-form for cricket. */
 const renderScore = (match: Match) => {
   const score = match.score as unknown as Record<string, unknown> | undefined;
-  if (!score) return '—';
+  if (!score) return '0 – 0';
   const a = score.teamA;
   const b = score.teamB;
-  if (a === undefined && b === undefined) return '—';
+  if (a === undefined && b === undefined) return '0 – 0';
   return `${a ?? 0} – ${b ?? 0}`;
+};
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.07, delayChildren: 0.1 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } },
 };
 
 const AdminDashboard: React.FC = () => {
@@ -121,238 +135,285 @@ const AdminDashboard: React.FC = () => {
 
   const teamName = (id?: string) => (id ? teamById.get(id)?.name ?? id : '—');
 
-  const nameOf = (match?: Match) => {
-    if (!match) return '—';
-    return match.participantA?.name ?? teamName(match.teamAId);
-  };
-
   const error = firstError;
 
   return (
-    <>
+    <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6">
       <AdminHeader
-        title="Dashboard"
-        subtitle="Operational overview of OLYMPIA 2K26. Every figure below is read live from Firestore."
+        title="Arena Command Center"
+        subtitle="Real-time live telemetry, telemetry aggregates, and operational controls for OLYMPIA 2K26."
         actions={
-          <>
-            <Btn to="/admin/live" variant="primary" icon={<HiOutlineVideoCamera className="h-4 w-4" />}>
-              Live control room
+          <div className="flex items-center gap-3">
+            <Btn to="/admin/live" variant="primary" icon={<HiOutlineVideoCamera className="h-4 w-4 animate-pulse" />}>
+              Live Control Room
             </Btn>
-            <Btn to="/admin/matches/create" variant="secondary">
-              Create match
+            <Btn to="/admin/matches/create" variant="warn">
+              + New Match
             </Btn>
-          </>
+          </div>
         }
       />
 
       {error && <ErrorNotice message={error} className="mb-5" />}
 
-      {/* ------------------------------------------------ today's traffic */}
-      <Card title="Today" hint="Matches scheduled against the local date" className="mb-5">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* ------------------------------------------------ Active Arena Stats Grid */}
+      <motion.div variants={itemVariants}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatTile
-            label="Live now"
+            label="Live Now"
             value={liveMatches.length}
             accent="red"
-            hint="Open the control room to operate them"
+            icon={<FiRadio className="text-red-400 animate-pulse" />}
+            hint="Active arena matches broadcasting"
             isLoading={isLoading}
             to="/admin/live"
           />
           <StatTile
-            label="Upcoming today"
+            label="Upcoming Today"
             value={upcomingToday.length}
             accent="blue"
+            icon={<FiClock className="text-blue-400" />}
+            hint="Scheduled on local timeline"
             isLoading={isLoading}
             to="/admin/matches"
           />
           <StatTile
-            label="Completed today"
+            label="Completed Today"
             value={completedToday.length}
             accent="green"
+            icon={<FiTrendingUp className="text-emerald-400" />}
+            hint="Archived results confirmed"
             isLoading={isLoading}
             to="/admin/matches"
           />
         </div>
-      </Card>
+      </motion.div>
 
-      {/* -------------------------------------------------- totals */}
-      <Card title="Competition" className="mb-5">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatTile label="Total matches" value={matches.data.length} accent="blue" isLoading={isLoading} to="/admin/matches" />
-          <StatTile label="Total teams" value={teams.data.length} accent="gold" isLoading={isLoading} to="/admin/teams" />
-          <StatTile label="Total players" value={players.data.length} accent="gold" isLoading={isLoading} to="/admin/players" />
-          <StatTile
-            label="Total tournaments"
-            value={tournaments.data.length}
-            accent="slate"
-            isLoading={isLoading}
-            to="/admin/tournaments"
-          />
-        </div>
-      </Card>
+      {/* ------------------------------------------------ Competition Totals */}
+      <motion.div variants={itemVariants}>
+        <Card title="Competition Telemetry" hint="Core database aggregates" glow="gold">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <StatTile 
+              label="Total Matches" 
+              value={matches.data.length} 
+              accent="blue" 
+              icon={<FiActivity />} 
+              isLoading={isLoading} 
+              to="/admin/matches" 
+            />
+            <StatTile 
+              label="Active Teams" 
+              value={teams.data.length} 
+              accent="gold" 
+              icon={<FiShield />} 
+              isLoading={isLoading} 
+              to="/admin/teams" 
+            />
+            <StatTile 
+              label="Rostered Players" 
+              value={players.data.length} 
+              accent="gold" 
+              icon={<FiUsers />} 
+              isLoading={isLoading} 
+              to="/admin/players" 
+            />
+            <StatTile
+              label="Tournaments"
+              value={tournaments.data.length}
+              accent="slate"
+              icon={<FiAward />}
+              isLoading={isLoading}
+              to="/admin/tournaments"
+            />
+          </div>
+        </Card>
+      </motion.div>
 
-      <Card title="Public interaction" className="mb-5">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* ------------------------------------------------ Public Interaction telemetry */}
+      <motion.div variants={itemVariants}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatTile
-            label="Total votes"
+            label="Ballots & Votes"
             value={votes.data.length}
             accent="blue"
             isLoading={votes.isLoading}
-            hint="Anonymous ballots cast"
+            hint="Real-time fan predictions"
             to="/admin/votes"
           />
           <StatTile
-            label="Total reviews"
+            label="Fan Reviews"
             value={reviews.data.length}
             accent="gold"
             isLoading={reviews.isLoading}
+            hint="Moderated match opinions"
             to="/admin/reviews"
           />
           <StatTile
-            label="Total reactions"
+            label="Live Reactions"
             value={reactions.data.length}
-            accent="slate"
+            accent="green"
             isLoading={reactions.isLoading}
+            hint="Crowd excitement pulses"
             to="/admin/reactions"
           />
         </div>
-      </Card>
+      </motion.div>
 
-      {/* ------------------------------------------ live match overview */}
-      <div className="mb-5 grid gap-5 xl:grid-cols-2">
+      {/* ------------------------------------------ Live Match Overview + Recent Events */}
+      <motion.div variants={itemVariants} className="grid gap-6 xl:grid-cols-2">
         <Card
-          title="Live match overview"
-          hint="Click through to the scoring console"
-          actions={<Btn to="/admin/live" size="xs" icon={<FiArrowRight className="h-3.5 w-3.5" />}>All live</Btn>}
+          title="Live Arena Stream"
+          hint="Click through to the high-performance scoring console"
+          glow="blue"
+          actions={
+            <Btn to="/admin/live" size="xs" variant="primary" icon={<FiArrowRight className="h-3 w-3" />}>
+              Open All
+            </Btn>
+          }
           flush
         >
           {matches.isLoading ? (
             <LoadingRows rows={4} cols={4} />
           ) : matches.error ? (
-            <div className="p-4"><ErrorNotice message={matches.error} /></div>
+            <div className="p-5"><ErrorNotice message={matches.error} /></div>
           ) : liveMatches.length === 0 ? (
             <EmptyNotice
-              title="No matches are live"
-              message="Start a match from the Live Control Room and it will appear here in real time."
-              action={<Btn to="/admin/live" variant="primary">Open control room</Btn>}
+              title="No Arena Matches Live"
+              message="Start a match from the Live Control Room to activate broadcast telemetry."
+              action={<Btn to="/admin/live" variant="primary">Launch Control Room</Btn>}
             />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-white/10">
               {liveMatches.map((match) => {
                 const sport = match.sportId;
                 const a = match.participantA?.name ?? teamName(match.teamAId);
                 const b = match.participantB?.name ?? teamName(match.teamBId);
                 return (
-                  <li key={match.id} className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                        {sport}
-                      </span>
-                      <StatusPill value="live" />
-                      <span className="ml-auto font-mono text-[12px] tabular-nums text-slate-500">
+                  <motion.li 
+                    key={match.id}
+                    whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.03)' }}
+                    className="p-5 transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className="rounded-md bg-[#1264FF]/20 border border-blue-400/30 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-blue-300">
+                          {sport}
+                        </span>
+                        <StatusPill value="live" />
+                      </div>
+                      <span className="font-mono text-xs font-bold tabular-nums text-[#D9A441] flex items-center gap-1.5">
+                        <FiClock className="h-3.5 w-3.5" />
                         {formatTime(match.scheduledAt)}
                       </span>
                     </div>
-                    <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                      <span className="truncate text-right text-[13px] font-semibold text-slate-800">{a}</span>
-                      <span className="rounded bg-slate-900 px-2.5 py-1 text-[14px] font-black tabular-nums text-white">
-                        {renderScore(match)}
-                      </span>
-                      <span className="truncate text-[13px] font-semibold text-slate-800">{b}</span>
+
+                    <div className="my-4 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+                      <span className="truncate text-right text-sm font-extrabold text-white">{a}</span>
+                      <div className="relative rounded-lg bg-gradient-to-r from-[#0B1A30] to-[#071426] border border-[#D9A441]/40 px-4 py-1.5 shadow-[0_0_20px_rgba(217,164,65,0.2)]">
+                        <span className="text-lg font-black tabular-nums tracking-wider text-[#FFD21F]">
+                          {renderScore(match)}
+                        </span>
+                      </div>
+                      <span className="truncate text-left text-sm font-extrabold text-white">{b}</span>
                     </div>
-                    <div className="mt-2 flex justify-end">
-                      <Btn to={`/admin/matches/${match.id}/scoring`} variant="primary" size="xs">
-                        Open scoring
+
+                    <div className="flex justify-end">
+                      <Btn to={`/admin/matches/${match.id}/scoring`} variant="warn" size="xs">
+                        Open Scoring Console →
                       </Btn>
                     </div>
-                  </li>
+                  </motion.li>
                 );
               })}
             </ul>
           )}
         </Card>
 
-        {/* --------------------------------------------- recent events */}
+        {/* --------------------------------------------- Recent Events Timeline */}
         <Card
-          title="Recent match events"
-          actions={<span className="text-[11px] text-slate-400">newest first</span>}
+          title="Telemetry Event Stream"
+          hint="Live broadcast actions stream"
+          actions={<span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Live Pulse</span>}
           flush
         >
           {events.isLoading ? (
             <LoadingRows rows={5} cols={3} />
           ) : events.error ? (
-            <div className="p-4"><ErrorNotice message={events.error} /></div>
+            <div className="p-5"><ErrorNotice message={events.error} /></div>
           ) : events.data.length === 0 ? (
             <EmptyNotice
-              title="No match events yet"
-              message="Goals, wickets and cards recorded from the scoring console stream here."
+              title="No Events Logged Yet"
+              message="Scores, goals, wickets and cards recorded in the console will appear here in real time."
             />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-white/5">
               {events.data.slice(0, 8).map((event) => (
-                <li key={event.id} className="flex items-start gap-3 px-4 py-2.5">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#1264FF]" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] font-semibold text-slate-800">
-                      {String(event.type ?? 'event').replace(/_/g, ' ')}
-                      {event.teamId ? ` · ${teamName(event.teamId)}` : ''}
+                <motion.li 
+                  key={event.id}
+                  whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.02)' }}
+                  className="flex items-start gap-3.5 px-5 py-3.5 transition-colors"
+                >
+                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#D9A441] shadow-[0_0_8px_#D9A441]" />
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-black uppercase tracking-wider text-white">
+                      {String(event.type ?? 'EVENT').replace(/_/g, ' ')}
+                      {event.teamId ? <span className="text-slate-400 font-normal"> · {teamName(event.teamId)}</span> : ''}
                     </span>
-                    <span className="block truncate text-[12px] text-slate-400">
-                      {event.undone ? 'undone · ' : ''}
-                      {event.data ? Object.entries(event.data).map(([key, value]) => `${key}: ${String(value)}`).join(' · ') : ''}
+                    <span className="block truncate text-[11px] text-slate-400 mt-0.5">
+                      {event.undone ? <span className="text-red-400 font-bold">UNDONE · </span> : ''}
+                      {event.data ? Object.entries(event.data).map(([k, v]) => `${k}: ${String(v)}`).join(' · ') : 'Event registered'}
                     </span>
-                  </span>
-                  <span className="shrink-0 font-mono text-[11px] tabular-nums text-slate-400">
+                  </div>
+                  <span className="shrink-0 font-mono text-[11px] font-bold tabular-nums text-slate-500">
                     {(() => {
-                      const stamp = event.timestamp;
-                      if (!stamp) return '';
-                      const date =
-                        typeof (stamp as { toDate?: () => Date }).toDate === 'function'
-                          ? (stamp as { toDate: () => Date }).toDate()
-                          : new Date(stamp as unknown as number);
-                      return Number.isNaN(date.getTime()) ? '' : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      const date = toDate(event.timestamp);
+                      return date ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
                     })()}
                   </span>
-                </li>
+                </motion.li>
               ))}
             </ul>
           )}
         </Card>
-      </div>
+      </motion.div>
 
-      <div className="grid gap-5 xl:grid-cols-2">
-        {/* ---------------------------------------- upcoming fixtures */}
+      {/* ---------------------------------------- Fixtures + Audit Activity */}
+      <motion.div variants={itemVariants} className="grid gap-6 xl:grid-cols-2">
         <Card
-          title="Upcoming fixtures"
-          actions={<Btn to="/admin/fixtures" size="xs">Manage</Btn>}
+          title="Upcoming Arena Fixtures"
+          actions={<Btn to="/admin/fixtures" size="xs">Manage Calendar</Btn>}
           flush
         >
           {fixtures.isLoading ? (
             <LoadingRows rows={4} cols={3} />
           ) : fixtures.error ? (
-            <div className="p-4"><ErrorNotice message={fixtures.error} /></div>
+            <div className="p-5"><ErrorNotice message={fixtures.error} /></div>
           ) : upcomingFixtures.length === 0 ? (
-            <EmptyNotice title="No fixtures scheduled" message="Create fixtures to build the schedule." action={<Btn to="/admin/fixtures/create" variant="primary">Create fixture</Btn>} />
+            <EmptyNotice
+              title="No Fixtures Scheduled"
+              message="Build your tournament brackets and schedule upcoming arena clashes."
+              action={<Btn to="/admin/fixtures/create" variant="primary">Create Fixture</Btn>}
+            />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-white/5">
               {upcomingFixtures.map((fixture) => (
-                <li key={fixture.id} className="flex items-center gap-3 px-4 py-3">
-                  <span className="flex w-14 shrink-0 flex-col items-center rounded border border-slate-200 bg-slate-50 py-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <li key={fixture.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02] transition-colors">
+                  <div className="flex w-16 shrink-0 flex-col items-center rounded-lg border border-white/10 bg-[#0B1A30]/80 py-1.5 shadow-inner">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#D9A441]">
                       {formatDay(fixture.scheduledAt)}
                     </span>
-                    <span className="font-mono text-[12px] font-bold tabular-nums text-slate-700">
+                    <span className="font-mono text-xs font-bold tabular-nums text-white">
                       {formatTime(fixture.scheduledAt)}
                     </span>
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] font-semibold text-slate-800">
-                      {teamName(fixture.teamAId)} <span className="text-slate-400">vs</span> {teamName(fixture.teamBId)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-extrabold text-white">
+                      {teamName(fixture.teamAId)} <span className="text-[#D9A441] font-black">VS</span> {teamName(fixture.teamBId)}
                     </span>
-                    <span className="block text-[11px] text-slate-400">
-                      {fixture.round ?? 'Fixture'} · {fixture.venueId ?? 'Venue TBC'}
+                    <span className="block text-[11px] text-slate-400 mt-0.5">
+                      {fixture.round ?? 'Round Match'} · {fixture.venueId ?? 'Arena Main'}
                     </span>
-                  </span>
+                  </div>
                   <StatusPill value={fixture.status ?? 'scheduled'} />
                 </li>
               ))}
@@ -360,74 +421,48 @@ const AdminDashboard: React.FC = () => {
           )}
         </Card>
 
-        {/* --------------------------------------- recent admin activity */}
+        {/* --------------------------------------- Audit Log */}
         <Card
-          title="Recent admin activity"
-          actions={<Btn to="/admin/audit" size="xs">Full audit log</Btn>}
+          title="Security & System Audit Log"
+          actions={<Btn to="/admin/audit" size="xs">Full Audit</Btn>}
           flush
         >
           {activity.isLoading ? (
             <LoadingRows rows={5} cols={3} />
           ) : activity.error ? (
-            <div className="p-4"><ErrorNotice message={activity.error} /></div>
+            <div className="p-5"><ErrorNotice message={activity.error} /></div>
           ) : activity.data.length === 0 ? (
             <EmptyNotice
-              title="No activity recorded yet"
-              message="Every privileged action an administrator takes is written to the audit log."
-              action={<Btn to="/admin/audit">Open audit log</Btn>}
+              title="Audit Log Initialized"
+              message="Every privileged administrative operation is immutably timestamped."
             />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-white/5">
               {activity.data.slice(0, 8).map((entry) => (
-                <li key={entry.id} className="flex items-center gap-3 px-4 py-2.5">
+                <li key={entry.id} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors">
                   <span
                     className={cn(
-                      'shrink-0 rounded border px-1.5 py-0.5 font-mono text-[10px] font-bold',
+                      'shrink-0 rounded-md border px-2 py-0.5 font-mono text-[10px] font-black uppercase',
                       entry.action?.startsWith('MATCH')
-                        ? 'border-blue-200 bg-blue-50 text-blue-700'
+                        ? 'border-blue-500/40 bg-blue-500/10 text-blue-300'
                         : entry.action?.startsWith('ADMIN')
-                          ? 'border-red-200 bg-red-50 text-red-700'
-                          : 'border-amber-200 bg-amber-50 text-amber-700',
+                          ? 'border-red-500/40 bg-red-500/10 text-red-300'
+                          : 'border-yellow-500/40 bg-yellow-500/10 text-yellow-300',
                     )}
                   >
                     {entry.action}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-[12px] text-slate-600">
+                  <span className="min-w-0 flex-1 truncate text-xs text-slate-300">
                     {entry.resourceLabel ?? entry.resourceId}
                   </span>
-                  <span className="shrink-0 text-[11px] text-slate-400">{entry.adminName ?? entry.adminId}</span>
+                  <span className="shrink-0 text-[11px] font-bold text-slate-500">{entry.adminName ?? entry.adminId}</span>
                 </li>
               ))}
             </ul>
           )}
         </Card>
-      </div>
-
-      {!isLoading && !error && matches.data.length === 0 && (
-        <Card className="mt-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-4">
-            <div className="min-w-0">
-              <p className="text-[13px] font-bold text-slate-700">
-                <FiClock className="mr-1.5 inline h-4 w-4 text-slate-400" />
-                Firestore returned zero matches.
-              </p>
-              <p className="mt-0.5 text-[12px] text-slate-500">
-                Run <code className="rounded bg-slate-200 px-1 py-0.5 text-[11px] font-bold">npm run seed</code> to
-                populate the collections, or create your first match manually.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Link
-                to="/admin/matches/create"
-                className="rounded-md bg-[#1264FF] px-3.5 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#0B4FD1]"
-              >
-                Create match
-              </Link>
-            </div>
-          </div>
-        </Card>
-      )}
-    </>
+      </motion.div>
+    </motion.div>
   );
 };
 

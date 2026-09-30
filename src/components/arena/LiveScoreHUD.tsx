@@ -1,22 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-
-interface Fixture {
-  sport: string;
-  stage: string;
-  venue: string;
-  teamA: string;
-  teamB: string;
-  scoreA: number;
-  scoreB: number;
-  clock: string;
-}
-
-const FIXTURES: Fixture[] = [
-  { sport: 'FOOTBALL', stage: 'SEMIFINAL', venue: 'MAIN ARENA', teamA: 'NORTH WING', teamB: 'SOUTH SIDE', scoreA: 2, scoreB: 1, clock: "78'" },
-  { sport: 'BADMINTON', stage: 'QUARTER FINAL', venue: 'COURT 03', teamA: 'FALCONS', teamB: 'VIPERS', scoreA: 1, scoreB: 1, clock: 'GAME 3' },
-  { sport: 'CRICKET', stage: 'GROUP STAGE', venue: 'OVAL A', teamA: 'TITANS', teamB: 'MAVERICKS', scoreA: 184, scoreB: 167, clock: 'OV 18.2' },
-];
+import { useCollection } from '@/hooks/useCollection';
+import type { Match, Team } from '@/types';
 
 /** Two-digit pad with a vertical roll on every value change. */
 const Roll: React.FC<{ value: number; className?: string }> = ({ value, className = '' }) => {
@@ -44,29 +29,43 @@ const Roll: React.FC<{ value: number; className?: string }> = ({ value, classNam
   );
 };
 
-/**
- * Broadcast-style live bug. Cycles through fixtures with a cross-fade so the
- * hero always has a pulse of real score activity without any data layer.
- */
 export const LiveScoreHUD: React.FC<{ className?: string }> = ({ className = '' }) => {
+  const matches = useCollection<Match>('matches');
+  const teams = useCollection<Team>('teams');
   const [index, setIndex] = useState(0);
-  const [minute, setMinute] = useState(0);
+
+  const teamById = React.useMemo(
+    () => new Map(teams.data.map((t) => [t.id, t])),
+    [teams.data]
+  );
+
+  const liveMatches = React.useMemo(
+    () => matches.data.filter((m) => m.status === 'live'),
+    [matches.data]
+  );
 
   useEffect(() => {
-    const id = setInterval(() => setIndex((i) => (i + 1) % FIXTURES.length), 5200);
+    if (liveMatches.length <= 1) return;
+    const id = setInterval(() => setIndex((i) => (i + 1) % liveMatches.length), 6000);
     return () => clearInterval(id);
-  }, []);
+  }, [liveMatches.length]);
 
-  useEffect(() => {
-    const id = setInterval(() => setMinute((m) => (m + 1) % 60), 1000);
-    return () => clearInterval(id);
-  }, []);
+  // If there are no live matches in Firestore, do not render fake simulated feed
+  if (matches.isLoading || liveMatches.length === 0) {
+    return null;
+  }
 
-  const fixture = FIXTURES[index];
+  const match = liveMatches[index % liveMatches.length];
+  const teamA = match.participantA?.name || teamById.get(match.teamAId)?.name || 'Team A';
+  const teamB = match.participantB?.name || teamById.get(match.teamBId)?.name || 'Team B';
+  const score = match.score as unknown as Record<string, unknown> | undefined;
+  const scoreA = Number(score?.teamA ?? 0);
+  const scoreB = Number(score?.teamB ?? 0);
+  const clock = match.liveState?.clock || 'LIVE';
 
   return (
     <div className={`pointer-events-none select-none ${className}`}>
-      <div className="relative overflow-hidden border border-[#D9A441]/35 bg-[#071426]/85 backdrop-blur-md shadow-[0_30px_60px_-30px_rgba(0,0,0,0.9)]">
+      <div className="relative overflow-hidden border border-[#D9A441]/40 bg-[#071426]/90 backdrop-blur-xl shadow-[0_30px_60px_-30px_rgba(0,0,0,0.9)] rounded-xl">
         {/* diagonal broadcast texture */}
         <div
           aria-hidden
@@ -76,71 +75,58 @@ export const LiveScoreHUD: React.FC<{ className?: string }> = ({ className = '' 
               'repeating-linear-gradient(135deg, rgba(217,164,65,0.5) 0px, rgba(217,164,65,0.5) 1px, transparent 1px, transparent 9px)',
           }}
         />
-        {/* corner sweep */}
-        <div
-          aria-hidden
-          className="absolute inset-y-0 right-0 w-1/2 opacity-60"
-          style={{ background: 'linear-gradient(90deg, rgba(18,100,255,0) 0%, rgba(18,100,255,0.22) 100%)' }}
-        />
 
-        <div className="relative px-4 pt-3 pb-3 sm:px-5">
+        <div className="relative px-5 pt-3.5 pb-4">
           <div className="flex items-center justify-between gap-6 mb-2.5">
             <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#FF4D3D]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#FF4D3D] shadow-[0_0_10px_2px_rgba(255,77,61,0.85)] ol-pulse" />
-              LIVE
-              <span className="text-white/45 font-bold tracking-[0.18em]">/ DEMO</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#FF4D3D] shadow-[0_0_10px_2px_rgba(255,77,61,0.85)] animate-ping" />
+              LIVE TELEMETRY
             </span>
             <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#D9A441]">
-              {fixture.venue}
+              {match.sportId}
             </span>
           </div>
 
-          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/45 mb-3">
-            {fixture.sport} <span className="text-white/25">/</span> {fixture.stage}
-            <span className="float-right text-white/40 tabular-nums">{fixture.clock}</span>
+          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-3 flex items-center justify-between">
+            <span>Match #{match.matchNumber ?? 1}</span>
+            <span className="text-[#FFD21F] font-mono tabular-nums">{clock}</span>
           </div>
 
-          <div className="flex items-center justify-between gap-3 sm:gap-5">
+          <div className="flex items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[11px] sm:text-xs font-black uppercase tracking-[0.14em] text-white/45">
-                HOME
+              <div className="truncate text-[10px] font-black uppercase tracking-[0.14em] text-white/40">
+                TEAM A
               </div>
-              <div className="truncate font-black uppercase tracking-tight text-white text-base sm:text-xl">
-                {fixture.teamA}
+              <div className="truncate font-black uppercase tracking-tight text-white text-base sm:text-lg">
+                {teamA}
               </div>
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-2 font-black tracking-tighter text-[#FFD21F] text-3xl sm:text-5xl leading-none">
-              <Roll value={fixture.scoreA} />
-              <span className="text-white/30 text-xl sm:text-3xl">:</span>
-              <Roll value={fixture.scoreB} className="text-white" />
+            <div className="flex items-center gap-1.5 font-black tracking-tighter text-[#FFD21F] text-3xl sm:text-4xl leading-none">
+              <Roll value={scoreA} />
+              <span className="text-white/30 text-xl">:</span>
+              <Roll value={scoreB} className="text-white" />
             </div>
 
             <div className="min-w-0 flex-1 text-right">
-              <div className="truncate text-[11px] sm:text-xs font-black uppercase tracking-[0.14em] text-white/45">
-                AWAY
+              <div className="truncate text-[10px] font-black uppercase tracking-[0.14em] text-white/40">
+                TEAM B
               </div>
-              <div className="truncate font-black uppercase tracking-tight text-white text-base sm:text-xl">
-                {fixture.teamB}
+              <div className="truncate font-black uppercase tracking-tight text-white text-base sm:text-lg">
+                {teamB}
               </div>
             </div>
           </div>
         </div>
 
-        {/* progress hairline — constant low-level motion */}
+        {/* progress hairline */}
         <motion.div
-          key={index}
+          key={match.id}
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
-          transition={{ duration: 5.2, ease: 'linear' }}
+          transition={{ duration: 6, ease: 'linear' }}
           className="h-[2px] origin-left bg-gradient-to-r from-[#D9A441] via-[#FFD21F] to-[#1264FF]"
         />
-      </div>
-
-      {/* live tick — the score nudges whenever the clock advances */}
-      <div className="mt-2 flex items-center justify-between px-1 text-[9px] font-black uppercase tracking-[0.24em] text-white/25">
-        <span>SIMULATED FEED</span>
-        <span className="tabular-nums text-[#D9A441]/70">SYNC {String(minute).padStart(2, '0')}s</span>
       </div>
     </div>
   );

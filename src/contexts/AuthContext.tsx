@@ -35,19 +35,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (firebaseUser) {
         try {
           const idTokenResult = await firebaseUser.getIdTokenResult();
-          const userIsAdmin = !!idTokenResult.claims.admin;
-          setIsAdmin(userIsAdmin);
+          let userIsAdmin = !!idTokenResult.claims.admin;
           
-          if (userIsAdmin && db) {
-            const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
-            if (adminDoc.exists()) {
-              setAdmin({ id: adminDoc.id, uid: adminDoc.id, ...adminDoc.data() } as unknown as AdminUser);
+          if (db && !firebaseUser.isAnonymous) {
+            try {
+              const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
+              if (adminDoc.exists()) {
+                const data = adminDoc.data();
+                if (data?.active !== false) {
+                  userIsAdmin = true;
+                  setAdmin({ id: adminDoc.id, uid: adminDoc.id, ...data } as unknown as AdminUser);
+                }
+              }
+            } catch (err) {
+              console.warn("Could not read admin profile doc", err);
             }
-          } else {
+          }
+          
+          setIsAdmin(userIsAdmin);
+          if (!userIsAdmin) {
             setAdmin(null);
           }
         } catch (error) {
-          console.error("Error fetching admin claims", error);
+          console.error("Error fetching admin status", error);
           setIsAdmin(false);
           setAdmin(null);
         }

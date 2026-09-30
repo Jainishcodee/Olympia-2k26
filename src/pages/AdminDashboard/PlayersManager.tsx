@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useCollection } from '@/hooks/useCollection';
-import { updatePlayer } from '@/services/players/playerService';
+import { deletePlayer } from '@/services/players/playerService';
 import {
   AdminHeader,
   Btn,
@@ -16,10 +16,9 @@ import {
   StatusPill,
   Toolbar,
 } from '@/components/admin/kit';
-import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { cn } from '@/utils/cn';
 import type { Player, Sport, Team } from '@/types';
-import { FiArchive, FiEdit2, FiEye, FiPlus, FiX } from 'react-icons/fi';
+import { FiEdit2, FiEye, FiPlus, FiTrash2, FiX } from 'react-icons/fi';
 
 const initialsOf = (name: string): string => {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -71,8 +70,6 @@ const PlayersManager: React.FC = () => {
   const [teamFilter, setTeamFilter] = useState(teamParam);
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [pending, setPending] = useState<Player | null>(null);
-  const [busy, setBusy] = useState(false);
 
   const sportNames = useMemo(() => {
     const map = new Map(sports.data.map((sport) => [sport.id, sport.name]));
@@ -104,18 +101,13 @@ const PlayersManager: React.FC = () => {
   const isLoading = players.isLoading || teams.isLoading || sports.isLoading;
   const error = players.error ?? teams.error ?? sports.error;
 
-  const archive = async () => {
-    if (!pending || busy) return;
-    setBusy(true);
+  const handleDelete = async (player: Player) => {
     try {
-      await updatePlayer(pending.id, { active: false });
-      await log('PLAYER_ARCHIVED', 'player', pending.id, { label: pending.name });
-      toast.success(`${pending.name} archived`);
-      setPending(null);
+      await deletePlayer(player.id);
+      await log('PLAYER_DELETED', 'player', player.id, { label: player.name });
+      toast.success(`${player.name} deleted`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Archive failed');
-    } finally {
-      setBusy(false);
+      toast.error(err instanceof Error ? err.message : 'Delete failed');
     }
   };
 
@@ -296,11 +288,10 @@ const PlayersManager: React.FC = () => {
                           <FiEdit2 className="h-3.5 w-3.5" />
                         </ActionIcon>
                         <ActionIcon
-                          label="Archive"
-                          disabled={player.active === false}
-                          onClick={() => setPending(player)}
+                          label="Delete"
+                          onClick={() => handleDelete(player)}
                         >
-                          <FiArchive className="h-3.5 w-3.5" />
+                          <FiTrash2 className="h-3.5 w-3.5 text-rose-500" />
                         </ActionIcon>
                       </div>
                     </td>
@@ -311,20 +302,6 @@ const PlayersManager: React.FC = () => {
           </div>
         )}
       </Card>
-
-      <ConfirmDialog
-        isOpen={pending !== null}
-        title="Archive this player?"
-        message={
-          pending
-            ? `${pending.name} will be hidden from active lists and removed from public view. Nothing is deleted — the record and their statistics are preserved.`
-            : ''
-        }
-        confirmText="Archive"
-        isDestructive
-        onConfirm={archive}
-        onCancel={() => setPending(null)}
-      />
     </>
   );
 };

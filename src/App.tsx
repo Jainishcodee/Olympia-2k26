@@ -119,13 +119,33 @@ const RouteSweep: React.FC = () => {
 const GlobalBackground: React.FC = () => {
   const { theme } = useTheme();
   
-  if (theme !== 'day') return null;
+  if (theme === 'day') {
+    return (
+      <div 
+        className="fixed inset-0 pointer-events-none z-[-1] opacity-[0.12] bg-cover bg-center bg-no-repeat bg-fixed" 
+        style={{ backgroundImage: `url(${BRAND.arena})` }} 
+      />
+    );
+  }
   
   return (
-    <div 
-      className="fixed inset-0 pointer-events-none z-[-1] opacity-[0.15] bg-cover bg-center bg-no-repeat bg-fixed" 
-      style={{ backgroundImage: `url(${BRAND.arena})` }} 
-    />
+    <div className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden">
+      {/* Night mode arena backdrop with atmospheric stadium lighting */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed opacity-[0.18] mix-blend-screen scale-105" 
+        style={{ backgroundImage: `url(${BRAND.arena})` }} 
+      />
+      <div 
+        className="absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse 100% 80% at 50% 10%, rgba(18,100,255,0.15) 0%, rgba(7,20,38,0.85) 50%, #080A0D 100%)'
+        }}
+      />
+      <div 
+        className="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[80vw] h-[500px] rounded-full blur-[140px] opacity-25"
+        style={{ background: 'radial-gradient(circle, #1264FF 0%, #D9A441 60%, transparent 80%)' }}
+      />
+    </div>
   );
 };
 

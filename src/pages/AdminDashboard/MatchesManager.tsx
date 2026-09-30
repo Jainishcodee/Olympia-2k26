@@ -12,7 +12,6 @@ import {
   StatusPill,
   Toolbar,
 } from '@/components/admin/kit';
-import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import {
   createMatch,
@@ -23,7 +22,7 @@ import type { Match, MatchStatus, Sport, Team, Tournament, Venue } from '@/types
 import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { FiEdit2, FiPlay, FiCopy, FiSlash, FiArchive, FiEye, FiRotateCcw } from 'react-icons/fi';
+import { FiEdit2, FiPlay, FiCopy, FiSlash, FiArchive, FiEye, FiRotateCcw, FiTrash2 } from 'react-icons/fi';
 
 const PAGE_SIZE = 40;
 
@@ -48,10 +47,6 @@ const cellDate = (value: unknown) => {
   };
 };
 
-type PendingAction =
-  | { kind: 'cancel' | 'archive' | 'restore' | 'delete'; match: Match }
-  | null;
-
 const MatchesManager: React.FC = () => {
   const navigate = useNavigate();
   const { log } = useAuditLog();
@@ -71,7 +66,6 @@ const MatchesManager: React.FC = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [autoShowArchived, setAutoShowArchived] = useState(false);
   const [visible, setVisible] = useState(PAGE_SIZE);
-  const [pending, setPending] = useState<PendingAction>(null);
   const [busy, setBusy] = useState(false);
 
   const lookups = useMemo(() => {
@@ -158,34 +152,23 @@ const MatchesManager: React.FC = () => {
     }
   };
 
-  const confirmPending = async () => {
-    if (!pending) return;
-    const { kind, match } = pending;
-    setBusy(true);
+  const handleDelete = async (match: Match) => {
     try {
-      if (kind === 'delete') {
-        await deleteMatch(match.id);
-        await log('MATCH_ARCHIVED', 'match', match.id, { label: label(match), metadata: { hardDelete: true } });
-        toast.success('Match deleted');
-      } else if (kind === 'cancel') {
-        await updateMatch(match.id, { status: 'cancelled' as MatchStatus });
-        await log('MATCH_CANCELLED', 'match', match.id, { label: label(match) });
-        toast.success('Match cancelled');
-      } else if (kind === 'archive') {
-        await updateMatch(match.id, { archived: true } as Partial<Match>);
-        await log('MATCH_ARCHIVED', 'match', match.id, { label: label(match) });
-        toast.success('Match archived. Check "Archived" to view.', { duration: 4000 });
-        setShowArchived(true);
-      } else if (kind === 'restore') {
-        await updateMatch(match.id, { archived: false } as Partial<Match>);
-        await log('MATCH_RESTORED', 'match', match.id, { label: label(match) });
-        toast.success('Match restored');
-      }
-      setPending(null);
+      await deleteMatch(match.id);
+      await log('MATCH_DELETED', 'match', match.id, { label: label(match) });
+      toast.success('Match deleted');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Action failed');
-    } finally {
-      setBusy(false);
+      toast.error(error instanceof Error ? error.message : 'Delete failed');
+    }
+  };
+
+  const handleCancel = async (match: Match) => {
+    try {
+      await updateMatch(match.id, { status: 'cancelled' as MatchStatus });
+      await log('MATCH_CANCELLED', 'match', match.id, { label: label(match) });
+      toast.success('Match cancelled');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Cancel failed');
     }
   };
 
@@ -371,15 +354,15 @@ const MatchesManager: React.FC = () => {
                           <ActionIcon
                             label="Cancel"
                             disabled={match.status === 'cancelled'}
-                            onClick={() => setPending({ kind: 'cancel', match })}
+                            onClick={() => handleCancel(match)}
                           >
                             <FiSlash className="h-3.5 w-3.5" />
                           </ActionIcon>
                           <ActionIcon
-                            label={isArchived ? 'Restore' : 'Archive'}
-                            onClick={() => setPending({ kind: isArchived ? 'restore' : 'archive', match })}
+                            label="Delete"
+                            onClick={() => handleDelete(match)}
                           >
-                            {isArchived ? <FiRotateCcw className="h-3.5 w-3.5" /> : <FiArchive className="h-3.5 w-3.5" />}
+                            <FiTrash2 className="h-3.5 w-3.5 text-rose-500" />
                           </ActionIcon>
                         </div>
                       </td>
@@ -399,40 +382,6 @@ const MatchesManager: React.FC = () => {
           </Btn>
         </div>
       )}
-
-      <ConfirmDialog
-        isOpen={pending !== null}
-        title={
-          pending?.kind === 'cancel'
-            ? 'Cancel this match?'
-            : pending?.kind === 'delete'
-              ? 'Delete this match permanently?'
-              : pending?.kind === 'restore'
-                ? 'Restore this match?'
-                : 'Archive this match?'
-        }
-        message={
-          pending
-            ? pending.kind === 'cancel'
-              ? `${label(pending.match)} will be marked cancelled and removed from active lists.`
-              : pending.kind === 'delete'
-                ? 'This removes the match document permanently. Prefer archiving — the match has a history.'
-                : pending.kind === 'restore'
-                  ? 'The match will be restored and visible in active lists again.'
-                  : 'The match is hidden from active lists but fully recoverable.'
-            : ''
-        }
-        confirmText={
-          pending?.kind === 'delete'
-            ? 'Delete'
-            : pending?.kind === 'restore'
-              ? 'Restore'
-              : 'Confirm'
-        }
-        isDestructive
-        onConfirm={confirmPending}
-        onCancel={() => setPending(null)}
-      />
     </>
   );
 };

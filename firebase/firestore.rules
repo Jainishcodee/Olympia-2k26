@@ -3,7 +3,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isAdmin() {
-      return request.auth != null && request.auth.token.admin == true;
+      return request.auth != null && (
+        request.auth.token.admin == true ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
     }
 
     function isAuthenticated() {
@@ -12,7 +15,15 @@ service cloud.firestore {
 
     // Admins collection
     match /admins/{adminId} {
-      allow read, write: if isAdmin();
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Audit logs collection
+    match /auditLogs/{auditId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
     }
 
     // Public read, admin write collections
@@ -61,8 +72,7 @@ service cloud.firestore {
     match /reactions/{reactionId} {
       allow read: if true;
       allow create: if isAuthenticated()
-                   && request.resource.data.userId == request.auth.uid
-                   && request.resource.data.createdAt == request.time;
+                   && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAdmin();
     }
 
@@ -81,8 +91,7 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if isAuthenticated() 
                             && request.resource.data.userId == request.auth.uid
-                            && request.resource.data.text.size() <= 1000
-                            && request.resource.data.createdAt == request.time;
+                            && request.resource.data.text.size() <= 1000;
       allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
@@ -92,6 +101,16 @@ service cloud.firestore {
       allow create, update: if isAuthenticated() 
                             && request.resource.data.userId == request.auth.uid;
       allow delete: if isAdmin();
+    }
+
+    // Match Voting & Reactions aggregates
+    match /match_voting/{matchId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+    match /match_reactions/{matchId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
     }
 
     // Users

@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useCollection, useDoc } from '@/hooks/useCollection';
 import {
   addPlayerToTeam,
+  deleteTeam,
   removePlayerFromTeam,
   setCaptain,
   setViceCaptain,
@@ -111,6 +112,7 @@ const emptyTally = (): Tally => ({ played: 0, won: 0, drawn: 0, lost: 0, gf: 0, 
 
 const TeamDetail: React.FC = () => {
   const { teamId } = useParams();
+  const navigate = useNavigate();
   const location = useLocation();
   const { log } = useAuditLog();
 
@@ -126,7 +128,7 @@ const TeamDetail: React.FC = () => {
   const sports = useCollection<Sport>('sports', { sortBy: 'name' });
   const matches = useCollection<Match>('matches', { sortBy: 'scheduledAt', direction: 'desc' });
 
-  const [confirm, setConfirm] = useState<{ kind: 'archive' } | { kind: 'remove'; player: Player } | null>(null);
+  const [confirm, setConfirm] = useState<{ kind: 'delete' } | { kind: 'remove'; player: Player } | null>(null);
   const [assignId, setAssignId] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -300,12 +302,15 @@ const TeamDetail: React.FC = () => {
     if (ok) setConfirm(null);
   };
 
-  const archiveTeam = async () => {
+  const deleteTeamAction = async () => {
     const ok = await run(async () => {
-      await updateTeam(id, { active: false });
-      await log('TEAM_ARCHIVED', 'team', id, { label: record.name });
-    }, `${record.name} archived`);
-    if (ok) setConfirm(null);
+      await deleteTeam(teamId!);
+      await log('TEAM_DELETED', 'team', teamId!, { label: team.name });
+    }, `${team.name} deleted`);
+    if (ok) {
+      setConfirm(null);
+      navigate('/admin/teams');
+    }
   };
 
   const archived = team.active === false;
@@ -343,11 +348,10 @@ const TeamDetail: React.FC = () => {
             </Btn>
             <Btn
               variant="danger"
-              icon={<FiArchive className="h-4 w-4" />}
-              disabled={archived}
-              onClick={() => setConfirm({ kind: 'archive' })}
+              icon={<FiTrash2 className="h-4 w-4" />}
+              onClick={() => setConfirm({ kind: 'delete' })}
             >
-              Archive
+              Delete
             </Btn>
           </>
         }
@@ -728,18 +732,18 @@ const TeamDetail: React.FC = () => {
 
       <ConfirmDialog
         isOpen={confirm !== null}
-        title={confirm?.kind === 'archive' ? 'Archive this team?' : 'Remove from roster?'}
+        title={confirm?.kind === 'delete' ? 'Delete this team?' : 'Remove from roster?'}
         message={
-          confirm?.kind === 'archive'
-            ? `${team.name} will be hidden from active lists. Nothing is deleted — matches, results and roster history are preserved.`
+          confirm?.kind === 'delete'
+            ? `Are you sure you want to permanently delete "${team.name}"? This action removes the team document from Firestore in real-time.`
             : confirm?.kind === 'remove'
               ? `${confirm.player.name} will be detached from ${team.name}. The player record itself is kept.`
               : ''
         }
-        confirmText={confirm?.kind === 'archive' ? 'Archive' : 'Remove'}
+        confirmText={confirm?.kind === 'delete' ? 'Delete' : 'Remove'}
         isDestructive
         onConfirm={() => {
-          if (confirm?.kind === 'archive') archiveTeam();
+          if (confirm?.kind === 'delete') deleteTeamAction();
           else if (confirm?.kind === 'remove') confirmRemoval();
         }}
         onCancel={() => setConfirm(null)}

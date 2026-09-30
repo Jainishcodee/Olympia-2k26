@@ -13,13 +13,12 @@ import {
   StatusPill,
   Toolbar,
 } from '@/components/admin/kit';
-import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { useCollection } from '@/hooks/useCollection';
 import { useAuditLog } from '@/hooks/useAuditLog';
-import { updateTournament } from '@/services/tournaments/tournamentService';
+import { deleteTournament, updateTournament } from '@/services/tournaments/tournamentService';
 import type { Match, Sport, Team, Tournament, TournamentFormat } from '@/types';
 import { cn } from '@/utils/cn';
-import { FiArchive, FiCheck, FiEdit2, FiEye } from 'react-icons/fi';
+import { FiCheck, FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi';
 
 /* ============================================================================
  *  Tournaments — one row per competition, with team/match counts derived from
@@ -72,8 +71,6 @@ const TournamentsManager: React.FC = () => {
   const [formatFilter, setFormatFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showArchived, setShowArchived] = useState(false);
-  const [pending, setPending] = useState<Tournament | null>(null);
-  const [busy, setBusy] = useState(false);
 
   const error = tournaments.error ?? sports.error ?? teams.error ?? matches.error;
 
@@ -119,23 +116,17 @@ const TournamentsManager: React.FC = () => {
       });
   }, [tournaments.data, search, sportFilter, formatFilter, statusFilter, showArchived]);
 
-  const confirmArchive = async () => {
-    if (!pending) return;
-    setBusy(true);
+  const handleDelete = async (tournament: Tournament) => {
     try {
-      await updateTournament(pending.id, { archived: true } as Partial<Tournament>);
-      await log('TOURNAMENT_ARCHIVED', 'tournament', pending.id, { label: pending.name });
-      toast.success('Tournament archived');
-      setPending(null);
+      await deleteTournament(tournament.id);
+      await log('TOURNAMENT_DELETED', 'tournament', tournament.id, { label: tournament.name });
+      toast.success('Tournament deleted');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Archive failed');
-    } finally {
-      setBusy(false);
+      toast.error(err instanceof Error ? err.message : 'Delete failed');
     }
   };
 
   const unarchive = async (tournament: ArchivedTournament) => {
-    setBusy(true);
     try {
       await updateTournament(tournament.id, { archived: false } as Partial<Tournament>);
       await log('TOURNAMENT_UPDATED', 'tournament', tournament.id, {
@@ -145,8 +136,6 @@ const TournamentsManager: React.FC = () => {
       toast.success('Tournament restored');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Restore failed');
-    } finally {
-      setBusy(false);
     }
   };
 
@@ -308,15 +297,12 @@ const TournamentsManager: React.FC = () => {
                           >
                             <FiEdit2 className="h-3.5 w-3.5" />
                           </ActionIcon>
-                          {archived ? (
-                            <ActionIcon label="Restore" disabled={busy} onClick={() => unarchive(tournament)}>
-                              <FiCheck className="h-3.5 w-3.5" />
-                            </ActionIcon>
-                          ) : (
-                            <ActionIcon label="Archive" disabled={busy} onClick={() => setPending(tournament)}>
-                              <FiArchive className="h-3.5 w-3.5" />
-                            </ActionIcon>
-                          )}
+                          <ActionIcon
+                            label="Delete"
+                            onClick={() => handleDelete(tournament)}
+                          >
+                            <FiTrash2 className="h-3.5 w-3.5 text-rose-500" />
+                          </ActionIcon>
                         </div>
                       </td>
                     </tr>
@@ -327,20 +313,6 @@ const TournamentsManager: React.FC = () => {
           </div>
         )}
       </Card>
-
-      <ConfirmDialog
-        isOpen={pending !== null}
-        title="Archive this tournament?"
-        message={
-          pending
-            ? `${pending.name} will be hidden from active lists. Nothing is deleted — matches, fixtures and results stay in Firestore and the tournament can be restored.`
-            : ''
-        }
-        confirmText={busy ? 'Archiving…' : 'Archive tournament'}
-        isDestructive
-        onConfirm={confirmArchive}
-        onCancel={() => setPending(null)}
-      />
     </>
   );
 };

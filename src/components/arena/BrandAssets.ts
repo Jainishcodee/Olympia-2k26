@@ -3,6 +3,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import logoLight from '@/assets/logo_light.png';
 import logoDark from '@/assets/logo_dark.png';
 import arena from '@/assets/arena.jpeg';
+import olympiaLogo from '@/assets/olympia.png';
 
 /**
  * Every image the homepage is allowed to load.
@@ -11,8 +12,9 @@ import arena from '@/assets/arena.jpeg';
  * renders its built-in vector/gradient fallback instead.
  */
 export const BRAND = {
-  logo: '/images/brand/olympia-logo.png',
-  logoSvg: '/images/brand/olympia-logo.svg',
+  logo: olympiaLogo,
+  olympia: olympiaLogo,
+  logoSvg: '/olympia.png',
   wordmark: '/images/brand/olympia-wordmark.png',
   heroBackdrop: '/images/backgrounds/hero-stadium.jpg',
   heroGlow: '/images/backgrounds/hero-glow.jpg',

@@ -202,6 +202,51 @@ body {
   mask-image: linear-gradient(to bottom, black, transparent 88%);
 }
 
+.ol-night-field {
+  background-image:
+    linear-gradient(rgba(18, 100, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(217, 164, 65, 0.04) 1px, transparent 1px),
+    radial-gradient(circle at 50% 10%, rgba(18, 100, 255, 0.14), transparent 45%);
+  background-size: 64px 64px, 64px 64px, auto;
+  mask-image: linear-gradient(to bottom, black 30%, transparent 95%);
+}
+
+/* Luxury Cyber-Sports Glass Panels */
+.ol-glass-card {
+  background: linear-gradient(135deg, rgba(11, 27, 51, 0.65) 0%, rgba(7, 20, 38, 0.85) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.ol-glass-card:hover {
+  border-color: rgba(217, 164, 65, 0.35);
+  box-shadow: 0 24px 60px -15px rgba(18, 100, 255, 0.2), inset 0 1px 0 rgba(217, 164, 65, 0.2);
+}
+
+.ol-glass-gold {
+  background: linear-gradient(135deg, rgba(217, 164, 65, 0.12) 0%, rgba(7, 20, 38, 0.8) 100%);
+  border: 1px solid rgba(217, 164, 65, 0.28);
+  box-shadow: 0 14px 40px -10px rgba(217, 164, 65, 0.25);
+}
+
+.ol-glass-blue {
+  background: linear-gradient(135deg, rgba(18, 100, 255, 0.14) 0%, rgba(7, 20, 38, 0.8) 100%);
+  border: 1px solid rgba(18, 100, 255, 0.3);
+  box-shadow: 0 14px 40px -10px rgba(18, 100, 255, 0.28);
+}
+
+/* Shimmer scanline effect */
+@keyframes ol-scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(1000%); }
+}
+
+.ol-scanline {
+  animation: ol-scanline 8s linear infinite;
+}
+
 .ol-editorial-button {
   display: inline-flex;
   align-items: center;

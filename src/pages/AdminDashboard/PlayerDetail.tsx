@@ -1,6 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { useAuditLog } from '@/hooks/useAuditLog';
 import { useCollection, useDoc, eq } from '@/hooks/useCollection';
+import { deletePlayer } from '@/services/players/playerService';
 import {
   AdminHeader,
   AdminTabs,
@@ -14,9 +17,10 @@ import {
   StatTile,
   StatusPill,
 } from '@/components/admin/kit';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { cn } from '@/utils/cn';
 import type { Match, Player, PlayerStats, Rating, Sport, Team } from '@/types';
-import { FiEdit2, FiPlay, FiUsers } from 'react-icons/fi';
+import { FiEdit2, FiPlay, FiTrash2, FiUsers } from 'react-icons/fi';
 
 const initialsOf = (name: string): string => {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -58,6 +62,8 @@ const cellDate = (value: unknown): string => {
 
 const PlayerDetail: React.FC = () => {
   const { playerId } = useParams();
+  const navigate = useNavigate();
+  const { log } = useAuditLog();
 
   const playerDoc = useDoc<Player>('players', playerId);
   const teams = useCollection<Team>('teams', { sortBy: 'name' });
@@ -70,8 +76,26 @@ const PlayerDetail: React.FC = () => {
   });
 
   const [tab, setTab] = useState<string>('profile');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const player = playerDoc.data;
+
+  const handleDelete = async () => {
+    if (!playerId || !player || busy) return;
+    setBusy(true);
+    try {
+      await deletePlayer(playerId);
+      await log('PLAYER_DELETED', 'player', playerId, { label: player.name });
+      toast.success(`${player.name} deleted`);
+      setShowDeleteConfirm(false);
+      navigate('/admin/players');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Delete failed');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const teamById = useMemo(() => new Map(teams.data.map((team) => [team.id, team])), [teams.data]);
   const sportNames = useMemo(() => {
@@ -180,6 +204,13 @@ const PlayerDetail: React.FC = () => {
                 Team roster
               </Btn>
             )}
+            <Btn
+              variant="danger"
+              icon={<FiTrash2 className="h-4 w-4" />}
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              Delete
+            </Btn>
           </>
         }
       />
@@ -479,6 +510,20 @@ const PlayerDetail: React.FC = () => {
           </Card>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Delete this player?"
+        message={
+          player
+            ? `Are you sure you want to permanently delete "${player.name}"? This action removes the player document from Firestore in real-time.`
+            : ''
+        }
+        confirmText="Delete"
+        isDestructive
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </>
   );
 };

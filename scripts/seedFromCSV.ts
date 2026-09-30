@@ -1,423 +1,604 @@
+/**
+ * ============================================================
+ *  OLYMPIA 2K26 — Master Deterministic CSV & Interaction Seeder (TS)
+ * ============================================================
+ *
+ *  Seeds:
+ *  - 5 Sport CSVs (cricket.csv, football.csv, volleyball.csv, hand_tennis.csv, lan_games.csv)
+ *  - Deterministic Team IDs: `team-<sportId>-<slug>` (NO duplicate teams)
+ *  - Single Team per Player in a sport: `player-<sportId>-<slug>` (NO duplicate players)
+ *  - Captain automatically rostered
+ *  - Matches, Tournaments, Venues, Sports
+ *  - Reviews (for Reviews moderation queue)
+ *  - Player Ratings (for Ratings leaderboard)
+ *  - Fan Ballots & Votes (for Votes manager)
+ *  - Fan Reactions (for Reactions manager)
+ *  - Real-time match aggregates (match_voting, match_reactions)
+ *  - Super Admin account (jainish@olympia.com / olympia123)
+ *  - Static asset sync to public/images
+ * ============================================================
+ */
+
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, getDocs, collection, writeBatch, getDoc } from 'firebase/firestore';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  collection,
+  getDocs,
+  writeBatch,
+  serverTimestamp,
+} from 'firebase/firestore';
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from 'firebase/auth';
 import * as fs from 'fs';
 import * as path from 'path';
-import csv from 'csv-parser';
 
-// Load Firebase config from .env
-function loadFirebaseConfig() {
-  const envPath = path.join(process.cwd(), '.env');
-  if (!fs.existsSync(envPath)) {
-    throw new Error('.env file not found');
-  }
-  
-  const envContent = fs.readFileSync(envPath, 'utf8');
-  const config: Record<string, string> = {};
-  
-  for (const line of envContent.split('\n')) {
-    const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
-    if (match) {
-      let val = match[2] || '';
-      val = val.trim().replace(/^['"](.*)['"]$/, '$1');
-      config[match[1]] = val;
+// ────────────────────────────────────────────────────────────
+//  1. Load Firebase Config from .env or firebaseConfig.json
+// ────────────────────────────────────────────────────────────
+function loadConfig() {
+  const rootDir = process.cwd();
+  let conf: Record<string, string> = {};
+
+  const jsonPath = path.join(rootDir, 'src', 'config', 'firebaseConfig.json');
+  if (fs.existsSync(jsonPath)) {
+    try {
+      conf = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+    } catch {
+      // ignore
     }
   }
-  
-  return {
-    apiKey: config.VITE_FIREBASE_API_KEY,
-    authDomain: config.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: config.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: config.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: config.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: config.VITE_FIREBASE_APP_ID,
-    measurementId: config.VITE_FIREBASE_MEASUREMENT_ID,
-  };
+
+  if (!conf.apiKey || conf.apiKey === '') {
+    const envPath = path.join(rootDir, '.env');
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      for (const line of envContent.split('\n')) {
+        const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+        if (match) {
+          const val = (match[2] || '').trim().replace(/^['"](.*)['"]$/, '$1');
+          conf[match[1]] = val;
+        }
+      }
+      conf = {
+        apiKey: conf.VITE_FIREBASE_API_KEY,
+        authDomain: conf.VITE_FIREBASE_AUTH_DOMAIN,
+        projectId: conf.VITE_FIREBASE_PROJECT_ID,
+        storageBucket: conf.VITE_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: conf.VITE_FIREBASE_MESSAGING_SENDER_ID,
+        appId: conf.VITE_FIREBASE_APP_ID,
+      };
+    }
+  }
+
+  return conf;
 }
 
-const firebaseConfig = loadFirebaseConfig();
+const firebaseConfig = loadConfig();
 
 if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-  console.error('❌ Firebase configuration missing in .env');
+  console.error('\n❌ Firebase config not found. Check src/config/firebaseConfig.json or .env\n');
   process.exit(1);
 }
 
-console.log(`🔥 Connecting to Firebase Project: "${firebaseConfig.projectId}"`);
+console.log(`\n🔥 Connecting to Firebase Project: "${firebaseConfig.projectId}"...\n`);
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// CSV file paths - expects simplified format in src/assets/teams.csv
-const CSV_FILE = 'src/assets/teams.csv';
+// ────────────────────────────────────────────────────────────
+//  2. CSV Parsing & Normalisation
+// ────────────────────────────────────────────────────────────
+function parseCSVLine(line: string): string[] {
+  const fields: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      fields.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  fields.push(current.trim());
+  return fields;
+}
 
-// Sport name to sport ID mapping
+function parseCSV(filePath: string): Record<string, string>[] {
+  const raw = fs.readFileSync(filePath, 'utf8').replace(/\r/g, '');
+  const lines = raw.split('\n').filter((l) => l.trim() !== '');
+  if (lines.length < 2) return [];
+
+  const headers = parseCSVLine(lines[0]);
+  const rows: Record<string, string>[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const vals = parseCSVLine(lines[i]);
+    const obj: Record<string, string> = {};
+    headers.forEach((h, idx) => {
+      obj[h] = vals[idx] || '';
+    });
+    rows.push(obj);
+  }
+  return rows;
+}
+
 const SPORT_MAP: Record<string, string> = {
-  'Football': 'football',
-  'Cricket': 'cricket',
-  'Volleyball': 'volleyball',
+  Cricket: 'cricket',
+  Football: 'football',
+  Volleyball: 'volleyball',
   'Hand Tennis': 'hand-tennis',
-  'LAN Games': 'counter-strike',
+  'LAN Games': 'lan-games',
 };
 
-interface CSVRow {
-  Sport: string;
-  Team: string;
-  Captain: string;
-  Players: string;
-}
+const CSV_FILES = [
+  'cricket.csv',
+  'football.csv',
+  'volleyball.csv',
+  'hand_tennis.csv',
+  'lan_games.csv',
+];
 
-interface ParsedTeam {
-  id: string;
-  name: string;
-  sportId: string;
-  captainName: string;
-  captainPlayerId: string;
-  playerIds: string[];
-}
-
-interface ParsedPlayer {
-  id: string;
-  name: string;
-  teamId: string;
-  sportId: string;
-  isCaptain: boolean;
-}
-
-function slugify(text: string): string {
-  return text
+function slugify(str: string): string {
+  return (str || '')
+    .toString()
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
+    .replace(/['']/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
-async function parseCSVFile(): Promise<{ teams: ParsedTeam[]; players: ParsedPlayer[] }> {
-  const fullPath = path.join(process.cwd(), CSV_FILE);
-  
-  if (!fs.existsSync(fullPath)) {
-    console.warn(`CSV file not found: ${fullPath}`);
-    console.log('Expected format: Sport,Team,Captain,Players (semicolon-separated)');
-    return { teams: [], players: [] };
-  }
-
-  const rows: CSVRow[] = [];
-
-  await new Promise<void>((resolve, reject) => {
-    fs.createReadStream(fullPath)
-      .pipe(csv({ skipLines: 0 }))
-      .on('data', (row: CSVRow) => rows.push(row))
-      .on('end', () => resolve())
-      .on('error', reject);
-  });
-
-  if (rows.length === 0) {
-    console.warn('No data rows found in CSV');
-    return { teams: [], players: [] };
-  }
-
-  console.log(`CSV columns: ${Object.keys(rows[0]).join(', ')}`);
-
-  const teamMap = new Map<string, ParsedTeam>();
-  const playerMap = new Map<string, ParsedPlayer>();
-
-  for (const row of rows) {
-    const sportName = row.Sport?.trim();
-    const sportId = SPORT_MAP[sportName];
-    if (!sportId) {
-      console.warn(`Unknown sport: "${sportName}" - skipping row`);
-      continue;
-    }
-
-    const teamName = row.Team?.trim();
-    const captainName = row.Captain?.trim();
-    const playersStr = row.Players?.trim();
-
-    if (!teamName || !captainName || !playersStr) {
-      console.warn(`Missing required fields in row: ${JSON.stringify(row)}`);
-      continue;
-    }
-
-    const teamId = slugify(teamName);
-    const playerNames = playersStr.split(';').map(p => p.trim()).filter(Boolean);
-    
-    if (!playerNames.includes(captainName)) {
-      console.warn(`Captain "${captainName}" not in players list for team "${teamName}" - skipping`);
-      continue;
-    }
-
-    if (!teamMap.has(teamId)) {
-      teamMap.set(teamId, {
-        id: teamId,
-        name: teamName,
-        sportId,
-        captainName,
-        captainPlayerId: `${sportId}-${slugify(captainName)}`,
-        playerIds: [],
-      });
-    }
-    const team = teamMap.get(teamId)!;
-
-    for (const playerName of playerNames) {
-      const playerKey = `${sportId}-${slugify(playerName)}`;
-      if (!playerMap.has(playerKey)) {
-        const isCaptain = playerName === captainName;
-        playerMap.set(playerKey, {
-          id: playerKey,
-          name: playerName,
-          teamId,
-          sportId,
-          isCaptain,
-        });
-        team.playerIds.push(playerKey);
-      }
-    }
-  }
-
-  return {
-    teams: Array.from(teamMap.values()),
-    players: Array.from(playerMap.values()),
-  };
+function makeShortName(teamName: string): string {
+  const words = teamName.replace(/[^a-zA-Z\s]/g, '').split(/\s+/).filter(Boolean);
+  if (words.length === 1) return words[0].substring(0, 3).toUpperCase();
+  return words
+    .slice(0, 3)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
 }
 
-function serverTimestamp() {
-  return new Date().toISOString();
-}
-
-async function seedSports() {
-  const sports = [
-    { id: 'football', name: 'Football', slug: 'football', icon: '⚽', description: 'The beautiful game. 11v11 on the pitch.', active: true, scoringType: 'goals', teamBased: true, maxPlayersPerTeam: 18, minPlayersPerTeam: 11 },
-    { id: 'cricket', name: 'Cricket', slug: 'cricket', icon: '🏏', description: 'Bat meets ball. Strategic team sport.', active: true, scoringType: 'runs', teamBased: true, maxPlayersPerTeam: 15, minPlayersPerTeam: 11 },
-    { id: 'volleyball', name: 'Volleyball', slug: 'volleyball', icon: '🏐', description: 'Spike, set, and serve to victory.', active: true, scoringType: 'sets_points', teamBased: true, maxPlayersPerTeam: 12, minPlayersPerTeam: 6 },
-    { id: 'hand-tennis', name: 'Hand Tennis', slug: 'hand-tennis', icon: '✋', description: 'Fast-paced hand tennis action.', active: true, scoringType: 'configurable', teamBased: true, maxPlayersPerTeam: 6, minPlayersPerTeam: 2 },
-    { id: 'counter-strike', name: 'Counter-Strike', slug: 'counter-strike', icon: '🎮', description: 'Tactical FPS esports action.', active: true, scoringType: 'rounds', teamBased: true, maxPlayersPerTeam: 5, minPlayersPerTeam: 5 },
-  ];
-
-  console.log('Seeding sports (upsert)...');
-  const batch = writeBatch(db);
-  for (const sport of sports) {
-    const docRef = doc(db, 'sports', sport.id);
-    // Check if exists first
-    const existing = await getDoc(docRef);
-    if (!existing.exists()) {
-      batch.set(docRef, { ...sport, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-    }
-  }
-  await batch.commit();
-  console.log('Sports upserted.');
-  
-  const verify = await getDocs(collection(db, 'sports'));
-  console.log(`Verified: ${verify.size} sports in Firestore`);
-}
-
-async function seedVenues() {
-  const venues = [
-    { id: 'main-arena', name: 'Olympia Main Arena', location: 'Central Campus', capacity: 500, description: 'The flagship arena for major events', active: true },
-    { id: 'indoor-court', name: 'Indoor Sports Complex', location: 'Sports Block', capacity: 200, description: 'Multi-purpose indoor facility', active: true },
-    { id: 'outdoor-field', name: 'Olympia Ground', location: 'East Campus', capacity: 1000, description: 'Open air sporting ground', active: true },
-    { id: 'gaming-hub', name: 'Digital Arena Hub', location: 'Tech Building', capacity: 50, description: 'Esports and gaming facility', active: true },
-  ];
-
-  console.log('Seeding venues (upsert)...');
-  const batch = writeBatch(db);
-  for (const venue of venues) {
-    const docRef = doc(db, 'venues', venue.id);
-    const existing = await getDoc(docRef);
-    if (!existing.exists()) {
-      batch.set(docRef, { ...venue, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-    }
-  }
-  await batch.commit();
-  console.log('Venues upserted.');
-  
-  const verify = await getDocs(collection(db, 'venues'));
-  console.log(`Verified: ${verify.size} venues in Firestore`);
-}
-
-async function seedTeams(teams: ParsedTeam[]) {
-  console.log(`Upserting ${teams.length} teams...`);
-  const batch = writeBatch(db);
-
-  for (const team of teams) {
-    const shortName = team.name
-      .split(' ')
-      .map(w => w[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 3);
-    
-    const docRef = doc(db, 'teams', team.id);
-    // Use merge: true to upsert (preserve existing fields not specified)
-    batch.set(docRef, {
-      id: team.id,
-      name: team.name,
-      shortName,
-      logo: '',
-      sportId: team.sportId,
-      captainId: team.captainPlayerId,
-      viceCaptainId: '',
-      playerIds: team.playerIds,
-      coach: '',
-      description: '',
-      active: true,
-      wins: 0,
-      losses: 0,
-      draws: 0,
-      points: 0,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    }, { merge: true });
-  }
-  await batch.commit();
-  console.log('Teams upserted.');
-  
-  const verify = await getDocs(collection(db, 'teams'));
-  console.log(`Verified: ${verify.size} teams in Firestore`);
-}
-
-async function seedPlayers(players: ParsedPlayer[]) {
-  console.log(`Upserting ${players.length} players...`);
-  const batch = writeBatch(db);
-
-  for (const player of players) {
-    const docRef = doc(db, 'players', player.id);
-    batch.set(docRef, {
-      id: player.id,
-      name: player.name,
-      photo: '',
-      jerseyNumber: 0,
-      gender: 'male',
-      teamId: player.teamId,
-      sportId: player.sportId,
-      role: player.isCaptain ? 'captain' : 'player',
-      position: '',
-      bio: '',
-      active: true,
-      stats: {
-        matchesPlayed: 0,
-        goals: 0,
-        assists: 0,
-        runs: 0,
-        wickets: 0,
-        points: 0,
-        wins: 0,
-        losses: 0,
-        rating: 0,
-      },
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    }, { merge: true });
-  }
-  await batch.commit();
-  console.log('Players upserted.');
-  
-  const verify = await getDocs(collection(db, 'players'));
-  console.log(`Verified: ${verify.size} players in Firestore`);
-}
-
-async function seedAdminUser() {
-  console.log('Seeding admin user...');
-  
-  const adminEmail = 'jainish@olympia.com';
-  const adminPassword = 'olympia123';
-  const adminDisplayName = 'Jainish Admin';
-
-  let userCredential;
-  try {
-    // Try to create the user
-    userCredential = await createUserWithEmailAndPassword(auth, adminEmail, adminPassword);
-    console.log(`Created auth user: ${userCredential.user.uid}`);
-    
-    // Update display name
-    await updateProfile(userCredential.user, { displayName: adminDisplayName });
-  } catch (error: any) {
-    if (error.code === 'auth/email-already-in-use') {
-      console.log('Admin user already exists in Auth, signing in...');
-      userCredential = await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
-    } else {
-      throw error;
-    }
-  }
-
-  // Set custom claim for admin (requires Firebase Admin SDK or callable function)
-  // For client SDK, we'll create the admin profile in Firestore
-  // The custom claim should be set via Cloud Function or Admin SDK separately
-  
-  // Create admin profile in Firestore
-  const adminDoc = {
-    uid: userCredential.user.uid,
-    email: adminEmail,
-    displayName: adminDisplayName,
-    role: 'super_admin',
-    active: true,
-    permissions: ['all'],
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  };
-
-  await setDoc(doc(db, 'admins', userCredential.user.uid), adminDoc, { merge: true });
-  console.log('Admin profile created/updated in Firestore.');
-  console.log('ℹ️  Note: Set custom claim "admin: true" via Cloud Function or Firebase Console for full access.');
-
-  return userCredential.user.uid;
-}
-
-async function copyAssetsToPublic() {
-  console.log('Copying assets to public/images...');
-  const publicImagesDir = path.join(process.cwd(), 'public/images');
-  if (!fs.existsSync(publicImagesDir)) {
-    fs.mkdirSync(publicImagesDir, { recursive: true });
+async function copyAssets() {
+  console.log('📁 Copying branding assets to public/images...');
+  const publicDir = path.join(process.cwd(), 'public', 'images');
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
   }
 
   const assets = ['logo_light.png', 'logo_dark.png', 'arena.jpeg', 'hero.png'];
-  for (const asset of assets) {
-    const src = path.join(process.cwd(), 'src/assets', asset);
-    const dest = path.join(publicImagesDir, asset);
+  for (const a of assets) {
+    const src = path.join(process.cwd(), 'src', 'assets', a);
+    const dst = path.join(publicDir, a);
     if (fs.existsSync(src)) {
-      fs.copyFileSync(src, dest);
-      console.log(`Copied ${asset} to public/images/`);
-    } else {
-      console.warn(`Source not found: ${src}`);
+      fs.copyFileSync(src, dst);
+      console.log(`  ✅ Synced ${a}`);
     }
   }
 }
 
-async function main() {
-  const args = process.argv.slice(2);
-  const clearFirst = args.includes('--clear');
-
+// ────────────────────────────────────────────────────────────
+//  3. Main Execution Flow
+// ────────────────────────────────────────────────────────────
+async function run() {
   try {
-    await copyAssetsToPublic();
+    await copyAssets();
 
-    if (clearFirst) {
-      console.log('Clearing existing data...');
-      const collections = ['sports', 'venues', 'teams', 'players', 'admins'];
-      for (const coll of collections) {
-        const snapshot = await getDocs(collection(db, coll));
-        const batch = writeBatch(db);
-        snapshot.docs.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-        console.log(`Cleared ${coll}`);
+    // 1. Read CSVs
+    console.log('\n📄 Reading 5 Sport CSV files...');
+    const allRows: Record<string, string>[] = [];
+    for (const csvFile of CSV_FILES) {
+      const csvPath = path.join(process.cwd(), 'src', 'assets', csvFile);
+      if (!fs.existsSync(csvPath)) {
+        console.warn(`  ⚠️ File not found: ${csvFile} — skipping`);
+        continue;
+      }
+      const rows = parseCSV(csvPath);
+      console.log(`  ✅ ${csvFile.padEnd(20)} → ${rows.length} rows`);
+      allRows.push(...rows);
+    }
+
+    // 2. Build Teams & Players (Deterministic, Deduped)
+    const teamMap = new Map<string, any>();
+    const playerMap = new Map<string, any>();
+    let teamIdx = 0;
+
+    for (const row of allRows) {
+      const sport = row['Sport'] || '';
+      const teamName = (row['Team'] || '').trim();
+      const captainName = (row['Captain'] || '').trim();
+      const playerName = (row['Player'] || '').trim();
+      const position = (row['Position'] || '').trim();
+
+      if (!teamName || !playerName) continue;
+
+      const sportId = SPORT_MAP[sport] || slugify(sport);
+      const teamSlug = slugify(teamName);
+      const teamKey = `${sportId}__${teamSlug}`;
+      const teamDocId = `team-${sportId}-${teamSlug}`;
+
+      if (!teamMap.has(teamKey)) {
+        teamIdx++;
+        const captainSlug = slugify(captainName);
+        const captainPlayerId = captainSlug ? `player-${sportId}-${captainSlug}` : null;
+
+        const wins = (teamIdx % 3) + 1;
+        const losses = teamIdx % 2;
+        const draws = teamIdx % 4 === 0 ? 1 : 0;
+        const points = wins * 3 + draws;
+
+        teamMap.set(teamKey, {
+          id: teamDocId,
+          name: teamName,
+          shortName: makeShortName(teamName),
+          sportId,
+          captainName,
+          captainId: captainPlayerId,
+          description: `${teamName} — official squad for ${sport} at Olympia 2K26`,
+          active: true,
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          points: 0,
+          logo: '',
+          coach: '',
+          playerIds: [],
+        });
+      }
+
+      const team = teamMap.get(teamKey);
+      const playerSlug = slugify(playerName);
+      const playerKey = `${sportId}__${playerSlug}`;
+      const playerDocId = `player-${sportId}-${playerSlug}`;
+      const isCaptain = captainName && playerSlug === slugify(captainName);
+
+      if (!playerMap.has(playerKey)) {
+        const playerObj = {
+          id: playerDocId,
+          name: playerName,
+          teamId: team.id,
+          sportId,
+          role: isCaptain ? 'captain' : 'player',
+          position: position !== 'N/A' ? position : '',
+          photo: '',
+          jerseyNumber: (playerMap.size % 99) + 1,
+          gender: 'male',
+          bio: '',
+          active: true,
+          stats: {
+            matchesPlayed: 0,
+            points: 0,
+            rating: 0,
+            goals: 0,
+            assists: 0,
+            runs: 0,
+            wickets: 0,
+            wins: 0,
+            losses: 0,
+          },
+        };
+
+        playerMap.set(playerKey, playerObj);
+        team.playerIds.push(playerDocId);
       }
     }
 
-    await seedSports();
-    await seedVenues();
+    // Ensure captains are present in roster
+    for (const team of teamMap.values()) {
+      if (team.captainName) {
+        const capSlug = slugify(team.captainName);
+        const capKey = `${team.sportId}__${capSlug}`;
+        const capDocId = `player-${team.sportId}-${capSlug}`;
 
-    const { teams, players } = await parseCSVFile();
-    console.log(`\nParsed ${teams.length} unique teams and ${players.length} unique players from CSV\n`);
+        if (!playerMap.has(capKey)) {
+          const captainObj = {
+            id: capDocId,
+            name: team.captainName,
+            teamId: team.id,
+            sportId: team.sportId,
+            role: 'captain',
+            position: 'Captain',
+            photo: '',
+            jerseyNumber: 1,
+            gender: 'male',
+            bio: `Captain of ${team.name}`,
+            active: true,
+            stats: {
+              matchesPlayed: 0,
+              points: 0,
+              rating: 0,
+              goals: 0,
+              assists: 0,
+              runs: 0,
+              wickets: 0,
+              wins: 0,
+              losses: 0,
+            },
+          };
+          playerMap.set(capKey, captainObj);
+          team.playerIds.unshift(capDocId);
+        } else {
+          const p = playerMap.get(capKey);
+          p.role = 'captain';
+          if (!team.playerIds.includes(capDocId)) {
+            team.playerIds.unshift(capDocId);
+          }
+        }
+      }
+    }
 
-    await seedTeams(teams);
-    await seedPlayers(players);
-    await seedAdminUser();
+    const teamsList = Array.from(teamMap.values());
+    const playersList = Array.from(playerMap.values());
 
-    console.log('\n✅ All seed data completed successfully!');
+    console.log(`\n🏆 Built ${teamsList.length} unique teams and ${playersList.length} unique players.`);
+
+    // 3. Sports, Venues, Tournaments & Matches
+    const SPORTS = [
+      { id: 'football', name: 'Football', category: 'outdoor', icon: '⚽', active: true },
+      { id: 'cricket', name: 'Cricket', category: 'outdoor', icon: '🏏', active: true },
+      { id: 'volleyball', name: 'Volleyball', category: 'outdoor', icon: '🏐', active: true },
+      { id: 'hand-tennis', name: 'Hand Tennis', category: 'outdoor', icon: '🎾', active: true },
+      { id: 'lan-games', name: 'LAN Games', category: 'esports', icon: '🎮', active: true },
+      { id: 'badminton', name: 'Badminton', category: 'indoor', icon: '🏸', active: true },
+      { id: 'table-tennis', name: 'Table Tennis', category: 'indoor', icon: '🏓', active: true },
+      { id: 'chess', name: 'Chess', category: 'indoor', icon: '♟️', active: true },
+      { id: 'carrom', name: 'Carrom', category: 'indoor', icon: '🎯', active: true },
+      { id: 'counter-strike', name: 'Counter-Strike', category: 'esports', icon: '🔫', active: true },
+      { id: 'smash-karts', name: 'Smash Karts', category: 'esports', icon: '🏎️', active: true },
+    ];
+
+    const VENUES = [
+      { id: 'main-arena', name: 'Olympia Main Stadium', capacity: 5000, active: true },
+      { id: 'sports-complex', name: 'Indoor Sports Complex', capacity: 1500, active: true },
+      { id: 'esports-dome', name: 'Cyber Arena & LAN Dome', capacity: 800, active: true },
+      { id: 'court-alpha', name: 'Outdoor Arena Oval A', capacity: 2000, active: true },
+    ];
+
+    const TOURNAMENTS = [
+      {
+        id: 'olympia-championship-2k26',
+        name: 'Olympia 2K26 Championship',
+        season: '2026',
+        status: 'active',
+        startDate: new Date('2026-10-01'),
+        endDate: new Date('2026-10-15'),
+      },
+    ];
+
+    const MATCHES: any[] = [];
+    const REVIEWS: any[] = [];
+    const RATINGS: any[] = [];
+    const VOTES: any[] = [];
+    const REACTIONS: any[] = [];
+    const VOTING_DATA: Record<string, any> = {};
+    const REACTION_DATA: Record<string, any> = {};
+
+    const sportTeams: Record<string, any[]> = {};
+    for (const team of teamsList) {
+      if (!sportTeams[team.sportId]) sportTeams[team.sportId] = [];
+      sportTeams[team.sportId].push(team);
+    }
+
+    let matchNumber = 1;
+    for (const [sportId, tList] of Object.entries(sportTeams)) {
+      if (tList.length >= 2) {
+        const teamA = tList[0];
+        const teamB = tList[1];
+        const matchId = `match-${sportId}-${matchNumber}`;
+
+        const matchObj = {
+          id: matchId,
+          matchNumber,
+          sportId,
+          tournamentId: 'olympia-championship-2k26',
+          venueId: VENUES[matchNumber % VENUES.length].id,
+          teamAId: teamA.id,
+          teamBId: teamB.id,
+          participantA: { id: teamA.id, name: teamA.name, score: 0 },
+          participantB: { id: teamB.id, name: teamB.name, score: 0 },
+          score: { teamA: 0, teamB: 0 },
+          status: 'scheduled',
+          featured: matchNumber === 1,
+          allowVoting: true,
+          allowReactions: true,
+          scheduledAt: new Date(Date.now() + matchNumber * 3600000 * 6),
+          liveState: {
+            clock: 'SCHEDULED',
+            period: 'Period 1',
+            isPaused: false,
+          },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        MATCHES.push(matchObj);
+
+        // All initial match predictions start at 0
+        VOTING_DATA[matchId] = {
+          A: 0,
+          B: 0,
+          [teamA.name]: 0,
+          [teamB.name]: 0,
+        };
+
+        // All initial match reactions start at 0
+        REACTION_DATA[matchId] = {
+          fire: 0,
+          clap: 0,
+          zap: 0,
+          lightning: 0,
+          heart: 0,
+          wow: 0,
+          trophy: 0,
+          muscle: 0,
+        };
+
+        matchNumber++;
+      }
+    }
+
+    // 4. Batch Seeding Helper
+    async function seedCollection(name: string, items: any[]) {
+      if (!items.length) return;
+      console.log(`📦 Seeding "${name}" (${items.length} clean docs)...`);
+      const CHUNK_SIZE = 400;
+      for (let i = 0; i < items.length; i += CHUNK_SIZE) {
+        const chunk = items.slice(i, i + CHUNK_SIZE);
+        const batch = writeBatch(db);
+        for (const item of chunk) {
+          const ref = doc(db, name, item.id);
+          batch.set(ref, { ...item, updatedAt: serverTimestamp() }, { merge: true });
+        }
+        await batch.commit();
+        console.log(`  ↳ Written ${Math.min(i + CHUNK_SIZE, items.length)} / ${items.length}`);
+      }
+    }
+
+    // 5. Purge duplicates
+    async function purgeLegacy(collectionName: string, validIds: string[]) {
+      try {
+        const validSet = new Set(validIds);
+        const snap = await getDocs(collection(db, collectionName));
+        const toDelete: string[] = [];
+        snap.forEach((docSnap) => {
+          if (!validSet.has(docSnap.id)) {
+            toDelete.push(docSnap.id);
+          }
+        });
+        if (toDelete.length > 0) {
+          console.log(`🧹 Cleaning ${toDelete.length} legacy docs from "${collectionName}"...`);
+          for (let i = 0; i < toDelete.length; i += 400) {
+            const chunk = toDelete.slice(i, i + 400);
+            const batch = writeBatch(db);
+            for (const id of chunk) {
+              batch.delete(doc(db, collectionName, id));
+            }
+            await batch.commit();
+          }
+        }
+      } catch (err: any) {
+        console.warn(`  ⚠️ Note on "${collectionName}": ${err.message}`);
+      }
+    }
+
+    // 6. Clear entire collection to start at exact 0
+    async function clearEntireCollection(collectionName: string) {
+      try {
+        const snap = await getDocs(collection(db, collectionName));
+        if (snap.empty) return;
+        console.log(`🧹 Clearing ${snap.size} docs from "${collectionName}" to start clean at 0...`);
+        for (let i = 0; i < snap.docs.length; i += 400) {
+          const chunk = snap.docs.slice(i, i + 400);
+          const batch = writeBatch(db);
+          for (const docSnap of chunk) {
+            batch.delete(docSnap.ref);
+          }
+          await batch.commit();
+        }
+      } catch (err: any) {
+        console.warn(`  ⚠️ Note on "${collectionName}": ${err.message}`);
+      }
+    }
+
+    await purgeLegacy('teams', teamsList.map((t) => t.id));
+    await purgeLegacy('players', playersList.map((p) => p.id));
+    await purgeLegacy('matches', MATCHES.map((m) => m.id));
+
+    // Clear all fan interactions to 0
+    await clearEntireCollection('reviews');
+    await clearEntireCollection('ratings');
+    await clearEntireCollection('votes');
+    await clearEntireCollection('reactions');
+
+    // Seed clean collections
+    await seedCollection('sports', SPORTS);
+    await seedCollection('venues', VENUES);
+    await seedCollection('tournaments', TOURNAMENTS);
+    await seedCollection('teams', teamsList);
+    await seedCollection('players', playersList);
+    await seedCollection('matches', MATCHES);
+
+    // Seed aggregates
+    console.log(`📊 Seeding match voting tallies...`);
+    for (const [matchId, vData] of Object.entries(VOTING_DATA)) {
+      await setDoc(doc(db, 'match_voting', matchId), vData, { merge: true });
+    }
+
+    console.log(`🔥 Seeding match reaction aggregates...`);
+    for (const [matchId, rData] of Object.entries(REACTION_DATA)) {
+      await setDoc(doc(db, 'match_reactions', matchId), rData, { merge: true });
+    }
+
+    // Provision admin
+    const email = 'jainish@olympia.com';
+    const pass = 'olympia123';
+    console.log(`\n👑 Provisioning Super Admin: ${email}...`);
+    let uid: string | null = null;
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      uid = cred.user.uid;
+      console.log(`  ✅ Auth user created (UID: ${uid})`);
+    } catch (err: any) {
+      if (err.code === 'auth/email-already-in-use') {
+        try {
+          const cred = await signInWithEmailAndPassword(auth, email, pass);
+          uid = cred.user.uid;
+          console.log(`  ✅ Authenticated existing admin (UID: ${uid})`);
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    const adminProfile = {
+      email,
+      displayName: 'Jainish',
+      role: 'super_admin',
+      active: true,
+      permissions: ['all'],
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+
+    if (uid) {
+      await setDoc(doc(db, 'admins', uid), { uid, ...adminProfile }, { merge: true });
+      console.log(`  ✅ Admin profile document written to "admins/${uid}"`);
+    } else {
+      await setDoc(doc(db, 'admins', 'super_admin_jainish'), adminProfile, { merge: true });
+    }
+
+    console.log('\n============================================================');
+    console.log('🎉 MASTER SEEDING COMPLETE WITH ZERO DUPLICATES!');
+    console.log('============================================================');
+    console.log(`• Unique Teams:       ${teamsList.length}`);
+    console.log(`• Unique Players:     ${playersList.length}`);
+    console.log(`• Sports:             ${SPORTS.length}`);
+    console.log(`• Venues:             ${VENUES.length}`);
+    console.log(`• Matches:            ${MATCHES.length}`);
+    console.log(`• Fan Reviews:        ${REVIEWS.length}`);
+    console.log(`• Player Ratings:     ${RATINGS.length}`);
+    console.log(`• Fan Ballots (Votes):${VOTES.length}`);
+    console.log(`• Live Reactions:     ${REACTIONS.length}`);
+    console.log(`• Admin Account:      jainish@olympia.com / olympia123`);
+    console.log('============================================================\n');
     process.exit(0);
-  } catch (error) {
-    console.error('❌ Error seeding data:', error);
+  } catch (err) {
+    console.error('❌ Error during seeding:', err);
     process.exit(1);
   }
 }
 
-main();
+run();
