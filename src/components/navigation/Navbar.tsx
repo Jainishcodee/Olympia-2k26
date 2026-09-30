@@ -4,7 +4,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/utils/cn';
 import { MobileMenu } from './MobileMenu';
 import { ThemeToggle } from './ThemeToggle';
-import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Magnetic } from '@/components/motion';
 
@@ -22,7 +21,6 @@ export const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { isAdmin, isLoading: authLoading } = useAuth();
   const { theme } = useTheme();
   const isDay = theme === 'day';
 
@@ -43,7 +41,7 @@ export const Navbar: React.FC = () => {
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b border-transparent",
           isScrolled
-            ? isDay ? "bg-[#F7F6F1]/90 backdrop-blur-xl border-[#071426]/10 py-3 shadow-[0_18px_50px_-30px_rgba(7,20,38,0.18)]" : "bg-[#080A0D]/90 backdrop-blur-xl border-white/5 py-3 shadow-[0_18px_50px_-30px_rgba(0,0,0,0.9)]"
+            ? isDay ? "bg-white/80 backdrop-blur-xl border-[#071426]/10 py-3 shadow-[0_18px_50px_-30px_rgba(7,20,38,0.18)]" : "bg-[#080A0D]/90 backdrop-blur-xl border-white/5 py-3 shadow-[0_18px_50px_-30px_rgba(0,0,0,0.9)]"
             : "bg-transparent py-6"
         )}
       >
@@ -120,24 +118,6 @@ export const Navbar: React.FC = () => {
           >
             <ThemeToggle className="!pr-2" />
             
-            {/* Admin button - mobile */}
-            {!authLoading && (
-              <Link 
-                to={isAdmin ? '/admin' : '/admin/login'} 
-                className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all duration-300 flex items-center gap-2"
-                style={{ 
-                  background: isAdmin ? 'linear-gradient(135deg, #1264FF, #1747B8)' : 'linear-gradient(135deg, #D9A441, #FFD21F)',
-                  color: isAdmin ? '#071426' : '#071426',
-                  boxShadow: isAdmin ? '0 4px 20px #1264FF40' : '0 4px 20px #D9A44140'
-                }}
-              >
-                <span className="flex items-center gap-1">
-                  {isAdmin ? '⚙️' : '🔐'}
-                  {isAdmin ? 'Admin' : 'Admin Login'}
-                </span>
-              </Link>
-            )}
-            
             <button
               className={cn("z-50 relative p-2", isDay ? "text-[#071426]" : "text-white")}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -153,33 +133,6 @@ export const Navbar: React.FC = () => {
           {/* Desktop right actions */}
           <div className="hidden lg:flex items-center gap-4">
             <ThemeToggle className="!pr-2" />
-            
-            {/* Admin button - desktop */}
-            {!authLoading && (
-              <Magnetic strength={0.3} radius={80}>
-                <Link 
-                  to={isAdmin ? '/admin' : '/admin/login'} 
-                  className="px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all duration-300 flex items-center gap-2 group relative overflow-hidden"
-                  style={{ 
-                    background: isAdmin ? 'linear-gradient(135deg, #1264FF, #1747B8)' : 'linear-gradient(135deg, #D9A441, #FFD21F)',
-                    color: isAdmin ? '#071426' : '#071426',
-                    boxShadow: isAdmin ? '0 4px 20px #1264FF40' : '0 4px 20px #D9A44140'
-                  }}
-                >
-                  <motion.span
-                    initial={false}
-                    whileHover={{ scale: 1.05 }}
-                    className="flex items-center gap-1"
-                  >
-                    {isAdmin ? '⚙️' : '🔐'}
-                    {isAdmin ? 'Dashboard' : 'Admin Login'}
-                  </motion.span>
-                  <motion.span
-                    className="absolute inset-0 bg-white/20 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"
-                  />
-                </Link>
-              </Magnetic>
-            )}
           </div>
         </div>
       </motion.nav>

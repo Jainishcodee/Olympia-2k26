@@ -48,7 +48,7 @@ export const LiveNowSection: React.FC = () => {
   return (
     <section className={`py-20 relative overflow-hidden backdrop-blur-md transition-colors duration-500 border-t ${
       isDay 
-        ? 'bg-[#FAF6EC] border-[#071426]/10 text-[#071426]' 
+        ? 'bg-gradient-to-b from-white/85 via-[#F3F8FE]/80 to-white/85 border-[#071426]/10 text-[#071426]' 
         : 'bg-[#080A0D]/90 border-white/5 text-white'
     }`}>
       {/* Radar ambient glow */}

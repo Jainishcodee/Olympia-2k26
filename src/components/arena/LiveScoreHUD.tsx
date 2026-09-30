@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCollection } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import type { Match, Team } from '@/types';
 
 /** Two-digit pad with a vertical roll on every value change. */
@@ -30,6 +31,8 @@ const Roll: React.FC<{ value: number; className?: string }> = ({ value, classNam
 };
 
 export const LiveScoreHUD: React.FC<{ className?: string }> = ({ className = '' }) => {
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
   const matches = useCollection<Match>('matches');
   const teams = useCollection<Team>('teams');
   const [index, setIndex] = useState(0);
@@ -65,11 +68,17 @@ export const LiveScoreHUD: React.FC<{ className?: string }> = ({ className = '' 
 
   return (
     <div className={`pointer-events-none select-none ${className}`}>
-      <div className="relative overflow-hidden border border-[#D9A441]/40 bg-[#071426]/90 backdrop-blur-xl shadow-[0_30px_60px_-30px_rgba(0,0,0,0.9)] rounded-xl">
+      <div
+        className={`relative overflow-hidden border backdrop-blur-xl rounded-xl transition-colors duration-300 ${
+          isDay
+            ? 'border-[#071426]/15 bg-white/85 shadow-[0_20px_50px_-20px_rgba(7,20,38,0.25)] text-[#071426]'
+            : 'border-[#D9A441]/40 bg-[#071426]/90 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.9)] text-white'
+        }`}
+      >
         {/* diagonal broadcast texture */}
         <div
           aria-hidden
-          className="absolute inset-0 opacity-[0.16]"
+          className={`absolute inset-0 ${isDay ? 'opacity-[0.06]' : 'opacity-[0.16]'}`}
           style={{
             backgroundImage:
               'repeating-linear-gradient(135deg, rgba(217,164,65,0.5) 0px, rgba(217,164,65,0.5) 1px, transparent 1px, transparent 9px)',
@@ -82,37 +91,61 @@ export const LiveScoreHUD: React.FC<{ className?: string }> = ({ className = '' 
               <span className="w-1.5 h-1.5 rounded-full bg-[#FF4D3D] shadow-[0_0_10px_2px_rgba(255,77,61,0.85)] animate-ping" />
               LIVE TELEMETRY
             </span>
-            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#D9A441]">
+            <span
+              className={`text-[10px] font-black uppercase tracking-[0.22em] ${
+                isDay ? 'text-[#155EEF]' : 'text-[#D9A441]'
+              }`}
+            >
               {match.sportId}
             </span>
           </div>
 
-          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-3 flex items-center justify-between">
+          <div
+            className={`text-[10px] font-black uppercase tracking-[0.2em] mb-3 flex items-center justify-between ${
+              isDay ? 'text-[#071426]/60' : 'text-white/50'
+            }`}
+          >
             <span>Match #{match.matchNumber ?? 1}</span>
-            <span className="text-[#FFD21F] font-mono tabular-nums">{clock}</span>
+            <span className="text-[#D9A441] font-mono tabular-nums">{clock}</span>
           </div>
 
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[10px] font-black uppercase tracking-[0.14em] text-white/40">
+              <div
+                className={`truncate text-[10px] font-black uppercase tracking-[0.14em] ${
+                  isDay ? 'text-[#071426]/50' : 'text-white/40'
+                }`}
+              >
                 TEAM A
               </div>
-              <div className="truncate font-black uppercase tracking-tight text-white text-base sm:text-lg">
+              <div
+                className={`truncate font-black uppercase tracking-tight text-base sm:text-lg ${
+                  isDay ? 'text-[#071426]' : 'text-white'
+                }`}
+              >
                 {teamA}
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 font-black tracking-tighter text-[#FFD21F] text-3xl sm:text-4xl leading-none">
+            <div className="flex items-center gap-1.5 font-black tracking-tighter text-[#D9A441] text-3xl sm:text-4xl leading-none">
               <Roll value={scoreA} />
-              <span className="text-white/30 text-xl">:</span>
-              <Roll value={scoreB} className="text-white" />
+              <span className={isDay ? 'text-[#071426]/30 text-xl' : 'text-white/30 text-xl'}>:</span>
+              <Roll value={scoreB} className={isDay ? 'text-[#071426]' : 'text-white'} />
             </div>
 
             <div className="min-w-0 flex-1 text-right">
-              <div className="truncate text-[10px] font-black uppercase tracking-[0.14em] text-white/40">
+              <div
+                className={`truncate text-[10px] font-black uppercase tracking-[0.14em] ${
+                  isDay ? 'text-[#071426]/50' : 'text-white/40'
+                }`}
+              >
                 TEAM B
               </div>
-              <div className="truncate font-black uppercase tracking-tight text-white text-base sm:text-lg">
+              <div
+                className={`truncate font-black uppercase tracking-tight text-base sm:text-lg ${
+                  isDay ? 'text-[#071426]' : 'text-white'
+                }`}
+              >
                 {teamB}
               </div>
             </div>

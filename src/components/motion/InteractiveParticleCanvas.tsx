@@ -73,7 +73,7 @@ export const InteractiveParticleCanvas: React.FC<{ className?: string }> = ({
     document.addEventListener('mouseleave', handleMouseLeave);
 
     const palette = isDay
-      ? ['#155EEF', '#D9A441', '#071426', '#FF6A00']
+      ? ['#155EEF', '#D9A441', '#FF6A00', '#60A5FA', '#FFFFFF', '#F59E0B']
       : ['#FFD21F', '#1264FF', '#D9A441', '#FF4D3D'];
 
     let particles: Particle[] = [];

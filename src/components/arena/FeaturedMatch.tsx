@@ -47,7 +47,7 @@ export const FeaturedMatch: React.FC = () => {
   return (
     <section className={`py-20 relative transition-colors duration-500 border-t ${
       isDay 
-        ? 'bg-[#FAF6EC] border-[#071426]/10' 
+        ? 'bg-gradient-to-b from-transparent via-white/40 to-transparent border-[#071426]/10' 
         : 'bg-[#080A0D]/90 border-white/5'
     }`}>
       <Container>
@@ -63,7 +63,7 @@ export const FeaturedMatch: React.FC = () => {
             transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
             className={`relative w-full rounded-3xl border overflow-hidden group transition-all duration-500 ${
               isDay
-                ? 'bg-gradient-to-b from-white to-[#F7F6F1] border-[#071426]/15 shadow-[0_20px_60px_rgba(7,20,38,0.08)]'
+                ? 'bg-gradient-to-br from-white/95 via-[#FDF9F3] to-[#EAF2FA] border-[#071426]/12 shadow-[0_20px_60px_rgba(7,20,38,0.07)]'
                 : 'bg-gradient-to-b from-[#0B1E3B] to-[#040B17] border-[#D9A441]/40 shadow-[0_20px_60px_rgba(0,0,0,0.85)]'
             }`}
           >

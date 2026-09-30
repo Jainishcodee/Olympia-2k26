@@ -122,7 +122,7 @@ export const ArenaLeaderboardPreview: React.FC = () => {
     <section
       className={`py-24 relative transition-colors duration-500 border-t ${
         isDay
-          ? 'bg-[#F7F6F1] border-[#071426]/10 text-[#071426]'
+          ? 'bg-transparent border-[#071426]/10 text-[#071426]'
           : 'bg-[#080A0D] border-white/5 text-white'
       }`}
     >
@@ -240,19 +240,23 @@ export const ArenaLeaderboardPreview: React.FC = () => {
             </div>
 
             {/* Top 5 Contenders List */}
-            <div className="flex flex-col space-y-3">
-              <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentPreview.sportId}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+                className="flex flex-col space-y-3"
+              >
                 {currentPreview.entries.map((entry, index) => {
                   const isFirst = entry.rank === 1;
                   const isSecond = entry.rank === 2;
                   const isThird = entry.rank === 3;
 
                   return (
-                    <motion.div
+                    <div
                       key={`${currentPreview.sportId}-${entry.rank}`}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.4, delay: index * 0.06 }}
                       className={`p-4 rounded-2xl flex items-center justify-between border transition-colors ${
                         isFirst
                           ? isDay
@@ -315,11 +319,11 @@ export const ArenaLeaderboardPreview: React.FC = () => {
                           </span>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   );
                 })}
-              </AnimatePresence>
-            </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </TiltCard>
       </Container>

@@ -503,3 +503,136 @@ App runs at `http://localhost:5173`.
 
 ### 13d. Build & TypeScript Verification
 - Verified with `tsc -b && vite build` — **0 errors**, production build succeeded cleanly.
+
+### 13e. React ForwardRef, Loading Animation & Brand Asset Synchronization
+- **`RollingScore.tsx`:** Moved `AnimatePresence` inside `RollingDigit` directly wrapping native `<motion.span>` elements to eliminate the React `Function components cannot be given refs (PopChild)` warning.
+- **`OlympiaEmblem.tsx`:** Replaced the legacy `FlameMark` SVG fallback with direct `BRAND.logo` (`Olympia.png`) rendering and a luxury metallic Olympia monogram badge, eliminating the 1-second flash of the old icon on initial load.
+- **`LoadingScreen.tsx`:** Synchronized the curtain wipe animation directly on button trigger to ensure instantaneous, seamless transition into the Arena with zero hitching or broken frame stalls.
+- **`ArenaLeaderboardPreview.tsx`:** Optimized `AnimatePresence` layout transition on discipline switches.
+
+---
+
+## 🌅 Phase 14: Ethereal Pre-Dawn & Sunrise 40:60 Light Blend Overhaul for Landing Page
+
+> **Completed on September 30, 2026**
+
+### 14a. 40:60 White Light to Pre-Dawn Sky Color Ratio Concept
+- **40% Luminous White Morning Light:** Pure celestial white dawn light beam, diffused stadium illumination, alabaster morning mist overlays, glistening specular card surfaces, and radiant white highlights.
+- **60% Pre-Dawn Twilight Palette:** Deep morning sapphire and astronomical indigo (`#0E2A47` / `#163E66`) transitioning smoothly through ethereal dawn cerulean (`#3B82F6` / `#60A5FA`), first-light horizon peach/rose blush (`#FFE3CA` / `#FED7AA` / `#FDBA74`), and golden hour ray highlights (`#D9A441` / `#FFD21F`).
+
+### 14b. Unified Cinematic Hero Section (`HeroSection.tsx`)
+- Unified the layered 3D depth, spring-physics mouse parallax, floating 3D sports objects, central metallic emblem, and LiveScoreHUD across **both Day and Night modes**.
+- In **Day Mode**:
+  - **L0 Environment Backdrop:** Multi-stop pre-dawn sky gradient (`#DDEAF8` to `#FAF6EF` to `#EAF2FB`) layered with the arena backdrop image at subtle opacity with morning mist blending.
+  - **L1 Atmosphere:** 40% pure white dawn sunburst core (`radial-gradient`) blended with 60% pre-dawn sapphire-blue mist, warm horizon sunrise amber-rose bloom, and a metallic golden horizon ray.
+  - **L4 Typography & CTA:** Refined pre-dawn typography in deep midnight navy with golden horizon borders, frosted dawn-glass CTA button with smooth gold hover transitions.
+  - **L5 LiveScore HUD:** Frosted morning glass HUD (`bg-white/85 backdrop-blur-xl border-[#071426]/15 text-[#071426]`) with real-time rolling digits.
+
+### 14c. Landing Page Continuous Flow (`Home.tsx` & Arena Sections)
+- **Continuous Dawn Gradient:** `Home.tsx` background transitioned to a full-page pre-dawn sunrise gradient with atmospheric ambient blooms.
+- **Section Harmonization:** Made section backgrounds (`LiveNowSection`, `FeaturedMatch`, `UpcomingMatches`, `TournamentSection`, `SportsUniverse`, `ArenaLeaderboardPreview`) blend seamlessly with the continuous dawn sky gradient.
+- **`InteractiveParticleCanvas.tsx`:** Enhanced the Day mode particle palette with morning golden sparkles, soft dawn coral, celestial blue, and glowing white morning starlight particles.
+- **`Navbar.tsx`:** Scrolled background refined to frosted dawn glass (`bg-white/80 backdrop-blur-xl`).
+
+### 14d. Verification
+- Verified with `tsc -b && vite build` — **0 errors**, production build succeeded cleanly.
+
+---
+
+## ⚡ Phase 15: "Choose Your Play" Blue Sweep Banner, Artwork Slot & Day/Night Unification
+
+> **Completed on September 30, 2026**
+
+### 15a. Highlight Banner Sweep & Kinetic Motion
+- **Underlying Blue Highlight Banner (`SportsUniverse.tsx`):**
+  - Integrated an animated background banner (`bg-gradient-to-r from-[#1264FF] via-[#1056E0] to-[#0A3EB0]`) with `origin-left scale-x-0 group-hover:scale-x-100` and cubic bezier spring curve `[0.16, 1, 0.3, 1]`.
+  - When hovered, the electric blue banner sweeps seamlessly in from behind, converting typography to high-contrast white with drop shadow.
+  - Interactive arrows and discipline numbers animate with spring translations and gold highlight glow.
+
+### 15b. Hover Artwork & Media Container Slot
+- **Media Slot Architecture:**
+  - Added a responsive, rounded glass artwork container (`w-28 h-16 sm:w-40 sm:h-20 md:w-52 md:h-24`) positioned inside each row.
+  - On hover, it smoothly reveals with coordinated scale (`scale-90` → `scale-100`), opacity (`0` → `1`), and translation (`-translate-x-4` → `translate-x-0`).
+  - Directly supports any image URL passed through Firestore or asset bundles (`sport.bannerUrl`, `sport.imageUrl`, `(sport as any).image`).
+  - Pre-configured with a dynamic athletic gradient backdrop, sport icon watermark, and frosted glass badge so it looks 100% complete and is ready for the user to upload images.
+
+### 15c. Editorial Layout Unification for Both Day & Night Modes
+- Replaced the standard card grid in Night mode with the exact same large-typography 2-column editorial list as Day mode.
+- In Night mode:
+  - Base lines: `border-b border-white/10`.
+  - Numbering: `text-white/40 group-hover:text-white/80`.
+  - Sport Name: `text-white`.
+  - Explore: `text-[#D9A441] group-hover:text-[#FFD21F]`.
+  - Hover Banner: Cyber-blue electric glow `shadow-[0_15px_45px_rgba(18,100,255,0.45)]`.
+- Title unified in both modes to `"CHOOSE YOUR PLAY."` with `"Ten disciplines. One arena. Make your move."` and SplitText animation.
+
+### 15d. Build Verification
+- Verified with `tsc -b && vite build` — **0 errors**, build passed cleanly in 1.05s.
+
+---
+
+## 🌅 Phase 16: Initial Gate Pre-Sunrise Atmosphere, Logo Typography Cleanup, Dual Entry Buttons & Clean Public Navbar
+
+> **Completed on September 30, 2026**
+
+### 16a. Pre-Sunrise & Post-Sunset Celestial Atmosphere (`LoadingScreen.tsx`)
+- **Atmospheric Horizon Gradient:** Transitioned the initial entry gate background from flat dark blue to a celestial pre-sunrise & twilight horizon gradient:
+  - Deep royal astronomical indigo (`#040A17`) at boundaries.
+  - 40% luminous morning white light core (`radial-gradient`) bursting directly behind the metallic Olympia disc.
+  - First-light horizon peach-gold and coral-rose glow beam (`radial-gradient` and linear sunrise haze).
+  - Shimmering light sweep animation across the horizon.
+
+### 16b. Logo Typography Cleanup & Dual Action Buttons
+- **Removed Duplicate Letters:** Completely removed the `OLYMPIA` and `— 2 K 2 6 —` letters underneath the central metallic emblem to keep the focal point cleanly on the luxury metallic badge.
+- **Dual Action Entry System:**
+  - **Button 1 (Enter the Arena):** Gold/electric glowing button with hover gradient sweep (`[ ENTER THE ARENA → ]`) that triggers the upward curtain wipe into the public digital arena.
+  - **Button 2 (Sports Secretary Portal):** Frosted cyber-glass portal button (`[ SPORTS SECRETARY ↗ ]`) that navigates directly to the `/admin/login` page.
+
+### 16c. Clean Public Arena Navbar (`Navbar.tsx`)
+- **Removed Admin Login Button from Arena Page:** Removed the public "Admin Login" / "Dashboard" buttons from the navigation bar (both mobile and desktop), keeping the public arena navigation focused on sports, live scores, tournaments, and leaderboard, with admin access routed through the initial Sports Secretary gate and `/admin/login`.
+
+### 16d. Build Verification
+- Verified with `tsc -b && vite build` — **0 errors**, production build succeeded cleanly in 1.17s.
+
+---
+
+## 🎯 Phase 17: "Choose Your Play" Balanced 2-Column Grid Realignment
+
+> **Completed on September 30, 2026**
+
+### 17a. Symmetrical 2-Column Alignment
+- **Removed `md:col-span-2` Asymmetry:** Removed the condition that forced the first sport (Badminton) to span 2 columns across the full row.
+- **Side-by-Side Pairing:** All 10 sports are now arranged evenly in a clean, symmetrical **5-row × 2-column grid** on tablets, laptops, and desktops.
+- **Geometrical Dividers:** Added middle vertical borders (`md:odd:border-r`) and horizontal row dividers (`border-b`) for sharp geometric clarity.
+- **Optimized Typography & Image Frame:** Adjusted sport name font scale (`clamp(1.75rem, 2.8vw, 3.4rem)`) and responsive image container (`w-24` to `w-36`) so every discipline (from Badminton to Volleyball) sits in balance side-by-side.
+
+### 17b. Build Verification
+- Verified with `tsc -b && vite build` — **0 errors**, build passed cleanly in 1.03s.
+
+---
+
+## 🌌 Phase 18: Blue Hour / Twilight Sky Atmosphere & Revolving Orbiting Light Ball
+
+> **Completed on September 30, 2026**
+
+### 18a. Blue Hour / Twilight Sky Background Refinement (`LoadingScreen.tsx`, `HeroSection.tsx`, `Home.tsx`)
+- **Atmospheric Palette:** Removed all dark navy, burgundy, maroon, and muddy brown tones. Implemented pure Blue Hour / Twilight Sky:
+  - Primary atmospheric blue: `#5F82B5`
+  - Supporting mid tones: `#7FA2C7`, `#8FAFCE`, `#A9C4DF`
+  - Lower sky: `#D6E5F1`
+  - Horizon / Ambient: `#F5F8FA`
+  - Center sunlight diffusion: `#FFFFFF`
+  - Subtle warm horizon ambient: `#FFF8E8`
+  - Darkest edge boundary: restricted to `#496B99` / `#5F82B5` (never `#071426` or `#040A17`).
+- **Seamless Sky Gradients:** Soft atmospheric gradient transitioning from top blue hour to lower horizon with luminous sunlight diffusion behind the Olympia emblem.
+- **Micro-Texture & Subtle Haze:** High-end, delicate micro-grain (`opacity-[0.025]`) and calm diffused light sweeps without neon/cyberpunk elements.
+
+### 18b. Radiant Revolving Orbiting Light Ball (`OlympiaEmblem.tsx`)
+- **Restored Continuous Orbiting Light Ball:**
+  - Added a brilliant, luminous white-gold revolving photon orb (`w-3.5 h-3.5 rounded-full bg-white shadow-[0_0_14px_4px_#FFD21F,0_0_24px_8px_rgba(255,210,31,0.7)]`) orbiting smoothly along the 360° celestial path with Framer Motion.
+  - Added a secondary golden planetary satellite orb on the tilted gold ring.
+  - Added a twilight blue satellite particle on the tilted dashed ring.
+  - Soft luminous white-blue ambient bloom behind the logo while preserving the metallic gold finish and crisp navy disc.
+
+### 18c. Build Verification
+- Verified with `tsc -b && vite build` — **0 errors**, production build passed cleanly in 1.11s.

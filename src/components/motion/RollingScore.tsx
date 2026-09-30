@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface RollingDigitProps {
@@ -13,26 +13,26 @@ const RollingDigit: React.FC<RollingDigitProps> = ({ digit, className = '' }) =>
     return <span className={className}>{digit}</span>;
   }
 
-  const num = Number(digit);
-
   return (
-    <div className={`relative inline-block overflow-hidden h-[1.15em] leading-none ${className}`}>
-      <motion.div
-        key={num}
-        initial={{ y: '100%', filter: 'blur(2px)' }}
-        animate={{ y: '0%', filter: 'blur(0px)' }}
-        exit={{ y: '-100%', filter: 'blur(2px)' }}
-        transition={{
-          type: 'spring',
-          stiffness: 400,
-          damping: 30,
-          mass: 0.8,
-        }}
-        className="inline-block"
-      >
-        {num}
-      </motion.div>
-    </div>
+    <span className={`relative inline-flex overflow-hidden h-[1.15em] leading-none justify-center items-center ${className}`}>
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.span
+          key={digit}
+          initial={{ y: '100%', filter: 'blur(2px)' }}
+          animate={{ y: '0%', filter: 'blur(0px)' }}
+          exit={{ y: '-100%', filter: 'blur(2px)' }}
+          transition={{
+            type: 'spring',
+            stiffness: 400,
+            damping: 30,
+            mass: 0.8,
+          }}
+          className="inline-block"
+        >
+          {digit}
+        </motion.span>
+      </AnimatePresence>
+    </span>
   );
 };
 
@@ -52,16 +52,15 @@ export const RollingScore: React.FC<RollingScoreProps> = ({
   const str = String(value);
 
   return (
-    <div className={`inline-flex items-center tabular-nums ${className}`}>
+    <span className={`inline-flex items-center tabular-nums ${className}`}>
       {prefix && <span className="mr-0.5">{prefix}</span>}
-      <AnimatePresence mode="popLayout" initial={false}>
-        {str.split('').map((char, index) => (
-          <RollingDigit key={`${index}-${char}`} digit={char} />
-        ))}
-      </AnimatePresence>
+      {str.split('').map((char, index) => (
+        <RollingDigit key={`${index}-${char}`} digit={char} />
+      ))}
       {suffix && <span className="ml-0.5">{suffix}</span>}
-    </div>
+    </span>
   );
 };
 
 export default RollingScore;
+

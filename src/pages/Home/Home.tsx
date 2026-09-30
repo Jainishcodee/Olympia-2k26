@@ -29,18 +29,35 @@ export const Home: React.FC = () => {
   const isDay = theme === 'day';
 
   return (
-    <div className={`relative min-h-screen overflow-x-hidden ${isDay ? 'bg-[#F7F6F1] text-[#071426]' : 'bg-[#080A0D] text-white'}`}>
+    <div
+      className={`relative min-h-screen overflow-x-hidden transition-colors duration-500 ${
+        isDay
+          ? 'bg-gradient-to-b from-[#7FA2C7] via-[#A9C4DF] via-25% via-[#D6E5F1] via-60% via-[#F5F8FA] via-85% to-[#FFFFFF] text-[#071426]'
+          : 'bg-[#080A0D] text-white'
+      }`}
+    >
+      {/* Blue-Hour Atmospheric Ambient Blooms */}
+      {isDay && (
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+          <div className="absolute top-[12%] left-1/4 h-[700px] w-[700px] -translate-x-1/2 rounded-full bg-gradient-to-br from-white/80 via-[#D6E5F1]/30 to-transparent blur-[130px]" />
+          <div className="absolute top-[38%] right-10 h-[600px] w-[600px] rounded-full bg-gradient-to-bl from-[#A9C4DF]/35 via-white/50 to-transparent blur-[140px]" />
+          <div className="absolute top-[65%] left-10 h-[650px] w-[650px] rounded-full bg-gradient-to-tr from-[#FFF8E8]/40 via-[#F5F8FA]/60 to-transparent blur-[140px]" />
+        </div>
+      )}
+
       <ScrollProgress />
       <InteractiveParticleCanvas />
 
       <HeroSection />
 
       {/* Kinetic Velocity Marquee Banner */}
-      <div className={`py-4 border-y overflow-hidden transition-colors duration-300 relative z-10 ${
-        isDay 
-          ? 'bg-white/80 border-[#071426]/10 text-[#071426]' 
-          : 'bg-[#040B17]/90 border-white/10 text-white'
-      }`}>
+      <div
+        className={`py-4 border-y overflow-hidden transition-colors duration-300 relative z-10 ${
+          isDay
+            ? 'bg-white/85 backdrop-blur-md border-[#071426]/10 text-[#071426] shadow-sm'
+            : 'bg-[#040B17]/90 border-white/10 text-white'
+        }`}
+      >
         <VelocityMarquee baseVelocity={1.5} className="text-xs md:text-sm tracking-[0.3em] font-black uppercase">
           <span className="text-[#D9A441]">★</span>
           <span>OLYMPIA 2K26</span>
@@ -57,11 +74,13 @@ export const Home: React.FC = () => {
       <SportsUniverseWrapper />
 
       {/* Reverse Velocity Ribbon */}
-      <div className={`py-3.5 border-y overflow-hidden transition-colors duration-300 relative z-10 ${
-        isDay 
-          ? 'bg-[#071426] border-[#071426] text-white' 
-          : 'bg-[#071426] border-white/5 text-[#D9A441]'
-      }`}>
+      <div
+        className={`py-3.5 border-y overflow-hidden transition-colors duration-300 relative z-10 ${
+          isDay
+            ? 'bg-[#071426] border-[#071426] text-[#FFD21F] shadow-md'
+            : 'bg-[#071426] border-white/5 text-[#D9A441]'
+        }`}
+      >
         <VelocityMarquee baseVelocity={-1.8} className="text-[11px] md:text-xs tracking-[0.28em] font-black uppercase">
           <span>HIGH-OCTANE CLASHES</span>
           <span className="opacity-40">•</span>

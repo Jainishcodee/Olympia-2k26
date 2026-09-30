@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useMotionValue, useTransform } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
 import { OlympiaEmblem } from './OlympiaEmblem';
 
 const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
@@ -13,23 +14,12 @@ const STAGES = [
   { at: 100, label: 'ARENA READY' },
 ] as const;
 
-const WORD = 'OLYMPIA'.split('');
-const CODE = '2K26'.split('');
-
-/**
- * Opening cinematic — the first ~3 seconds.
- *
- * 1. hairline ring draws against a live percentage
- * 2. status ticker steps through the boot sequence
- * 3. at 100% the mark blooms in with a metallic sweep and the wordmark
- *    resolves letter by letter
- * 4. "ENTER THE ARENA" arms itself; clicking wipes the curtain upward
- */
 export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const startedAt = useRef(performance.now());
+  const navigate = useNavigate();
 
   // Stepped, slightly irregular progress so it reads as real work.
   useEffect(() => {
@@ -57,7 +47,12 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
   const enter = () => {
     if (!isReady || leaving) return;
     setLeaving(true);
-    window.setTimeout(onComplete, 900);
+    onComplete();
+  };
+
+  const goToAdmin = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate('/admin/login');
   };
 
   useEffect(() => {
@@ -90,54 +85,82 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
       initial={{ clipPath: 'inset(0% 0% 0% 0%)' }}
       exit={{ clipPath: 'inset(0% 0% 100% 0%)' }}
       transition={{ duration: 0.9, ease: EASE_IN_OUT }}
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden bg-[#040B17]"
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden"
+      style={{
+        backgroundColor: '#D6E5F1',
+        backgroundImage:
+          'linear-gradient(180deg, #5F82B5 0%, #7FA2C7 20%, #8FAFCE 38%, #B5CCE1 58%, #D6E5F1 78%, #F5F8FA 100%)',
+      }}
     >
-      {/* --- stage ------------------------------------------------ */}
+      {/* --- Soft Atmospheric Corner Depth (Edges remain around #496B99 - #5F82B5, never dark navy) --- */}
       <div
         aria-hidden
-        className="absolute inset-0"
+        className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            'radial-gradient(ellipse 70% 55% at 50% 42%, rgba(18,100,255,0.28) 0%, rgba(7,20,38,0.6) 45%, rgba(4,11,23,1) 78%)',
+            'radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0) 38%, rgba(127, 162, 199, 0.22) 72%, rgba(73, 107, 153, 0.32) 100%)',
         }}
       />
+
+      {/* --- Atmospheric Horizon Sunlight Glow (Soft blue + warm white dawn blend) --- */}
       <div
         aria-hidden
-        className="absolute inset-0 opacity-[0.05] mix-blend-overlay"
+        className="absolute inset-x-0 bottom-[10%] h-[50%] pointer-events-none blur-[80px]"
+        style={{
+          background:
+            'radial-gradient(ellipse 120% 70% at 50% 100%, rgba(255, 255, 255, 0.92) 0%, rgba(255, 248, 232, 0.5) 30%, rgba(214, 229, 241, 0.4) 62%, transparent 88%)',
+        }}
+      />
+
+      {/* --- Soft Luminous Environment Behind the Olympia Logo --- */}
+      <div
+        aria-hidden
+        className="absolute left-1/2 top-[44%] -translate-x-1/2 -translate-y-1/2 h-[560px] w-[560px] rounded-full blur-[85px] pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(245, 248, 250, 0.7) 35%, rgba(169, 196, 223, 0.35) 65%, transparent 85%)',
+        }}
+      />
+
+      {/* --- Very Subtle Atmospheric Micro-Grain --- */}
+      <div
+        aria-hidden
+        className="absolute inset-0 opacity-[0.025] pointer-events-none mix-blend-overlay"
         style={{
           backgroundImage:
             'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%224%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E")',
         }}
       />
-      {/* light sweep */}
+
+      {/* --- Gentle Sunlight Sweep --- */}
       <motion.div
         aria-hidden
         initial={{ x: '-40%', opacity: 0 }}
-        animate={{ x: '140%', opacity: [0, 0.5, 0] }}
-        transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
-        className="absolute -top-1/4 h-[150%] w-[45%] blur-3xl"
+        animate={{ x: '140%', opacity: [0, 0.35, 0] }}
+        transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+        className="absolute -top-1/4 h-[150%] w-[40%] blur-3xl pointer-events-none"
         style={{
           background:
-            'linear-gradient(100deg, rgba(217,164,65,0) 0%, rgba(217,164,65,0.16) 45%, rgba(255,210,31,0.22) 55%, rgba(217,164,65,0) 100%)',
+            'linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%)',
         }}
       />
 
-      {/* --- corner framing --------------------------------------- */}
+      {/* --- Corner Framing & Header Details (Olympia Navy & Gold) --- */}
       <div aria-hidden className="pointer-events-none absolute inset-0 hidden md:block">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.8 }}
-          className="absolute left-8 top-8 flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-[#D9A441]"
+          className="absolute left-8 top-8 flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-[#071426]"
         >
-          <span className="w-6 h-px bg-[#D9A441]/60" />
+          <span className="w-6 h-px bg-[#D9A441]" />
           OLYMPIA 2K26
         </motion.div>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.45, duration: 0.8 }}
-          className="absolute right-8 top-8 text-[10px] font-black uppercase tracking-[0.3em] text-white/35"
+          className="absolute right-8 top-8 text-[10px] font-black uppercase tracking-[0.3em] text-[#071426]/60"
         >
           SYSTEM / ARENA LINK
         </motion.div>
@@ -145,29 +168,29 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
           transition={{ delay: 0.2, duration: 1.4, ease: EASE_OUT }}
-          className="absolute left-8 top-16 h-px w-24 origin-left bg-[#D9A441]/50"
+          className="absolute left-8 top-16 h-px w-24 origin-left bg-[#071426]/15"
         />
         <motion.div
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
           transition={{ delay: 0.2, duration: 1.4, ease: EASE_OUT }}
-          className="absolute right-8 top-16 h-px w-24 origin-right bg-[#D9A441]/50"
+          className="absolute right-8 top-16 h-px w-24 origin-right bg-[#071426]/15"
         />
       </div>
 
-      {/* --- centre stage ----------------------------------------- */}
+      {/* --- Centre Stage ----------------------------------------- */}
       <div className="relative z-10 flex flex-col items-center px-6">
         <div className="relative flex h-[300px] w-[300px] items-center justify-center sm:h-[340px] sm:w-[340px]">
-          {/* progress ring */}
+          {/* Progress ring with clean light track and Olympia brand gradient */}
           <svg viewBox="0 0 300 300" className="absolute inset-0 h-full w-full -rotate-90">
-            <circle cx="150" cy="150" r={R} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="1.5" />
+            <circle cx="150" cy="150" r={R} fill="none" stroke="rgba(7, 20, 38, 0.12)" strokeWidth="1.5" />
             <motion.circle
               cx="150"
               cy="150"
               r={R}
               fill="none"
               stroke="url(#ol-ring-grad)"
-              strokeWidth="2"
+              strokeWidth="2.5"
               strokeLinecap="round"
               strokeDasharray={CIRC}
               style={{ strokeDashoffset: offset }}
@@ -175,13 +198,14 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
             <defs>
               <linearGradient id="ol-ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#1264FF" />
-                <stop offset="45%" stopColor="#D9A441" />
+                <stop offset="45%" stopColor="#071426" />
+                <stop offset="75%" stopColor="#D9A441" />
                 <stop offset="100%" stopColor="#FFD21F" />
               </linearGradient>
             </defs>
           </svg>
 
-          {/* counter-rotating dashed ring */}
+          {/* Counter-rotating subtle gold dashed ring */}
           <motion.svg
             viewBox="0 0 300 300"
             animate={{ rotate: -360 }}
@@ -193,13 +217,13 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
               cy="150"
               r="112"
               fill="none"
-              stroke="rgba(217,164,65,0.35)"
+              stroke="rgba(217, 164, 65, 0.55)"
               strokeWidth="1"
               strokeDasharray="2 14"
             />
           </motion.svg>
 
-          {/* the mark blooms in at 100% */}
+          {/* The emblem blooms in at 100% */}
           <AnimatePresence>
             {isReady && (
               <motion.div
@@ -209,18 +233,18 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
                 transition={{ duration: 1, ease: EASE_OUT }}
                 className="absolute flex items-center justify-center"
               >
-                <div className="w-[168px] sm:w-[190px]">
+                <div className="w-[175px] sm:w-[200px]">
                   <OlympiaEmblem orbits breathe={false} depth={0} tilt={0} />
                 </div>
-                {/* metallic sweep across the reveal */}
+                {/* Luminous light sweep across the reveal */}
                 <motion.span
                   initial={{ x: '-130%', opacity: 0 }}
-                  animate={{ x: '130%', opacity: [0, 1, 0] }}
+                  animate={{ x: '130%', opacity: [0, 0.8, 0] }}
                   transition={{ duration: 1.1, delay: 0.35, ease: 'easeInOut' }}
                   className="pointer-events-none absolute inset-y-[-10%] w-[45%] skew-x-[-18deg]"
                   style={{
                     background:
-                      'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.55) 50%, rgba(255,255,255,0) 100%)',
+                      'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0) 100%)',
                     mixBlendMode: 'overlay',
                   }}
                 />
@@ -228,7 +252,7 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
             )}
           </AnimatePresence>
 
-          {/* percentage */}
+          {/* Percentage readout */}
           <AnimatePresence mode="wait">
             {!isReady && (
               <motion.div
@@ -237,7 +261,7 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
                 transition={{ duration: 0.4 }}
                 className="flex flex-col items-center"
               >
-                <div className="flex items-start font-black leading-none tracking-tighter text-white">
+                <div className="flex items-start font-black leading-none tracking-tighter text-[#071426]">
                   <motion.span
                     key={Math.floor(progress)}
                     initial={{ y: 8, opacity: 0 }}
@@ -257,7 +281,7 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
                       animate={{ y: 0, opacity: 1 }}
                       exit={{ y: -12, opacity: 0 }}
                       transition={{ duration: 0.3 }}
-                      className="text-[10px] font-black uppercase tracking-[0.28em] text-[#D9A441]/85 whitespace-nowrap"
+                      className="text-[10px] font-black uppercase tracking-[0.28em] text-[#071426]/75 whitespace-nowrap"
                     >
                       {status}
                     </motion.p>
@@ -268,111 +292,89 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
           </AnimatePresence>
         </div>
 
-        {/* --- wordmark ------------------------------------------- */}
-        <div className="mt-8 flex flex-col items-center">
-          <div className="flex overflow-hidden pb-1">
-            {WORD.map((ch, i) => (
-              <motion.span
-                key={`${ch}-${i}`}
-                initial={{ y: '110%', opacity: 0 }}
-                animate={isReady ? { y: '0%', opacity: 1 } : { y: '110%', opacity: 0 }}
-                transition={{ duration: 0.8, delay: 0.1 + i * 0.05, ease: EASE_OUT }}
-                className="text-4xl sm:text-6xl font-black leading-none tracking-[-0.04em] text-white"
-                style={{ textShadow: '0 8px 30px rgba(0,0,0,0.6)' }}
-              >
-                {ch}
-              </motion.span>
-            ))}
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={isReady ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ delay: 0.5, duration: 0.6 }}
-            className="mt-2 flex items-center gap-3"
-          >
-            <span className="h-px w-8 bg-[#D9A441]/50" />
-            <span
-              className="text-lg sm:text-2xl font-black tracking-[0.42em] text-[#D9A441] pr-[0.42em]"
-              style={{
-                background: 'linear-gradient(100deg, #9A6A18 0%, #FFD21F 45%, #D9A441 70%, #FFF0BC 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              {CODE.join('')}
-            </span>
-            <span className="h-px w-8 bg-[#D9A441]/50" />
-          </motion.div>
-        </div>
-
-        {/* --- CTA ------------------------------------------------- */}
-        <div className="mt-10 h-14">
+        {/* --- 2 Action Buttons (Enter Arena & Sports Secretary) --- */}
+        <div className="mt-8">
           <AnimatePresence mode="wait">
             {isReady ? (
-              <motion.button
-                key="enter"
-                initial={{ opacity: 0, y: 18 }}
+              <motion.div
+                key="actions"
+                initial={{ opacity: 0, y: 22 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.5, ease: EASE_OUT }}
-                onClick={enter}
-                data-cursor-label="ENTER"
-                className="group relative overflow-hidden px-9 py-4 focus:outline-none"
+                transition={{ duration: 0.6, ease: EASE_OUT }}
+                className="flex flex-col sm:flex-row items-center gap-4"
               >
-                <span className="absolute inset-0 border border-[#D9A441]/70" />
-                <span className="absolute inset-0 origin-left scale-x-0 bg-[#D9A441] transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:scale-x-100" />
-                <span className="relative z-10 flex items-center gap-3 text-xs font-black uppercase tracking-[0.3em] text-[#D9A441] transition-colors duration-300 group-hover:text-[#040B17]">
-                  ENTER THE ARENA
-                  <span className="inline-block transition-transform duration-300 group-hover:translate-x-1.5">→</span>
-                </span>
-                <span className="absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-[#FFD21F] to-transparent opacity-70" />
-              </motion.button>
+                {/* Button 1: Enter Arena (Player / Fan Entry) */}
+                <button
+                  onClick={enter}
+                  data-cursor-label="ARENA"
+                  className="group relative overflow-hidden px-8 py-3.5 sm:px-10 sm:py-4 rounded-xl border border-[#D9A441] bg-gradient-to-r from-[#FFD21F] via-[#FFE27A] to-[#D9A441] text-[#071426] font-black tracking-[0.22em] uppercase text-xs transition-all duration-300 hover:scale-[1.02] shadow-[0_8px_25px_rgba(217,164,65,0.35)] hover:shadow-[0_12px_32px_rgba(217,164,65,0.55)] focus:outline-none"
+                >
+                  <span className="absolute inset-0 origin-left scale-x-0 bg-gradient-to-r from-[#FFD21F] to-[#FFFFFF] transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:scale-x-100" />
+                  <span className="relative z-10 flex items-center gap-2.5 font-black text-[#071426]">
+                    <span>ENTER THE ARENA</span>
+                    <span className="text-sm transition-transform duration-300 group-hover:translate-x-1.5">→</span>
+                  </span>
+                </button>
+
+                {/* Button 2: Sports Secretary (Admin Login Portal) */}
+                <button
+                  onClick={goToAdmin}
+                  data-cursor-label="ADMIN"
+                  className="group relative overflow-hidden px-7 py-3.5 sm:px-9 sm:py-4 rounded-xl border border-[#071426]/20 bg-[#071426] text-white font-black tracking-[0.2em] uppercase text-xs transition-all duration-300 hover:border-[#1264FF] hover:bg-[#1264FF] hover:scale-[1.02] shadow-[0_8px_25px_rgba(7,20,38,0.2)] hover:shadow-[0_10px_30px_rgba(18,100,255,0.35)] focus:outline-none"
+                >
+                  <span className="absolute inset-0 origin-left scale-x-0 bg-[#1264FF] transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:scale-x-100" />
+                  <span className="relative z-10 flex items-center gap-2">
+                    <span>SPORTS SECRETARY</span>
+                    <span className="text-sm transition-transform duration-300 group-hover:translate-x-1">↗</span>
+                  </span>
+                </button>
+              </motion.div>
             ) : (
               <motion.div
                 key="bar"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex items-center gap-3"
+                className="flex items-center gap-3 py-4"
               >
-                <span className="block h-px w-40 overflow-hidden bg-white/10 sm:w-56">
+                <span className="block h-px w-44 overflow-hidden bg-[#071426]/12 sm:w-60">
                   <motion.span
-                    className="block h-full origin-left bg-gradient-to-r from-[#1264FF] via-[#D9A441] to-[#FFD21F]"
+                    className="block h-full origin-left bg-gradient-to-r from-[#1264FF] via-[#071426] to-[#D9A441]"
                     style={{ scaleX: ringProgress }}
                   />
                 </span>
-                <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white/30">LOADING</span>
+                <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[#071426]/50">LOADING</span>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* --- bottom rail ------------------------------------------ */}
+      {/* --- Bottom Rail ------------------------------------------ */}
       <div className="absolute inset-x-0 bottom-0 px-6 pb-6 sm:px-10">
-        <div className="flex items-end justify-between text-[9px] font-black uppercase tracking-[0.28em] text-white/25">
+        <div className="flex items-end justify-between text-[9px] font-black uppercase tracking-[0.28em] text-[#071426]/55">
           <span>THE DIGITAL ARENA</span>
           <span className="hidden sm:inline">ONE FESTIVAL. EVERY SPORT. ALL HEART.</span>
-          <span className="tabular-nums text-[#D9A441]/70">{String(Math.floor(progress)).padStart(3, '0')} / 100</span>
+          <span className="tabular-nums text-[#071426]/80 font-black">{String(Math.floor(progress)).padStart(3, '0')} / 100</span>
         </div>
-        <div className="mt-3 h-px w-full bg-white/8">
+        <div className="mt-3 h-px w-full bg-[#071426]/12">
           <motion.div
             className="h-full origin-left"
             style={{ scaleX: ringProgress }}
           >
-            <div className="h-full w-full bg-gradient-to-r from-[#1264FF] via-[#D9A441] to-[#FFD21F]" />
+            <div className="h-full w-full bg-gradient-to-r from-[#1264FF] via-[#071426] to-[#D9A441]" />
           </motion.div>
         </div>
       </div>
 
-      {/* gold edge that leads the curtain as it lifts */}
+      {/* Radiant golden-white edge that leads the curtain as it lifts */}
       {leaving && (
         <motion.div
           initial={{ bottom: '0%' }}
           animate={{ bottom: '100%' }}
           transition={{ duration: 0.9, ease: EASE_IN_OUT }}
-          className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-[#FFD21F] to-transparent"
+          className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-[#FFD21F] to-transparent shadow-[0_0_12px_#FFD21F]"
         />
       )}
     </motion.div>

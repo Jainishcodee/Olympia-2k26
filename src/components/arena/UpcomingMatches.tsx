@@ -46,7 +46,7 @@ export const UpcomingMatches: React.FC = () => {
   return (
     <section className={`py-24 relative transition-colors duration-500 border-t ${
       isDay 
-        ? 'bg-[#F7F6F1] border-[#071426]/10 text-[#071426]' 
+        ? 'bg-gradient-to-b from-transparent via-white/50 to-transparent border-[#071426]/10 text-[#071426]' 
         : 'bg-[#080A0D]/90 border-white/5 text-white'
     }`}>
       {/* Environmental subtle accent bloom */}

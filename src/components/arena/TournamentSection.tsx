@@ -11,8 +11,8 @@ export const TournamentSection: React.FC = () => {
   const isDay = theme === 'day';
 
   return (
-    <section className={`py-24 relative transition-colors duration-500 ${
-      isDay ? 'bg-[#F7F6F1] text-[#071426]' : 'bg-[#080A0D] text-white'
+    <section className={`py-24 relative transition-colors duration-500 border-t ${
+      isDay ? 'bg-transparent border-[#071426]/10 text-[#071426]' : 'bg-[#080A0D] border-white/5 text-white'
     }`}>
       <Container>
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10">
@@ -46,7 +46,7 @@ export const TournamentSection: React.FC = () => {
         >
           <div className={`rounded-3xl p-8 md:p-12 border relative overflow-hidden transition-all duration-500 ${
             isDay
-              ? 'bg-gradient-to-br from-white via-[#FAF6EC] to-[#F7F6F1] border-[#071426]/12 shadow-[0_20px_50px_rgba(7,20,38,0.06)]'
+              ? 'bg-gradient-to-br from-white/95 via-[#FDFBF7] to-[#EEF5FC] border-[#071426]/12 shadow-[0_20px_50px_rgba(7,20,38,0.06)]'
               : 'bg-gradient-to-br from-[#1747B8]/20 via-[#071426] to-[#040B17] border-[#1747B8]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8)]'
           }`}>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 relative z-10">
