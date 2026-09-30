@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { Timestamp } from 'firebase/firestore';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useCollection, useDoc } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import { createTeam, updateTeam } from '@/services/teams/teamService';
 import { uploadFile } from '@/services/storage/storageService';
 import {
@@ -20,6 +21,7 @@ import {
 import FileUpload from '@/components/admin/FileUpload';
 import FormField from '@/components/admin/FormField';
 import type { Player, Sport, Team } from '@/types';
+import { cn } from '@/utils/cn';
 
 interface TeamForm {
   name: string;
@@ -48,6 +50,8 @@ const EMPTY_FORM: TeamForm = {
 const TeamEditor: React.FC = () => {
   const { teamId } = useParams();
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
   const { log } = useAuditLog();
 
   const isCreate = !teamId;
@@ -220,7 +224,7 @@ const TeamEditor: React.FC = () => {
         <Card flush>
           <FormSection step="1" title="Identity" description="How the team appears across the admin panel and public site.">
             <div className="mb-4">
-              <span className="block text-sm font-medium text-gray-700">Team logo</span>
+              <span className={cn('block text-sm font-medium', isDay ? 'text-slate-700' : 'text-slate-200')}>Team logo</span>
               <div className="mt-1.5">
                 <FileUpload
                   onUpload={handleLogoFile}
@@ -305,7 +309,7 @@ const TeamEditor: React.FC = () => {
               helpText="Short blurb — department, colours, or anything worth knowing."
               placeholder="Who are they, and what do they play?"
             />
-            <div className="border-t border-slate-100 pt-1">
+            <div className={cn('border-t pt-1', isDay ? 'border-slate-100' : 'border-white/5')}>
               <Toggle
                 checked={form.active}
                 onChange={(checked) => set('active', checked)}

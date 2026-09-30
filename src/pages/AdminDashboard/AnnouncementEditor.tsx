@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Timestamp } from 'firebase/firestore';
 import { useDoc } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import {
   AdminHeader,
@@ -83,6 +84,8 @@ const AnnouncementEditor: React.FC = () => {
   const { announcementId } = useParams<{ announcementId: string }>();
   const isEdit = Boolean(announcementId);
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
   const { log } = useAuditLog();
 
   const existing = useDoc<AnnouncementDoc>('announcements', announcementId);

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { Timestamp } from 'firebase/firestore';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useCollection, useDoc } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import { createPlayer, updatePlayer } from '@/services/players/playerService';
 import { addPlayerToTeam, removePlayerFromTeam } from '@/services/teams/teamService';
 import { uploadFile } from '@/services/storage/storageService';
@@ -21,6 +22,7 @@ import {
 import FileUpload from '@/components/admin/FileUpload';
 import FormField from '@/components/admin/FormField';
 import type { Player, PlayerStats, Sport, Team } from '@/types';
+import { cn } from '@/utils/cn';
 
 type PlayerRole = Player['role'];
 type Gender = Player['gender'];
@@ -66,6 +68,8 @@ const EMPTY_FORM: PlayerForm = {
 const PlayerEditor: React.FC = () => {
   const { playerId } = useParams();
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
   const { log } = useAuditLog();
   const [searchParams] = useSearchParams();
 
@@ -257,7 +261,7 @@ const PlayerEditor: React.FC = () => {
         <Card flush>
           <FormSection step="1" title="Identity" description="Name, photo and squad number as shown on scoreboards.">
             <div className="mb-4">
-              <span className="block text-sm font-medium text-gray-700">Player photo</span>
+              <span className={cn('block text-sm font-medium', isDay ? 'text-slate-700' : 'text-slate-200')}>Player photo</span>
               <div className="mt-1.5">
                 <FileUpload
                   onUpload={handlePhotoFile}
@@ -355,7 +359,7 @@ const PlayerEditor: React.FC = () => {
               helpText="One or two lines — year, department, playing style."
               placeholder="Second-year CSE, left-footed winger."
             />
-            <div className="border-t border-slate-100 pt-1">
+            <div className={cn('border-t pt-1', isDay ? 'border-slate-100' : 'border-white/5')}>
               <Toggle
                 checked={form.active}
                 onChange={(checked) => set('active', checked)}

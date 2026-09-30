@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { Timestamp } from 'firebase/firestore';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useDoc } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import { createVenue, updateVenue } from '@/services/venues/venueService';
 import { uploadFile } from '@/services/storage/storageService';
 import {
@@ -20,6 +21,7 @@ import {
 import FileUpload from '@/components/admin/FileUpload';
 import FormField from '@/components/admin/FormField';
 import type { Venue } from '@/types';
+import { cn } from '@/utils/cn';
 
 /** Availability lives on the document as an optional extra field — see VenuesManager. */
 type VenueRecord = Venue & { available?: boolean };
@@ -47,6 +49,8 @@ const EMPTY_FORM: VenueForm = {
 const VenueEditor: React.FC = () => {
   const { venueId } = useParams();
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
   const { log } = useAuditLog();
 
   const isCreate = !venueId;
@@ -237,7 +241,7 @@ const VenueEditor: React.FC = () => {
 
           <FormSection step="2" title="Image" description="Used on the public venue listing.">
             <div className="mb-4">
-              <span className="block text-sm font-medium text-gray-700">Venue image</span>
+              <span className={cn('block text-sm font-medium', isDay ? 'text-slate-700' : 'text-slate-200')}>Venue image</span>
               <div className="mt-1.5">
                 <FileUpload
                   onUpload={handleImageFile}
@@ -256,7 +260,7 @@ const VenueEditor: React.FC = () => {
           </FormSection>
 
           <FormSection step="3" title="Availability" description="Whether operators can pick this venue right now.">
-            <div className="divide-y divide-slate-100">
+            <div className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
               <Toggle
                 checked={form.available}
                 onChange={(checked) => set('available', checked)}

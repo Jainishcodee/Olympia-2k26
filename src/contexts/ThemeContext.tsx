@@ -6,6 +6,7 @@ const STORAGE_KEY = 'olympia-theme';
 
 interface ThemeContextValue {
   theme: Theme;
+  isDay: boolean;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
 }
@@ -56,7 +57,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     [],
   );
 
-  const value = useMemo(() => ({ theme, setTheme, toggleTheme }), [theme, setTheme, toggleTheme]);
+  const value = useMemo(
+    () => ({ theme, isDay: theme === 'day', setTheme, toggleTheme }),
+    [theme, setTheme, toggleTheme],
+  );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };

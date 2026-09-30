@@ -149,6 +149,8 @@ const GlobalBackground: React.FC = () => {
   );
 };
 
+import { MobileBottomNav } from './components/navigation/MobileBottomNav';
+
 // Public layout wrapper
 const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
@@ -165,11 +167,12 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
           exit={{ opacity: 0, y: -14, filter: 'blur(6px)' }}
           transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className="min-h-screen"
+          className="min-h-screen pb-16 lg:pb-0"
         >
           {children}
         </motion.main>
       </AnimatePresence>
+      <MobileBottomNav />
     </>
   );
 };

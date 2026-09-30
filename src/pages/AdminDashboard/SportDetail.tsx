@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { eq, useCollection, useDoc } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   AdminHeader,
   AdminTabs,
@@ -19,16 +20,16 @@ import {
 import FormField from '@/components/admin/FormField';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { useAuditLog } from '@/hooks/useAuditLog';
-import { updateSport } from '@/services/sports/sportService';
+import { deleteSport, updateSport } from '@/services/sports/sportService';
 import type { Match, Player, ScoringType, Sport, Team, Venue } from '@/types';
 import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';
-import { FiLock } from 'react-icons/fi';
+import { FiLock, FiTrash2 } from 'react-icons/fi';
 
 /* ============================================================================
  *  Sport detail — identity, the on/off switch, and every piece of data that
  *  hangs off this discipline: matches, teams, players and the venues they
- *  actually played in. Disabling is reversible; removal is not offered.
+ *  actually played in.
  * ==========================================================================*/
 
 const SCORING_TYPES: ScoringType[] = [
@@ -65,9 +66,13 @@ const dateOf = (value: unknown) => {
 
 const SportDetail: React.FC = () => {
   const { sportId } = useParams<{ sportId: string }>();
+  const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
   const { log } = useAuditLog();
   const [tab, setTab] = useState('matches');
   const [confirmDisable, setConfirmDisable] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -116,6 +121,23 @@ const SportDetail: React.FC = () => {
       toast.error(error instanceof Error ? error.message : 'Save failed');
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleDelete = async (target: Sport) => {
+    setBusy(true);
+    try {
+      await deleteSport(target.id);
+      await log('SPORT_DELETED', 'sport', target.id, {
+        label: `Deleted sport ${target.name}`,
+      });
+      toast.success(`Deleted ${target.name}`);
+      navigate('/admin/sports');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Delete failed');
+    } finally {
+      setBusy(false);
+      setConfirmDelete(false);
     }
   };
 
@@ -190,28 +212,31 @@ const SportDetail: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse text-left">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
+              <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/[0.04]')}>
                 {['Match', 'Teams / Players', 'Date', 'Status', ''].map((heading) => (
                   <th
                     key={heading}
-                    className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                    className={cn(
+                      'whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider',
+                      isDay ? 'text-slate-500' : 'text-slate-400'
+                    )}
                   >
                     {heading}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
               {matches.data.map((match) => (
-                <tr key={match.id} className="transition-colors hover:bg-slate-50/70">
-                  <td className="px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums text-slate-700">
+                <tr key={match.id} className={cn('transition-colors', isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]')}>
+                  <td className={cn('px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-700' : 'text-slate-300')}>
                     #{match.matchNumber ?? '—'}
                   </td>
-                  <td className="max-w-[300px] truncate px-3 py-2.5 text-[13px] font-semibold text-slate-800">
+                  <td className={cn('max-w-[300px] truncate px-3 py-2.5 text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-slate-100')}>
                     {match.participantA?.name ?? match.teamAId ?? 'TBD'} vs{' '}
                     {match.participantB?.name ?? match.teamBId ?? 'TBD'}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-slate-600">
+                  <td className={cn('whitespace-nowrap px-3 py-2.5 text-[12px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {dateOf(match.scheduledAt)}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5">
@@ -249,27 +274,30 @@ const SportDetail: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-left">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
+              <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/[0.04]')}>
                 {['Team', 'Short name', 'Players', 'Status', ''].map((heading) => (
                   <th
                     key={heading}
-                    className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                    className={cn(
+                      'whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider',
+                      isDay ? 'text-slate-500' : 'text-slate-400'
+                    )}
                   >
                     {heading}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
               {teams.data.map((team) => (
-                <tr key={team.id} className="transition-colors hover:bg-slate-50/70">
-                  <td className="px-3 py-2.5 text-[13px] font-semibold text-slate-800">
+                <tr key={team.id} className={cn('transition-colors', isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]')}>
+                  <td className={cn('px-3 py-2.5 text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-slate-100')}>
                     {team.name}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-[13px] text-slate-600">
+                  <td className={cn('whitespace-nowrap px-3 py-2.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {team.shortName || '—'}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-600">
+                  <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {team.playerIds?.length ?? 0}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5">
@@ -302,30 +330,33 @@ const SportDetail: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-left">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
+              <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/[0.04]')}>
                 {['Player', '#', 'Team', 'Role', ''].map((heading) => (
                   <th
                     key={heading}
-                    className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                    className={cn(
+                      'whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider',
+                      isDay ? 'text-slate-500' : 'text-slate-400'
+                    )}
                   >
                     {heading}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
               {players.data.map((player) => (
-                <tr key={player.id} className="transition-colors hover:bg-slate-50/70">
-                  <td className="px-3 py-2.5 text-[13px] font-semibold text-slate-800">
+                <tr key={player.id} className={cn('transition-colors', isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]')}>
+                  <td className={cn('px-3 py-2.5 text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-slate-100')}>
                     {player.name}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-600">
+                  <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {player.jerseyNumber || '—'}
                   </td>
-                  <td className="max-w-[200px] truncate px-3 py-2.5 text-[13px] text-slate-600">
+                  <td className={cn('max-w-[200px] truncate px-3 py-2.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {teamNames.get(player.teamId) ?? player.teamId ?? '—'}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-[13px] capitalize text-slate-600">
+                  <td className={cn('whitespace-nowrap px-3 py-2.5 text-[13px] capitalize', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {player.role?.replace('_', ' ') ?? '—'}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-right">
@@ -355,30 +386,33 @@ const SportDetail: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse text-left">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
+              <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/[0.04]')}>
                 {['Venue', 'Location', 'Capacity', 'Matches here', ''].map((heading) => (
                   <th
                     key={heading}
-                    className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                    className={cn(
+                      'whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider',
+                      isDay ? 'text-slate-500' : 'text-slate-400'
+                    )}
                   >
                     {heading}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
               {venuesInUse.map(({ venue, count }) => (
-                <tr key={venue.id} className="transition-colors hover:bg-slate-50/70">
-                  <td className="px-3 py-2.5 text-[13px] font-semibold text-slate-800">
+                <tr key={venue.id} className={cn('transition-colors', isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]')}>
+                  <td className={cn('px-3 py-2.5 text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-slate-100')}>
                     {venue.name}
                   </td>
-                  <td className="max-w-[220px] truncate px-3 py-2.5 text-[13px] text-slate-600">
+                  <td className={cn('max-w-[220px] truncate px-3 py-2.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {venue.location || '—'}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-600">
+                  <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {venue.capacity ?? '—'}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums text-slate-700">
+                  <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-700' : 'text-amber-400')}>
                     {count}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-right">
@@ -421,14 +455,22 @@ const SportDetail: React.FC = () => {
               Edit
             </Btn>
             {row.active ? (
-              <Btn variant="danger" onClick={() => setConfirmDisable(true)} icon={<FiLock className="h-4 w-4" />}>
-                Disable sport
+              <Btn variant="secondary" onClick={() => setConfirmDisable(true)} icon={<FiLock className="h-4 w-4" />}>
+                Disable
               </Btn>
             ) : (
-              <Btn variant="primary" onClick={() => writeActive(true, row)} disabled={busy}>
-                Enable sport
+              <Btn variant="secondary" onClick={() => writeActive(true, row)} disabled={busy}>
+                Enable
               </Btn>
             )}
+            <Btn
+              variant="danger"
+              onClick={() => setConfirmDelete(true)}
+              disabled={busy}
+              icon={<FiTrash2 className="h-4 w-4" />}
+            >
+              Delete
+            </Btn>
           </>
         }
       />
@@ -440,14 +482,15 @@ const SportDetail: React.FC = () => {
           <div className="flex items-start gap-4">
             <span
               className={cn(
-                'flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-3xl',
+                'flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border text-3xl',
+                isDay ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/[0.04]'
               )}
             >
               {isImage ? <img src={icon} alt="" className="h-full w-full rounded-lg object-cover" /> : icon || '•'}
             </span>
             <div className="min-w-0">
-              <p className="text-lg font-bold text-slate-900">{row.name}</p>
-              <p className="mt-1 text-[13px] leading-relaxed text-slate-500">
+              <p className={cn('text-lg font-bold', isDay ? 'text-slate-900' : 'text-white')}>{row.name}</p>
+              <p className={cn('mt-1 text-[13px] leading-relaxed', isDay ? 'text-slate-500' : 'text-slate-400')}>
                 {row.description || 'No description yet.'}
               </p>
             </div>
@@ -463,7 +506,7 @@ const SportDetail: React.FC = () => {
             <MetaRow label="Sport id">{row.id}</MetaRow>
           </dl>
 
-          <div className="mt-3 border-t border-slate-100">
+          <div className={cn('mt-3 border-t', isDay ? 'border-slate-100' : 'border-white/5')}>
             <Toggle
               checked={Boolean(row.active)}
               onChange={(next) => onToggle(next, row)}
@@ -475,7 +518,7 @@ const SportDetail: React.FC = () => {
         </Card>
 
         <Card title="Status">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-4 text-center">
+          <div className={cn('rounded-lg border px-4 py-4 text-center', isDay ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/[0.02]')}>
             <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
               Currently
             </span>
@@ -484,12 +527,14 @@ const SportDetail: React.FC = () => {
             </span>
           </div>
           {matches.data.length > 0 && (
-            <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-[12px] leading-relaxed text-amber-900">
+            <div className={cn(
+              'mt-3 flex items-start gap-2 rounded-lg border px-3 py-3 text-[12px] leading-relaxed',
+              isDay ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-amber-500/20 bg-amber-950/20 text-amber-300'
+            )}>
               <FiLock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
               <span>
                 {matches.data.length} recorded{' '}
-                {matches.data.length === 1 ? 'match' : 'matches'} depend on this sport. It can be
-                disabled, but never removed — history stays intact.
+                {matches.data.length === 1 ? 'match' : 'matches'} depend on this sport.
               </span>
             </div>
           )}
@@ -535,6 +580,16 @@ const SportDetail: React.FC = () => {
         onCancel={() => setConfirmDisable(false)}
       />
 
+      <ConfirmDialog
+        isOpen={confirmDelete}
+        title={`Delete sport "${row.name}"?`}
+        message={`This will permanently delete this sport from Firestore in real-time.${matches.data.length > 0 ? ` Note: ${matches.data.length} existing matches reference this sport.` : ''}`}
+        confirmText={busy ? 'Deleting…' : 'Delete sport'}
+        isDestructive
+        onConfirm={() => handleDelete(row)}
+        onCancel={() => setConfirmDelete(false)}
+      />
+
       {editing && (
         <SportEditModal
           sport={row}
@@ -553,6 +608,8 @@ const SportEditModal: React.FC<{
   onClose: () => void;
   onSaved: () => void;
 }> = ({ sport, onClose, onSaved }) => {
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
   const { log } = useAuditLog();
   const [name, setName] = useState(sport.name);
   const [icon, setIcon] = useState(sport.icon ?? '');
@@ -595,10 +652,13 @@ const SportEditModal: React.FC<{
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center px-4 py-8 text-center">
         <div className="fixed inset-0 bg-slate-900/60" aria-hidden="true" onClick={onClose} />
-        <div className="relative w-full max-w-xl rounded-lg bg-white text-left shadow-xl">
-          <header className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-3">
+        <div className={cn(
+          'relative w-full max-w-xl rounded-lg text-left shadow-xl border',
+          isDay ? 'bg-white border-slate-200' : 'bg-[#0B1528] border-white/10 text-white'
+        )}>
+          <header className={cn('flex items-center justify-between gap-3 border-b px-5 py-3', isDay ? 'border-slate-200' : 'border-white/10')}>
             <div className="min-w-0">
-              <h3 className="truncate text-sm font-bold text-slate-900">Edit sport</h3>
+              <h3 className={cn('truncate text-sm font-bold', isDay ? 'text-slate-900' : 'text-white')}>Edit sport</h3>
               <p className="truncate text-[11px] text-slate-400">
                 {sport.slug} · id {sport.id}
               </p>
@@ -654,7 +714,7 @@ const SportEditModal: React.FC<{
               onChange={(e) => setDescription(e.target.value)}
             />
 
-            <div className="border-t border-slate-100">
+            <div className={cn('border-t pt-3', isDay ? 'border-slate-100' : 'border-white/5')}>
               <Toggle
                 checked={teamBased}
                 onChange={setTeamBased}
@@ -664,7 +724,7 @@ const SportEditModal: React.FC<{
             </div>
           </div>
 
-          <footer className="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
+          <footer className={cn('flex items-center justify-end gap-2 border-t px-5 py-3', isDay ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/[0.02]')}>
             <Btn onClick={onClose}>Cancel</Btn>
             <Btn variant="primary" onClick={save} disabled={saving}>
               {saving ? 'Saving…' : 'Save changes'}

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   AdminHeader,
   AdminTabs,
@@ -45,6 +46,8 @@ const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { log } = useAuditLog();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
 
   const [section, setSection] = useState('general');
   const [form, setForm] = useState<Settings>(DEFAULT_SETTINGS);
@@ -148,7 +151,7 @@ const SettingsPage: React.FC = () => {
         {/* ---------------------------------------------------- general */}
         {section === 'general' && (
           <div className="px-5 py-5">
-            <h3 className="mb-4 text-sm font-bold text-slate-900">General</h3>
+            <h3 className={cn('mb-4 text-sm font-bold', isDay ? 'text-slate-900' : 'text-white')}>General</h3>
             <FormGrid cols={2}>
               <FormField
                 label="Event name"
@@ -188,8 +191,8 @@ const SettingsPage: React.FC = () => {
         {/* --------------------------------------------------- branding */}
         {section === 'branding' && (
           <div className="px-5 py-5">
-            <h3 className="mb-1 text-sm font-bold text-slate-900">Branding</h3>
-            <p className="mb-4 text-[12px] text-slate-400">
+            <h3 className={cn('mb-1 text-sm font-bold', isDay ? 'text-slate-900' : 'text-white')}>Branding</h3>
+            <p className={cn('mb-4 text-[12px]', isDay ? 'text-slate-400' : 'text-white/50')}>
               Navy and gold are the identity. Blue, yellow and coral are environmental accents only.
             </p>
             <div className="mb-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -202,7 +205,7 @@ const SettingsPage: React.FC = () => {
                 ] as const
               ).map(([key, label, fallback]) => (
                 <label key={key} className="block">
-                  <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  <span className={cn('block text-[11px] font-semibold uppercase tracking-wider', isDay ? 'text-slate-400' : 'text-white/50')}>
                     {label}
                   </span>
                   <span className="mt-1 flex items-center gap-2">
@@ -210,14 +213,20 @@ const SettingsPage: React.FC = () => {
                       type="color"
                       value={form[key] || fallback}
                       onChange={(e) => set(key, e.target.value)}
-                      className="h-9 w-11 shrink-0 cursor-pointer rounded border border-slate-300 bg-white p-1"
+                      className={cn(
+                        'h-9 w-11 shrink-0 cursor-pointer rounded border p-1',
+                        isDay ? 'border-slate-300 bg-white' : 'border-white/10 bg-[#071426]',
+                      )}
                       aria-label={label}
                     />
                     <input
                       type="text"
                       value={form[key]}
                       onChange={(e) => set(key, e.target.value)}
-                      className="h-9 w-full rounded-md border border-slate-300 px-2.5 font-mono text-[13px] uppercase text-slate-700 outline-none focus:border-[#1264FF]"
+                      className={cn(
+                        'h-9 w-full rounded-md border px-2.5 font-mono text-[13px] uppercase outline-none focus:border-[#1264FF]',
+                        isDay ? 'border-slate-300 bg-white text-slate-700' : 'border-white/10 bg-[#071426] text-white/90',
+                      )}
                     />
                   </span>
                 </label>
@@ -232,9 +241,14 @@ const SettingsPage: React.FC = () => {
                 helpText="Leave empty to use the built-in OLYMPIA wordmark."
               />
             </div>
-            <div className="mt-4 flex items-center gap-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+            <div
+              className={cn(
+                'mt-4 flex items-center gap-4 rounded-lg border px-4 py-3 shadow-sm',
+                isDay ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/[0.04]',
+              )}
+            >
               <span
-                className="flex h-11 w-11 items-center justify-center rounded-md text-base font-black"
+                className="flex h-11 w-11 items-center justify-center rounded-md text-base font-black shadow-inner"
                 style={{ backgroundColor: form.brandAccent, color: form.brandGold }}
               >
                 O
@@ -254,7 +268,7 @@ const SettingsPage: React.FC = () => {
         {/* ----------------------------------------------- live scoring */}
         {section === 'scoring' && (
           <div className="px-5 py-5">
-            <h3 className="mb-4 text-sm font-bold text-slate-900">Live scoring</h3>
+            <h3 className={cn('mb-4 text-sm font-bold', isDay ? 'text-slate-900' : 'text-white')}>Live scoring</h3>
             <FormGrid cols={2}>
               <FormField
                 as="select"
@@ -297,8 +311,13 @@ const SettingsPage: React.FC = () => {
                 hint="Prevents an accidental FINAL on the console."
               />
             </div>
-            <div className="mt-5 flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3">
-              <span className="text-[12px] text-slate-500">
+            <div
+              className={cn(
+                'mt-5 flex flex-wrap items-center gap-3 rounded-lg border border-dashed px-4 py-3',
+                isDay ? 'border-slate-300 bg-slate-50' : 'border-white/15 bg-white/[0.03]',
+              )}
+            >
+              <span className={cn('text-[12px]', isDay ? 'text-slate-600' : 'text-white/60')}>
                 Verify these rules against sample scores before a live event.
               </span>
               <Btn size="xs" to="/admin/scoring-simulator">
@@ -311,8 +330,8 @@ const SettingsPage: React.FC = () => {
         {/* ----------------------------------------- public interaction */}
         {section === 'interaction' && (
           <div className="px-5 py-5">
-            <h3 className="mb-1 text-sm font-bold text-slate-900">Public interaction</h3>
-            <p className="mb-4 text-[12px] text-slate-400">
+            <h3 className={cn('mb-1 text-sm font-bold', isDay ? 'text-slate-900' : 'text-white')}>Public interaction</h3>
+            <p className={cn('mb-4 text-[12px]', isDay ? 'text-slate-400' : 'text-white/50')}>
               Defaults applied when a match is created. Each match can override them individually.
             </p>
             <div className="grid gap-x-8 sm:grid-cols-2">
@@ -342,7 +361,7 @@ const SettingsPage: React.FC = () => {
               />
             </div>
 
-            <h4 className="mb-2 mt-6 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <h4 className={cn('mb-2 mt-6 text-[11px] font-bold uppercase tracking-wider', isDay ? 'text-slate-400' : 'text-white/50')}>
               Available reactions
             </h4>
             <div className="flex flex-wrap gap-2">
@@ -364,8 +383,12 @@ const SettingsPage: React.FC = () => {
                     className={cn(
                       'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition-colors',
                       active
-                        ? 'border-[#1264FF] bg-[#1264FF]/10 text-slate-900'
-                        : 'border-slate-300 bg-white text-slate-400 hover:border-slate-400',
+                        ? isDay
+                          ? 'border-[#1264FF] bg-[#1264FF]/10 text-slate-900'
+                          : 'border-[#1264FF] bg-[#1264FF]/20 text-white shadow-sm shadow-[#1264FF]/30'
+                        : isDay
+                          ? 'border-slate-300 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-800'
+                          : 'border-white/10 bg-white/[0.04] text-white/60 hover:border-white/20 hover:text-white',
                     )}
                   >
                     <span className="text-[15px]">{chip.emoji}</span>
@@ -385,8 +408,8 @@ const SettingsPage: React.FC = () => {
         {/* -------------------------------------------------- display */}
         {section === 'display' && (
           <div className="px-5 py-5">
-            <h3 className="mb-4 text-sm font-bold text-slate-900">Display defaults</h3>
-            <span className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <h3 className={cn('mb-4 text-sm font-bold', isDay ? 'text-slate-900' : 'text-white')}>Display defaults</h3>
+            <span className={cn('mb-2 block text-[11px] font-semibold uppercase tracking-wider', isDay ? 'text-slate-400' : 'text-white/50')}>
               Default match display
             </span>
             <div className="mb-5 grid gap-3 sm:grid-cols-2">
@@ -411,8 +434,12 @@ const SettingsPage: React.FC = () => {
                   className={cn(
                     'rounded-lg border p-4 text-left transition-colors',
                     form.defaultDisplayMode === option.value
-                      ? 'border-[#1264FF] bg-[#1264FF]/5 ring-2 ring-[#1264FF]/20'
-                      : 'border-slate-200 hover:border-slate-300',
+                      ? isDay
+                        ? 'border-[#1264FF] bg-[#1264FF]/5 ring-2 ring-[#1264FF]/20'
+                        : 'border-[#1264FF] bg-[#1264FF]/15 ring-2 ring-[#1264FF]/30'
+                      : isDay
+                        ? 'border-slate-200 bg-white hover:border-slate-300'
+                        : 'border-white/10 bg-white/[0.02] hover:border-white/20',
                   )}
                 >
                   <span className="flex items-center gap-2">
@@ -421,12 +448,12 @@ const SettingsPage: React.FC = () => {
                         'h-3.5 w-3.5 rounded-full border-2',
                         form.defaultDisplayMode === option.value
                           ? 'border-[#1264FF] bg-[#1264FF]'
-                          : 'border-slate-300',
+                          : isDay ? 'border-slate-300' : 'border-white/20',
                       )}
                     />
-                    <span className="text-[13px] font-bold text-slate-800">{option.title}</span>
+                    <span className={cn('text-[13px] font-bold', isDay ? 'text-slate-800' : 'text-white')}>{option.title}</span>
                   </span>
-                  <span className="mt-2 block text-[12px] leading-relaxed text-slate-500">{option.copy}</span>
+                  <span className={cn('mt-2 block text-[12px] leading-relaxed', isDay ? 'text-slate-500' : 'text-white/60')}>{option.copy}</span>
                 </button>
               ))}
             </div>
@@ -450,8 +477,8 @@ const SettingsPage: React.FC = () => {
         {/* ------------------------------------------------- security */}
         {section === 'security' && (
           <div className="px-5 py-5">
-            <h3 className="mb-1 text-sm font-bold text-slate-900">Security</h3>
-            <p className="mb-4 text-[12px] text-slate-400">
+            <h3 className={cn('mb-1 text-sm font-bold', isDay ? 'text-slate-900' : 'text-white')}>Security</h3>
+            <p className={cn('mb-4 text-[12px]', isDay ? 'text-slate-400' : 'text-white/50')}>
               Client-side controls are convenience only — <strong>Firebase Security Rules</strong> and the trusted
               backend are what actually enforce permissions.
             </p>
@@ -490,11 +517,18 @@ const SettingsPage: React.FC = () => {
                 hint="Every archive/delete asks first."
               />
             </div>
-            <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-              <p className="text-[13px] font-semibold text-amber-900">
+            <div
+              className={cn(
+                'mt-5 rounded-lg border px-4 py-3 shadow-sm',
+                isDay
+                  ? 'border-amber-200 bg-amber-50'
+                  : 'border-[#D9A441]/30 bg-[#D9A441]/10',
+              )}
+            >
+              <p className={cn('text-[13px] font-semibold', isDay ? 'text-amber-900' : 'text-[#F5CA6E]')}>
                 Passwords are never displayed or stored here.
               </p>
-              <p className="mt-0.5 text-[12px] leading-relaxed text-amber-800">
+              <p className={cn('mt-0.5 text-[12px] leading-relaxed', isDay ? 'text-amber-800' : 'text-white/70')}>
                 Authentication lives in Firebase Authentication. Administrator accounts are provisioned by a trusted
                 backend via Cloud Functions — see <code className="font-mono">functions/src/admins/createAdmin.ts</code>.
               </p>
@@ -504,8 +538,22 @@ const SettingsPage: React.FC = () => {
       </Card>
 
       {/* ------------------------------------------------- sticky footer */}
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
-        <span className={cn('text-[12px]', dirty ? 'font-semibold text-[#A9761B]' : 'text-slate-400')}>
+      <div
+        className={cn(
+          'mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3 shadow-sm',
+          isDay
+            ? 'border-slate-200 bg-white'
+            : 'border-white/10 bg-[#071426]',
+        )}
+      >
+        <span
+          className={cn(
+            'text-[12px]',
+            dirty
+              ? isDay ? 'font-semibold text-[#A9761B]' : 'font-semibold text-[#F5CA6E]'
+              : isDay ? 'text-slate-400' : 'text-white/40',
+          )}
+        >
           {dirty
             ? 'You have unsaved changes — nothing reaches Firestore until you save.'
             : 'All changes are saved.'}

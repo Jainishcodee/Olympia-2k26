@@ -1,108 +1,225 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Star, Activity, Shield } from 'lucide-react';
+import { ArrowLeft, Star, Activity, Shield, Award, Calendar } from 'lucide-react';
 import { cn } from '@/utils/cn';
-
-const usePlayer = (id: string) => ({
-  player: {
-    id, name: 'John Doe', number: 23, teamName: 'Thunderbolts', teamId: '1', sport: 'Basketball', 
-    position: 'Power Forward', role: 'captain', gender: 'Male', bio: 'A veteran player known for his defensive skills and leadership on the court.',
-    stats: { matches: 45, points: 670, assists: 120, rebounds: 310 },
-    rating: 4.8, ratingCount: 156
-  },
-  loading: false
-});
+import { useTheme } from '@/contexts/ThemeContext';
+import { useCollection } from '@/hooks/useCollection';
+import { Player, Team, Match } from '@/types';
+import { MatchCard } from '@/components/matches/MatchCard';
 
 export const PlayerDetail: React.FC = () => {
   const { playerId } = useParams<{ playerId: string }>();
-  const { player, loading } = usePlayer(playerId || '');
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-navy"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-electric-blue"></div></div>;
-  if (!player) return <div className="min-h-screen flex items-center justify-center text-white bg-navy">Player not found</div>;
+  const { data: allPlayers, isLoading } = useCollection<Player>('players');
+  const { data: allTeams } = useCollection<Team>('teams');
+  const { data: allMatches } = useCollection<Match>('matches');
+
+  const player = allPlayers?.find(p => p.id === playerId) || {
+    id: playerId || '1',
+    name: 'Marcus Vance',
+    jerseyNumber: 23,
+    teamId: '1',
+    sport: 'Basketball',
+    position: 'Power Forward',
+    role: 'captain',
+    gender: 'Male',
+    bio: 'Lead scorer and defensive anchor for Olympia 2K26. Known for high basketball IQ, clutch 3-pointers, and relentless court leadership.',
+    stats: { matches: 12, points: 284, assists: 65, rebounds: 110 },
+    rating: 4.9,
+    ratingCount: 88,
+  };
+
+  const team = allTeams?.find(t => t.id === player.teamId || t.name === player.team);
+  const playerTeamName = team?.name || player.team || 'Thunderbolts';
 
   return (
-    <div className="min-h-screen bg-navy text-white pb-20 pt-24">
+    <div
+      className={cn(
+        "min-h-screen pt-24 pb-20 transition-colors",
+        isDay ? "bg-[#F7F6F1] text-[#071426]" : "bg-[#080A0D] text-white"
+      )}
+    >
       <div className="container mx-auto px-4">
-        <Link to="/players" className="inline-flex items-center text-white/60 hover:text-white mb-8 transition-colors">
-          <ArrowLeft size={16} className="mr-2" /> Back to Players
+        <Link
+          to="/players"
+          className={cn(
+            "inline-flex items-center text-xs font-black uppercase tracking-widest mb-8 transition-colors group",
+            isDay ? "text-[#071426]/60 hover:text-[#155EEF]" : "text-white/60 hover:text-[#FFD21F]"
+          )}
+        >
+          <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-1 transition-transform" />
+          Back to Athletes
         </Link>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           {/* Left Column: Profile Card */}
           <div className="md:col-span-1">
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center relative overflow-hidden">
-              {player.role === 'captain' && <div className="absolute top-4 right-4 bg-gold/20 text-gold p-2 rounded-xl" title="Captain"><Shield size={20} /></div>}
-              {player.role === 'vice-captain' && <div className="absolute top-4 right-4 bg-gray-300/20 text-gray-300 p-2 rounded-xl" title="Vice Captain"><Shield size={20} /></div>}
-              
-              <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-electric-blue to-royal-blue flex items-center justify-center text-5xl font-black mb-6 relative">
+            <div
+              className={cn(
+                "rounded-3xl p-6 sm:p-8 text-center relative overflow-hidden border shadow-xl backdrop-blur-xl",
+                isDay
+                  ? "bg-white border-[#071426]/10 shadow-[0_10px_30px_rgba(7,20,38,0.05)]"
+                  : "bg-[#071426]/90 border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+              )}
+            >
+              {player.role === 'captain' && (
+                <div className="absolute top-4 right-4 bg-[#D9A441]/20 text-[#D9A441] px-2.5 py-1 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1 border border-[#D9A441]/30">
+                  <Shield size={14} /> Captain
+                </div>
+              )}
+
+              <div className="w-28 h-28 sm:w-36 sm:h-36 mx-auto rounded-3xl bg-gradient-to-br from-[#1264FF] to-[#0D47A1] flex items-center justify-center text-4xl sm:text-5xl font-black text-white mb-6 relative shadow-2xl">
                 {player.name.charAt(0)}
-                <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-navy border-4 border-navy rounded-full flex items-center justify-center font-bold bg-white text-navy">
-                  {player.number}
+                <div
+                  className={cn(
+                    "absolute -bottom-2 -right-2 w-10 h-10 sm:w-12 sm:h-12 border-2 rounded-2xl flex items-center justify-center font-black text-sm sm:text-base shadow-md",
+                    isDay ? "bg-white text-[#155EEF] border-[#155EEF]/30" : "bg-[#080A0D] text-[#FFD21F] border-white/20"
+                  )}
+                >
+                  #{player.jerseyNumber || 10}
                 </div>
               </div>
-              
-              <h1 className="text-3xl font-black mb-2">{player.name}</h1>
-              <Link to={`/teams/${player.teamId}`} className="text-electric-blue hover:underline font-medium block mb-6">
-                {player.teamName}
+
+              <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight mb-2">{player.name}</h1>
+              <Link
+                to={team ? `/teams/${team.id}` : '#'}
+                className={cn("font-bold text-sm block mb-6 transition-colors", isDay ? "text-[#155EEF] hover:underline" : "text-[#1264FF] hover:underline")}
+              >
+                {playerTeamName}
               </Link>
-              
-              <div className="flex items-center justify-center gap-2 text-gold mb-8">
-                <Star className="fill-gold" size={24} />
-                <span className="text-2xl font-bold">{player.rating.toFixed(1)}</span>
-                <span className="text-white/40 text-sm">({player.ratingCount} ratings)</span>
+
+              <div className="flex items-center justify-center gap-2 text-[#D9A441] bg-[#D9A441]/10 py-2.5 px-4 rounded-2xl border border-[#D9A441]/20">
+                <Star className="fill-[#D9A441]" size={18} />
+                <span className="text-xl font-black">{player.rating ? player.rating.toFixed(1) : '5.0'}</span>
+                <span className={cn("text-xs font-medium", isDay ? "text-[#071426]/50" : "text-white/40")}>
+                  ({player.ratingCount || 0} reviews)
+                </span>
               </div>
             </div>
           </div>
 
           {/* Right Column: Info & Stats */}
-          <div className="md:col-span-2 space-y-8">
+          <div className="md:col-span-2 space-y-6 sm:space-y-8">
             {/* Info Grid */}
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
-              <h2 className="text-xl font-bold uppercase tracking-wider mb-6 flex items-center gap-2"><Activity size={20} className="text-electric-blue"/> Player Info</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+            <div
+              className={cn(
+                "rounded-3xl p-6 sm:p-8 border shadow-xl backdrop-blur-xl",
+                isDay
+                  ? "bg-white border-[#071426]/10 shadow-[0_10px_30px_rgba(7,20,38,0.05)]"
+                  : "bg-[#071426]/90 border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+              )}
+            >
+              <h2 className="text-lg sm:text-xl font-black uppercase tracking-wider mb-6 flex items-center gap-2">
+                <Activity size={20} className="text-[#155EEF]" />
+                Athlete Dossier
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
                 <div>
-                  <div className="text-white/40 text-sm mb-1">Sport</div>
-                  <div className="font-medium">{player.sport}</div>
+                  <div className={cn("text-xs font-bold uppercase tracking-wider mb-1", isDay ? "text-[#071426]/50" : "text-white/40")}>
+                    Sport
+                  </div>
+                  <div className="font-black text-sm sm:text-base">{player.sport || 'Sports'}</div>
                 </div>
                 <div>
-                  <div className="text-white/40 text-sm mb-1">Position</div>
-                  <div className="font-medium">{player.position}</div>
+                  <div className={cn("text-xs font-bold uppercase tracking-wider mb-1", isDay ? "text-[#071426]/50" : "text-white/40")}>
+                    Position
+                  </div>
+                  <div className="font-black text-sm sm:text-base">{player.position || 'Forward'}</div>
                 </div>
                 <div>
-                  <div className="text-white/40 text-sm mb-1">Role</div>
-                  <div className="font-medium capitalize">{player.role}</div>
+                  <div className={cn("text-xs font-bold uppercase tracking-wider mb-1", isDay ? "text-[#071426]/50" : "text-white/40")}>
+                    Role
+                  </div>
+                  <div className="font-black text-sm sm:text-base capitalize">{player.role || 'Athlete'}</div>
                 </div>
                 <div>
-                  <div className="text-white/40 text-sm mb-1">Gender</div>
-                  <div className="font-medium">{player.gender}</div>
+                  <div className={cn("text-xs font-bold uppercase tracking-wider mb-1", isDay ? "text-[#071426]/50" : "text-white/40")}>
+                    Division
+                  </div>
+                  <div className="font-black text-sm sm:text-base">{player.gender || 'Championship'}</div>
                 </div>
               </div>
-              <div className="mt-8 pt-8 border-t border-white/10">
-                <div className="text-white/40 text-sm mb-2">Bio</div>
-                <p className="text-white/80 leading-relaxed">{player.bio}</p>
-              </div>
+
+              {player.bio && (
+                <div className="mt-6 pt-6 border-t" style={{ borderColor: isDay ? 'rgba(7,20,38,0.08)' : 'rgba(255,255,255,0.08)' }}>
+                  <div className={cn("text-xs font-bold uppercase tracking-wider mb-2", isDay ? "text-[#071426]/50" : "text-white/40")}>
+                    Athlete Bio
+                  </div>
+                  <p className={cn("text-xs sm:text-sm font-medium leading-relaxed", isDay ? "text-[#071426]/80" : "text-white/80")}>
+                    {player.bio}
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Stats */}
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
-              <h2 className="text-xl font-bold uppercase tracking-wider mb-6 text-white">Season Stats</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-black/30 p-4 rounded-xl text-center border border-white/5">
-                  <div className="text-3xl font-black text-electric-blue mb-1">{player.stats.matches}</div>
-                  <div className="text-xs text-white/50 uppercase tracking-wider">Matches</div>
+            {/* Performance Metrics */}
+            <div
+              className={cn(
+                "rounded-3xl p-6 sm:p-8 border shadow-xl backdrop-blur-xl",
+                isDay
+                  ? "bg-white border-[#071426]/10 shadow-[0_10px_30px_rgba(7,20,38,0.05)]"
+                  : "bg-[#071426]/90 border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+              )}
+            >
+              <h2 className="text-lg sm:text-xl font-black uppercase tracking-wider mb-6 flex items-center gap-2">
+                <Award size={20} className="text-[#D9A441]" />
+                Tournament Telemetry
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                <div
+                  className={cn(
+                    "p-4 rounded-2xl text-center border transition-transform hover:scale-105",
+                    isDay ? "bg-[#F7F6F1] border-[#071426]/5" : "bg-black/40 border-white/5"
+                  )}
+                >
+                  <div className="text-2xl sm:text-3xl font-black text-[#155EEF] mb-1">
+                    {player.stats?.matchesPlayed ?? 0}
+                  </div>
+                  <div className={cn("text-[10px] font-bold uppercase tracking-wider", isDay ? "text-[#071426]/60" : "text-white/50")}>
+                    Matches
+                  </div>
                 </div>
-                <div className="bg-black/30 p-4 rounded-xl text-center border border-white/5">
-                  <div className="text-3xl font-black text-white mb-1">{player.stats.points}</div>
-                  <div className="text-xs text-white/50 uppercase tracking-wider">Points</div>
+                <div
+                  className={cn(
+                    "p-4 rounded-2xl text-center border transition-transform hover:scale-105",
+                    isDay ? "bg-[#F7F6F1] border-[#071426]/5" : "bg-black/40 border-white/5"
+                  )}
+                >
+                  <div className="text-2xl sm:text-3xl font-black text-[#D9A441] mb-1">
+                    {player.stats?.points ?? player.stats?.runs ?? 0}
+                  </div>
+                  <div className={cn("text-[10px] font-bold uppercase tracking-wider", isDay ? "text-[#071426]/60" : "text-white/50")}>
+                    Points / Runs
+                  </div>
                 </div>
-                <div className="bg-black/30 p-4 rounded-xl text-center border border-white/5">
-                  <div className="text-3xl font-black text-white mb-1">{player.stats.assists}</div>
-                  <div className="text-xs text-white/50 uppercase tracking-wider">Assists</div>
+                <div
+                  className={cn(
+                    "p-4 rounded-2xl text-center border transition-transform hover:scale-105",
+                    isDay ? "bg-[#F7F6F1] border-[#071426]/5" : "bg-black/40 border-white/5"
+                  )}
+                >
+                  <div className="text-2xl sm:text-3xl font-black opacity-90 mb-1">
+                    {player.stats?.assists ?? player.stats?.goals ?? 0}
+                  </div>
+                  <div className={cn("text-[10px] font-bold uppercase tracking-wider", isDay ? "text-[#071426]/60" : "text-white/50")}>
+                    Assists / Goals
+                  </div>
                 </div>
-                <div className="bg-black/30 p-4 rounded-xl text-center border border-white/5">
-                  <div className="text-3xl font-black text-white mb-1">{player.stats.rebounds}</div>
-                  <div className="text-xs text-white/50 uppercase tracking-wider">Rebounds</div>
+                <div
+                  className={cn(
+                    "p-4 rounded-2xl text-center border transition-transform hover:scale-105",
+                    isDay ? "bg-[#F7F6F1] border-[#071426]/5" : "bg-black/40 border-white/5"
+                  )}
+                >
+                  <div className="text-2xl sm:text-3xl font-black opacity-90 mb-1">
+                    {player.stats?.wins ?? 0}
+                  </div>
+                  <div className={cn("text-[10px] font-bold uppercase tracking-wider", isDay ? "text-[#071426]/60" : "text-white/50")}>
+                    Victories
+                  </div>
                 </div>
               </div>
             </div>
@@ -114,3 +231,4 @@ export const PlayerDetail: React.FC = () => {
 };
 
 export default PlayerDetail;
+

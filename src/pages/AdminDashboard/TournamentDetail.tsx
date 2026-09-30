@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { eq, useCollection, useDoc } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   AdminHeader,
   AdminTabs,
@@ -72,6 +73,8 @@ const scoreOf = (match: Match): string => {
 
 const TournamentDetail: React.FC = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
   const [tab, setTab] = useState('overview');
 
   const tournament = useDoc<Tournament>('tournaments', tournamentId);
@@ -301,10 +304,13 @@ const TournamentDetail: React.FC = () => {
         </Card>
 
         <Card title="Description">
-          <p className="text-[13px] leading-relaxed text-slate-600">
+          <p className={cn('text-[13px] leading-relaxed', isDay ? 'text-slate-600' : 'text-slate-300')}>
             {row.description || 'No description yet.'}
           </p>
-          <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-[12px] leading-relaxed text-slate-500">
+          <div className={cn(
+            'mt-4 rounded-lg border border-dashed px-3 py-3 text-[12px] leading-relaxed',
+            isDay ? 'border-slate-300 bg-slate-50 text-slate-600' : 'border-white/10 bg-white/[0.02] text-slate-400'
+          )}>
             {usingFallback
               ? 'No team carries this tournament id, so teams are scoped by sport. Link teams to tighten the scope.'
               : 'Teams are scoped by their tournament id.'}
@@ -332,33 +338,36 @@ const TournamentDetail: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] border-collapse text-left">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
+              <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/[0.04]')}>
                 {['Team', 'Short name', 'Players', 'Record', 'Points', ''].map((heading) => (
                   <th
                     key={heading}
-                    className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                    className={cn(
+                      'whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider',
+                      isDay ? 'text-slate-500' : 'text-slate-400'
+                    )}
                   >
                     {heading}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
               {scopeTeams.map((team) => (
-                <tr key={team.id} className="transition-colors hover:bg-slate-50/70">
-                  <td className="px-3 py-2.5 text-[13px] font-semibold text-slate-800">
+                <tr key={team.id} className={cn('transition-colors', isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]')}>
+                  <td className={cn('px-3 py-2.5 text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-slate-100')}>
                     {team.name}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-[13px] text-slate-600">
+                  <td className={cn('whitespace-nowrap px-3 py-2.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {team.shortName || '—'}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-600">
+                  <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {team.playerIds?.length ?? 0}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-[12px] tabular-nums text-slate-600">
+                  <td className={cn('whitespace-nowrap px-3 py-2.5 text-[12px] tabular-nums', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {team.wins ?? 0}W · {team.losses ?? 0}L · {team.draws ?? 0}D
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums text-slate-700">
+                  <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-700' : 'text-amber-400')}>
                     {team.points ?? 0}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-right">
@@ -390,18 +399,18 @@ const TournamentDetail: React.FC = () => {
           }
         />
       ) : (
-        <ul className="divide-y divide-slate-100">
+        <ul className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
           {fixtures.data.map((fixture) => (
             <li key={fixture.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-              <span className="w-12 shrink-0 font-mono text-[12px] font-bold tabular-nums text-slate-700">
+              <span className={cn('w-12 shrink-0 font-mono text-[12px] font-bold tabular-nums', isDay ? 'text-slate-700' : 'text-amber-400')}>
                 {timeOf(fixture.scheduledAt)}
               </span>
               <span className="min-w-[180px] flex-1">
-                <span className="block truncate text-[13px] font-semibold text-slate-800">
+                <span className={cn('block truncate text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-slate-100')}>
                   {teamLabel(fixture.teamAId)} <span className="text-slate-400">vs</span>{' '}
                   {teamLabel(fixture.teamBId)}
                 </span>
-                <span className="block truncate text-[11px] text-slate-400">
+                <span className={cn('block truncate text-[11px]', isDay ? 'text-slate-400' : 'text-slate-500')}>
                   {fixture.round || 'Fixture'} · {dateOf(fixture.scheduledAt)} ·{' '}
                   {venueName(fixture.venueId)}
                 </span>
@@ -444,8 +453,8 @@ const TournamentDetail: React.FC = () => {
           <div className="flex min-w-max gap-4">
             {bracketRounds.map((round, index) => (
               <div key={round.name} className="w-[260px]">
-                <div className="mb-2 flex items-center justify-between rounded-md bg-[#071426] px-3 py-2">
-                  <span className="truncate text-[11px] font-bold uppercase tracking-[0.12em] text-[#FFD21F]">
+                <div className={cn('mb-2 flex items-center justify-between rounded-md px-3 py-2', isDay ? 'bg-slate-900 text-amber-300' : 'bg-[#071426] text-[#FFD21F]')}>
+                  <span className="truncate text-[11px] font-bold uppercase tracking-[0.12em]">
                     {round.name}
                   </span>
                   <span className="ml-2 shrink-0 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white">
@@ -454,7 +463,10 @@ const TournamentDetail: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   {round.fixtures.length === 0 ? (
-                    <div className="rounded-md border border-dashed border-slate-300 px-3 py-6 text-center text-[11px] text-slate-400">
+                    <div className={cn(
+                      'rounded-md border border-dashed px-3 py-6 text-center text-[11px]',
+                      isDay ? 'border-slate-300 text-slate-400' : 'border-white/10 text-slate-500'
+                    )}>
                       No fixtures in this round
                     </div>
                   ) : (
@@ -462,25 +474,29 @@ const TournamentDetail: React.FC = () => {
                       <div
                         key={fixture.id}
                         className={cn(
-                          'rounded-md border bg-white px-3 py-2 transition-colors',
-                          fixture.status === 'completed'
-                            ? 'border-emerald-200'
-                            : 'border-slate-200 hover:border-[#1264FF]',
+                          'rounded-md border px-3 py-2 transition-colors',
+                          isDay
+                            ? fixture.status === 'completed'
+                              ? 'border-emerald-300 bg-emerald-50/50'
+                              : 'border-slate-200 bg-white hover:border-blue-400'
+                            : fixture.status === 'completed'
+                              ? 'border-emerald-500/30 bg-emerald-950/20'
+                              : 'border-white/10 bg-white/[0.03] hover:border-blue-500/50'
                         )}
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          <span className={cn('text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-500' : 'text-slate-400')}>
                             {timeOf(fixture.scheduledAt)}
                           </span>
                           <StatusPill value={fixture.status ?? 'scheduled'} />
                         </div>
-                        <span className="mt-1.5 block truncate text-[13px] font-semibold text-slate-800">
+                        <span className={cn('mt-1.5 block truncate text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-slate-100')}>
                           {teamLabel(fixture.teamAId)}
                         </span>
-                        <span className="block truncate text-[13px] font-semibold text-slate-800">
+                        <span className={cn('block truncate text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-slate-100')}>
                           {teamLabel(fixture.teamBId)}
                         </span>
-                        <div className="mt-2 flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+                        <div className={cn('mt-2 flex items-center justify-between gap-2 border-t pt-2', isDay ? 'border-slate-100' : 'border-white/5')}>
                           <span className="truncate text-[11px] text-slate-400">
                             {venueName(fixture.venueId)}
                           </span>
@@ -493,7 +509,7 @@ const TournamentDetail: React.FC = () => {
                   )}
                 </div>
                 {index < bracketRounds.length - 1 && (
-                  <span className="mt-2 block text-center text-[10px] uppercase tracking-wider text-slate-300">
+                  <span className={cn('mt-2 block text-center text-[10px] uppercase tracking-wider', isDay ? 'text-slate-400' : 'text-slate-500')}>
                     next round →
                   </span>
                 )}
@@ -523,39 +539,42 @@ const TournamentDetail: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-left">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
+              <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/[0.04]')}>
                 {['#', 'Team', 'P', 'W', 'D', 'L', 'Pts'].map((heading) => (
                   <th
                     key={heading}
-                    className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                    className={cn(
+                      'whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider',
+                      isDay ? 'text-slate-500' : 'text-slate-400'
+                    )}
                   >
                     {heading}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
               {standings.map((standing, index) => (
-                <tr key={standing.key} className="transition-colors hover:bg-slate-50/70">
-                  <td className="px-3 py-2.5 font-mono text-[12px] font-bold tabular-nums text-slate-400">
+                <tr key={standing.key} className={cn('transition-colors', isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]')}>
+                  <td className={cn('px-3 py-2.5 font-mono text-[12px] font-bold tabular-nums', isDay ? 'text-slate-500' : 'text-slate-400')}>
                     {index + 1}
                   </td>
-                  <td className="px-3 py-2.5 text-[13px] font-semibold text-slate-800">
+                  <td className={cn('px-3 py-2.5 text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-slate-100')}>
                     {standing.name}
                   </td>
-                  <td className="px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-600">
+                  <td className={cn('px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {standing.p}
                   </td>
-                  <td className="px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-600">
+                  <td className={cn('px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {standing.w}
                   </td>
-                  <td className="px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-600">
+                  <td className={cn('px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {standing.d}
                   </td>
-                  <td className="px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-600">
+                  <td className={cn('px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {standing.l}
                   </td>
-                  <td className="px-3 py-2.5 font-mono text-[14px] font-bold tabular-nums text-slate-900">
+                  <td className={cn('px-3 py-2.5 font-mono text-[14px] font-bold tabular-nums', isDay ? 'text-slate-900' : 'text-amber-400')}>
                     {standing.pts}
                   </td>
                 </tr>
@@ -581,34 +600,37 @@ const TournamentDetail: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] border-collapse text-left">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
+              <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/[0.04]')}>
                 {['Match', 'Teams', 'Date', 'Time', 'Venue', 'Status', ''].map((heading) => (
                   <th
                     key={heading}
-                    className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                    className={cn(
+                      'whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider',
+                      isDay ? 'text-slate-500' : 'text-slate-400'
+                    )}
                   >
                     {heading}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
               {matches.data.map((match) => (
-                <tr key={match.id} className="transition-colors hover:bg-slate-50/70">
-                  <td className="px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums text-slate-700">
+                <tr key={match.id} className={cn('transition-colors', isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]')}>
+                  <td className={cn('px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-700' : 'text-slate-300')}>
                     #{match.matchNumber ?? '—'}
                   </td>
-                  <td className="max-w-[280px] truncate px-3 py-2.5 text-[13px] font-semibold text-slate-800">
+                  <td className={cn('max-w-[280px] truncate px-3 py-2.5 text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-slate-100')}>
                     {teamLabel(match.teamAId, match.participantA?.name)} vs{' '}
                     {teamLabel(match.teamBId, match.participantB?.name)}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-slate-600">
+                  <td className={cn('whitespace-nowrap px-3 py-2.5 text-[12px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {dateOf(match.scheduledAt)}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[12px] tabular-nums text-slate-600">
+                  <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[12px] tabular-nums', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {timeOf(match.scheduledAt)}
                   </td>
-                  <td className="max-w-[150px] truncate px-3 py-2.5 text-[13px] text-slate-600">
+                  <td className={cn('max-w-[150px] truncate px-3 py-2.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                     {venueName(match.venueId)}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5">
@@ -644,7 +666,7 @@ const TournamentDetail: React.FC = () => {
           action={<Btn to="/admin/matches">Open matches</Btn>}
         />
       ) : (
-        <ul className="divide-y divide-slate-100">
+        <ul className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
           {completedMatches.map((match) => {
             const score: { teamA?: number; teamB?: number } | undefined = match.score;
             const a = score?.teamA ?? 0;
@@ -653,29 +675,36 @@ const TournamentDetail: React.FC = () => {
             const rightWon = b > a;
             return (
               <li key={match.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                <span className="w-14 shrink-0 font-mono text-[12px] font-bold tabular-nums text-slate-400">
+                <span className={cn('w-14 shrink-0 font-mono text-[12px] font-bold tabular-nums', isDay ? 'text-slate-400' : 'text-slate-500')}>
                   #{match.matchNumber ?? '—'}
                 </span>
                 <span
                   className={cn(
                     'min-w-[160px] flex-1 truncate text-right text-[13px] font-semibold',
-                    leftWon ? 'text-slate-900' : 'text-slate-500',
+                    isDay
+                      ? (leftWon ? 'text-slate-900 font-bold' : 'text-slate-500')
+                      : (leftWon ? 'text-white font-bold' : 'text-slate-400'),
                   )}
                 >
                   {teamLabel(match.teamAId, match.participantA?.name)}
                 </span>
-                <span className="rounded bg-[#071426] px-3 py-1.5 font-mono text-[14px] font-bold tabular-nums text-[#FFD21F]">
+                <span className={cn(
+                  'rounded px-3 py-1.5 font-mono text-[14px] font-bold tabular-nums',
+                  isDay ? 'bg-slate-900 text-amber-300' : 'bg-black/60 text-[#FFD21F] border border-amber-500/20'
+                )}>
                   {scoreOf(match)}
                 </span>
                 <span
                   className={cn(
                     'min-w-[160px] flex-1 truncate text-[13px] font-semibold',
-                    rightWon ? 'text-slate-900' : 'text-slate-500',
+                    isDay
+                      ? (rightWon ? 'text-slate-900 font-bold' : 'text-slate-500')
+                      : (rightWon ? 'text-white font-bold' : 'text-slate-400'),
                   )}
                 >
                   {teamLabel(match.teamBId, match.participantB?.name)}
                 </span>
-                <span className="shrink-0 text-[11px] tabular-nums text-slate-400">
+                <span className={cn('shrink-0 text-[11px] tabular-nums', isDay ? 'text-slate-400' : 'text-slate-500')}>
                   {dateOf(match.endedAt ?? match.scheduledAt)}
                 </span>
                 <Btn size="xs" to={`/admin/matches/${match.id}`}>

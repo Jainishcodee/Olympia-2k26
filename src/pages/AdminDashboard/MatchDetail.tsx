@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useCollection, useDoc, eq } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   AdminHeader,
   AdminTabs,
@@ -81,6 +82,8 @@ const TABS = [
 const MatchDetail: React.FC = () => {
   const { matchId } = useParams<{ matchId: string }>();
   const { log } = useAuditLog();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
 
   const match = useDoc<Match>('matches', matchId);
   const events = useCollection<MatchEvent>('matchEvents', {
@@ -245,40 +248,67 @@ const MatchDetail: React.FC = () => {
       />
 
       {/* -------------------------------------------------- score plate */}
-      <section className="mb-5 overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-2.5">
-          <span className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
+      <section
+        className={cn(
+          'mb-5 overflow-hidden rounded-lg border shadow-sm',
+          isDay ? 'border-slate-200 bg-white' : 'border-white/10 bg-[#071426]/90',
+        )}
+      >
+        <div
+          className={cn(
+            'flex items-center gap-3 border-b px-4 py-2.5',
+            isDay ? 'border-slate-100 bg-slate-50/50' : 'border-white/5 bg-white/[0.02]',
+          )}
+        >
+          <span
+            className={cn(
+              'text-[11px] font-black uppercase tracking-[0.16em]',
+              isDay ? 'text-slate-600' : 'text-[#D9A441]',
+            )}
+          >
             {lookups.sport(data.sportId)}
           </span>
-          <span className="h-3 w-px bg-slate-200" />
-          <span className="truncate text-[11px] font-semibold text-slate-400">
+          <span className={cn('h-3 w-px', isDay ? 'bg-slate-200' : 'bg-white/10')} />
+          <span className={cn('truncate text-[11px] font-semibold', isDay ? 'text-slate-500' : 'text-white/60')}>
             {lookups.tournament(data.tournamentId)}
           </span>
-          <span className="ml-auto font-mono text-[12px] tabular-nums text-slate-500">
+          <span className={cn('ml-auto font-mono text-[12px] tabular-nums', isDay ? 'text-slate-500' : 'text-white/60')}>
             {live.clock ?? (live.over !== undefined ? `${live.over}.${live.ball ?? 0} ov` : '')}
           </span>
         </div>
 
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 py-6">
-          <span className="truncate text-right text-[17px] font-bold text-slate-900">
+          <span className={cn('truncate text-right text-[17px] font-bold', isDay ? 'text-slate-900' : 'text-white')}>
             {participantName('A')}
           </span>
           <span className="flex flex-col items-center">
-            <span className="rounded-md bg-slate-900 px-4 py-2 text-[28px] font-black leading-none tabular-nums text-white">
+            <span
+              className={cn(
+                'rounded-md px-4 py-2 text-[28px] font-black leading-none tabular-nums shadow-sm',
+                isDay
+                  ? 'bg-slate-900 text-white'
+                  : 'border border-[#D9A441]/40 bg-[#071426] text-[#D9A441] shadow-[#D9A441]/10',
+              )}
+            >
               {scoreline}
             </span>
-            <span className="mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <span className={cn('mt-2 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-400' : 'text-white/40')}>
               {data.status}
             </span>
           </span>
-          <span className="truncate text-[17px] font-bold text-slate-900">
+          <span className={cn('truncate text-[17px] font-bold', isDay ? 'text-slate-900' : 'text-white')}>
             {participantName('B')}
           </span>
         </div>
 
         {controls.length > 0 && (
-          <footer className="flex flex-wrap items-center gap-2 border-t border-slate-100 px-4 py-3">
-            <span className="mr-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          <footer
+            className={cn(
+              'flex flex-wrap items-center gap-2 border-t px-4 py-3',
+              isDay ? 'border-slate-100 bg-slate-50/50' : 'border-white/5 bg-white/[0.02]',
+            )}
+          >
+            <span className={cn('mr-1 text-[11px] font-semibold uppercase tracking-wider', isDay ? 'text-slate-400' : 'text-white/40')}>
               Match status
             </span>
             {controls.map(({ kind, label, variant, Icon }) => (
@@ -295,7 +325,12 @@ const MatchDetail: React.FC = () => {
           </footer>
         )}
         {cancelled && (
-          <p className="border-t border-slate-100 bg-slate-50 px-4 py-2.5 text-[12px] text-slate-500">
+          <p
+            className={cn(
+              'border-t px-4 py-2.5 text-[12px]',
+              isDay ? 'border-slate-100 bg-slate-50 text-slate-500' : 'border-white/5 bg-white/[0.03] text-white/60',
+            )}
+          >
             This match is cancelled. Reopen it from the matches table to operate it again.
           </p>
         )}
@@ -320,12 +355,15 @@ const MatchDetail: React.FC = () => {
               ].map(([term, detail]) => (
                 <div
                   key={term}
-                  className="flex items-baseline justify-between gap-4 border-b border-slate-100 py-2.5 last:border-b-0"
+                  className={cn(
+                    'flex items-baseline justify-between gap-4 border-b py-2.5 last:border-b-0',
+                    isDay ? 'border-slate-100' : 'border-white/5',
+                  )}
                 >
-                  <dt className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  <dt className={cn('shrink-0 text-[11px] font-semibold uppercase tracking-wider', isDay ? 'text-slate-400' : 'text-white/40')}>
                     {term}
                   </dt>
-                  <dd className="min-w-0 truncate text-right text-[13px] font-medium text-slate-800">
+                  <dd className={cn('min-w-0 truncate text-right text-[13px] font-medium', isDay ? 'text-slate-800' : 'text-white/90')}>
                     {detail}
                   </dd>
                 </div>
@@ -346,12 +384,15 @@ const MatchDetail: React.FC = () => {
               ].map(([term, detail]) => (
                 <div
                   key={term}
-                  className="flex items-baseline justify-between gap-4 border-b border-slate-100 py-2.5 last:border-b-0"
+                  className={cn(
+                    'flex items-baseline justify-between gap-4 border-b py-2.5 last:border-b-0',
+                    isDay ? 'border-slate-100' : 'border-white/5',
+                  )}
                 >
-                  <dt className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  <dt className={cn('shrink-0 text-[11px] font-semibold uppercase tracking-wider', isDay ? 'text-slate-400' : 'text-white/40')}>
                     {term}
                   </dt>
-                  <dd className="min-w-0 truncate text-right text-[13px] font-medium text-slate-800">
+                  <dd className={cn('min-w-0 truncate text-right text-[13px] font-medium', isDay ? 'text-slate-800' : 'text-white/90')}>
                     {detail}
                   </dd>
                 </div>
@@ -380,33 +421,33 @@ const MatchDetail: React.FC = () => {
               action={<Btn variant="primary" to={`/admin/matches/${data.id}/scoring`}>Open scoring</Btn>}
             />
           ) : (
-            <ol className="divide-y divide-slate-100">
+            <ol className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
               {events.data.map((event) => (
                 <li key={event.id} className="flex items-start gap-3 px-4 py-3">
-                  <span className="mt-0.5 w-16 shrink-0 font-mono text-[11px] tabular-nums text-slate-400">
+                  <span className={cn('mt-0.5 w-16 shrink-0 font-mono text-[11px] tabular-nums', isDay ? 'text-slate-400' : 'text-white/40')}>
                     {timeOnly(event.timestamp)}
                   </span>
                   <span
                     className={cn(
                       'w-32 shrink-0 rounded border px-1.5 py-0.5 text-center text-[10px] font-bold uppercase tracking-wider',
                       event.undone
-                        ? 'border-slate-200 bg-slate-100 text-slate-400 line-through'
+                        ? isDay ? 'border-slate-200 bg-slate-100 text-slate-400 line-through' : 'border-white/10 bg-white/[0.05] text-white/40 line-through'
                         : event.type === 'goal' || event.type === 'six' || event.type === 'point'
-                          ? 'border-blue-200 bg-blue-50 text-blue-700'
+                          ? isDay ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-[#1264FF]/40 bg-[#1264FF]/15 text-[#60A5FA]'
                           : event.type === 'wicket' || event.type === 'red_card'
-                            ? 'border-red-200 bg-red-50 text-red-700'
-                            : 'border-amber-200 bg-amber-50 text-amber-700',
+                            ? isDay ? 'border-red-200 bg-red-50 text-red-700' : 'border-rose-500/40 bg-rose-500/15 text-rose-300'
+                            : isDay ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-[#D9A441]/40 bg-[#D9A441]/10 text-[#F5CA6E]',
                     )}
                   >
                     {String(event.type).replace(/_/g, ' ')}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] text-slate-700">
+                    <span className={cn('block truncate text-[13px] font-medium', isDay ? 'text-slate-700' : 'text-white/90')}>
                       {event.teamId ? lookups.team(event.teamId) : '—'}
                       {event.playerId ? ` · ${event.playerId}` : ''}
                     </span>
                     {event.data && Object.keys(event.data).length > 0 && (
-                      <span className="block truncate text-[11px] text-slate-400">
+                      <span className={cn('block truncate text-[11px]', isDay ? 'text-slate-400' : 'text-white/40')}>
                         {Object.entries(event.data)
                           .map(([key, value]) => `${key}: ${String(value)}`)
                           .join(' · ')}
@@ -414,7 +455,7 @@ const MatchDetail: React.FC = () => {
                     )}
                   </span>
                   {event.undone && (
-                    <span className="shrink-0 text-[10px] font-bold uppercase text-slate-400">undone</span>
+                    <span className={cn('shrink-0 text-[10px] font-bold uppercase', isDay ? 'text-slate-400' : 'text-white/40')}>undone</span>
                   )}
                 </li>
               ))}
@@ -458,21 +499,21 @@ const MatchDetail: React.FC = () => {
                 return (
                   <table className="w-full border-collapse text-left">
                     <thead>
-                      <tr className="border-b border-slate-200 bg-slate-50">
-                        <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">Event</th>
-                        <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">Count</th>
-                        <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">Share</th>
+                      <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
+                        <th className={cn('px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-white/60')}>Event</th>
+                        <th className={cn('px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-white/60')}>Count</th>
+                        <th className={cn('px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-white/60')}>Share</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
                       {rows.map(([type, count]) => (
-                        <tr key={type}>
-                          <td className="px-4 py-2.5 text-[13px] font-semibold text-slate-700">
+                        <tr key={type} className={isDay ? 'hover:bg-slate-50/50' : 'hover:bg-white/[0.02]'}>
+                          <td className={cn('px-4 py-2.5 text-[13px] font-semibold', isDay ? 'text-slate-700' : 'text-white/80')}>
                             {type.replace(/_/g, ' ')}
                           </td>
-                          <td className="px-4 py-2.5 text-[13px] font-bold tabular-nums text-slate-900">{count}</td>
+                          <td className={cn('px-4 py-2.5 text-[13px] font-bold tabular-nums', isDay ? 'text-slate-900' : 'text-white')}>{count}</td>
                           <td className="px-4 py-2.5">
-                            <span className="block h-1.5 w-full max-w-[240px] rounded-full bg-slate-100">
+                            <span className={cn('block h-1.5 w-full max-w-[240px] rounded-full', isDay ? 'bg-slate-100' : 'bg-white/10')}>
                               <span
                                 className="block h-1.5 rounded-full bg-[#1264FF]"
                                 style={{ width: `${(count / max) * 100}%` }}
@@ -519,7 +560,12 @@ const MatchDetail: React.FC = () => {
               hint="Who-wins / man-of-the-match polls."
             />
           </div>
-          <p className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3.5 py-2.5 text-[12px] text-slate-500">
+          <p
+            className={cn(
+              'mt-4 rounded-lg border border-dashed px-3.5 py-2.5 text-[12px]',
+              isDay ? 'border-slate-300 bg-slate-50 text-slate-600' : 'border-white/15 bg-white/[0.03] text-white/60',
+            )}
+          >
             Each change is written straight to the match document and appended to the audit log.
           </p>
         </Card>
@@ -541,32 +587,37 @@ const MatchDetail: React.FC = () => {
           ) : (
             <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
                   {['Timestamp', 'Admin', 'Action', 'Details'].map((heading) => (
                     <th
                       key={heading}
-                      className="whitespace-nowrap px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                      className={cn('whitespace-nowrap px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-white/60')}
                     >
                       {heading}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
                 {audit.data.map((entry) => (
-                  <tr key={entry.id}>
-                    <td className="whitespace-nowrap px-4 py-2.5 font-mono text-[12px] tabular-nums text-slate-600">
+                  <tr key={entry.id} className={isDay ? 'hover:bg-slate-50/50' : 'hover:bg-white/[0.02]'}>
+                    <td className={cn('whitespace-nowrap px-4 py-2.5 font-mono text-[12px] tabular-nums', isDay ? 'text-slate-600' : 'text-white/70')}>
                       {fullStamp(entry.timestamp)}
                     </td>
-                    <td className="max-w-[200px] truncate px-4 py-2.5 text-[12px] text-slate-600">
+                    <td className={cn('max-w-[200px] truncate px-4 py-2.5 text-[12px]', isDay ? 'text-slate-600' : 'text-white/70')}>
                       {entry.adminName ?? entry.adminEmail ?? entry.adminId}
                     </td>
                     <td className="whitespace-nowrap px-4 py-2.5">
-                      <span className="rounded border border-blue-200 bg-blue-50 px-1.5 py-0.5 font-mono text-[10px] font-bold text-blue-700">
+                      <span
+                        className={cn(
+                          'rounded border px-1.5 py-0.5 font-mono text-[10px] font-bold',
+                          isDay ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-[#1264FF]/40 bg-[#1264FF]/15 text-[#60A5FA]',
+                        )}
+                      >
                         {entry.action}
                       </span>
                     </td>
-                    <td className="max-w-[320px] truncate px-4 py-2.5 text-[12px] text-slate-500">
+                    <td className={cn('max-w-[320px] truncate px-4 py-2.5 text-[12px]', isDay ? 'text-slate-500' : 'text-white/50')}>
                       {entry.metadata ? JSON.stringify(entry.metadata) : '—'}
                     </td>
                   </tr>

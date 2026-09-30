@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Timestamp } from 'firebase/firestore';
 import { useCollection, useDoc } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   AdminHeader,
   Btn,
@@ -18,6 +19,7 @@ import { createTournament, updateTournament } from '@/services/tournaments/tourn
 import type { Round, Sport, Tournament, TournamentFormat, TournamentStatus } from '@/types';
 import toast from 'react-hot-toast';
 import { FiPlus, FiTrash2 } from 'react-icons/fi';
+import { cn } from '@/utils/cn';
 
 /* ============================================================================
  *  Tournament editor — identity, window, format and the round ladder that the
@@ -81,6 +83,8 @@ const TournamentEditor: React.FC = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   const isEdit = Boolean(tournamentId);
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
   const { log } = useAuditLog();
 
   const sports = useCollection<Sport>('sports', { sortBy: 'name' });
@@ -304,18 +308,24 @@ const TournamentEditor: React.FC = () => {
           description="The bracket view renders these columns in order. Match ids attach automatically as fixtures are created."
         >
           {rounds.length === 0 ? (
-            <p className="mb-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-[13px] text-slate-500">
-              No rounds yet. Add at least one — for a knockout cup that would be{" "}
-              <span className="font-semibold text-slate-700">Round of 16</span>,{" "}
-              <span className="font-semibold text-slate-700">Quarterfinal</span>,{" "}
-              <span className="font-semibold text-slate-700">Semifinal</span>,{" "}
-              <span className="font-semibold text-slate-700">Final</span>.
+            <p className={cn(
+              'mb-4 rounded-lg border border-dashed px-4 py-3 text-[13px]',
+              isDay ? 'border-slate-300 bg-slate-50 text-slate-600' : 'border-white/10 bg-white/[0.02] text-slate-400'
+            )}>
+              No rounds yet. Add at least one — for a knockout cup that would be{' '}
+              <span className={cn('font-semibold', isDay ? 'text-slate-800' : 'text-slate-200')}>Round of 16</span>,{' '}
+              <span className={cn('font-semibold', isDay ? 'text-slate-800' : 'text-slate-200')}>Quarterfinal</span>,{' '}
+              <span className={cn('font-semibold', isDay ? 'text-slate-800' : 'text-slate-200')}>Semifinal</span>,{' '}
+              <span className={cn('font-semibold', isDay ? 'text-slate-800' : 'text-slate-200')}>Final</span>.
             </p>
           ) : (
-            <ul className="mb-4 divide-y divide-slate-100 rounded-lg border border-slate-200">
+            <ul className={cn('mb-4 divide-y rounded-lg border', isDay ? 'divide-slate-100 border-slate-200 bg-white' : 'divide-white/5 border-white/10 bg-white/[0.02]')}>
               {rounds.map((round, index) => (
                 <li key={round.id} className="flex items-center gap-3 px-3 py-2">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#071426] text-[11px] font-bold text-[#D9A441]">
+                  <span className={cn(
+                    'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',
+                    isDay ? 'bg-slate-900 text-amber-300' : 'bg-[#071426] text-[#FFD21F]'
+                  )}>
                     {index + 1}
                   </span>
                   <input
@@ -323,9 +333,12 @@ const TournamentEditor: React.FC = () => {
                     value={round.name}
                     onChange={(e) => renameRound(round.id, e.target.value)}
                     aria-label={`Round ${index + 1} name`}
-                    className="h-8 min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-2.5 text-[13px] text-slate-800 outline-none transition-colors focus:border-[#1264FF] focus:ring-2 focus:ring-[#1264FF]/15"
+                    className={cn(
+                      'h-8 min-w-0 flex-1 rounded-md border px-2.5 text-[13px] outline-none transition-colors focus:border-[#1264FF] focus:ring-2 focus:ring-[#1264FF]/15',
+                      isDay ? 'border-slate-300 bg-white text-slate-800' : 'border-white/10 bg-white/[0.04] text-white'
+                    )}
                   />
-                  <span className="hidden text-[11px] tabular-nums text-slate-400 sm:block">
+                  <span className={cn('hidden text-[11px] tabular-nums sm:block', isDay ? 'text-slate-400' : 'text-slate-500')}>
                     {round.matchIds?.length ?? 0} matches
                   </span>
                   <button
@@ -333,7 +346,10 @@ const TournamentEditor: React.FC = () => {
                     title="Remove round"
                     aria-label={`Remove round ${index + 1}`}
                     onClick={() => removeRound(round.id)}
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-red-200 bg-white text-red-500 transition-colors hover:border-red-300 hover:text-red-700"
+                    className={cn(
+                      'flex h-7 w-7 shrink-0 items-center justify-center rounded border transition-colors',
+                      isDay ? 'border-red-200 bg-white text-red-500 hover:border-red-300 hover:text-red-700' : 'border-red-500/30 bg-red-950/20 text-red-400 hover:border-red-500/50 hover:text-red-300'
+                    )}
                   >
                     <FiTrash2 className="h-3.5 w-3.5" />
                   </button>
@@ -352,7 +368,7 @@ const TournamentEditor: React.FC = () => {
       </Card>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-        <span className="text-[12px] text-slate-400">
+        <span className={cn('text-[12px]', isDay ? 'text-slate-400' : 'text-slate-500')}>
           {rounds.length} {rounds.length === 1 ? 'round' : 'rounds'} · {form.format.replace('_', ' ')}
         </span>
         <div className="flex items-center gap-2">

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Timestamp } from 'firebase/firestore';
 import { useCollection, useDoc } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   AdminHeader,
   Btn,
@@ -89,6 +90,8 @@ const MatchEditor: React.FC = () => {
   const { matchId } = useParams<{ matchId: string }>();
   const isEdit = Boolean(matchId);
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
   const { user } = useAuth();
   const { log } = useAuditLog();
 
@@ -274,7 +277,10 @@ const MatchEditor: React.FC = () => {
       />
 
       {/* ------------------------------------------------- step rail */}
-      <div className="mb-5 overflow-x-auto rounded-lg border border-slate-200 bg-white px-3 py-3">
+      <div className={cn(
+        'mb-5 overflow-x-auto rounded-lg border px-3 py-3',
+        isDay ? 'border-slate-200 bg-white' : 'border-white/10 bg-[#0B1528]'
+      )}>
         <ol className="flex min-w-max items-center">
           {STEPS.map((item, index) => {
             const done = index < step;
@@ -288,25 +294,27 @@ const MatchEditor: React.FC = () => {
                   disabled={index > step}
                   className={cn(
                     'flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] font-bold transition-colors',
-                    active && 'bg-[#071426] text-[#FFD21F]',
-                    done && 'text-[#1264FF]',
-                    !active && !done && 'text-slate-400',
+                    active && (isDay ? 'bg-slate-900 text-amber-300' : 'bg-[#071426] text-[#FFD21F] border border-amber-500/30'),
+                    done && 'text-blue-500',
+                    !active && !done && (isDay ? 'text-slate-400' : 'text-slate-500'),
                     index <= step ? 'cursor-pointer' : 'cursor-not-allowed opacity-60',
                   )}
                 >
                   <span
                     className={cn(
                       'flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black',
-                      active && 'bg-[#FFD21F] text-[#071426]',
-                      done && 'bg-[#1264FF] text-white',
-                      !active && !done && 'bg-slate-100 text-slate-400',
+                      active && (isDay ? 'bg-amber-300 text-slate-900' : 'bg-[#FFD21F] text-[#071426]'),
+                      done && 'bg-blue-600 text-white',
+                      !active && !done && (isDay ? 'bg-slate-100 text-slate-400' : 'bg-white/10 text-slate-400'),
                     )}
                   >
                     {done ? <FiCheck className="h-3 w-3" /> : index + 1}
                   </span>
                   <span className="hidden sm:inline">{item.label}</span>
                 </button>
-                {index < STEPS.length - 1 && <span className="mx-1 h-px w-5 bg-slate-200 sm:mx-2 sm:w-8" />}
+                {index < STEPS.length - 1 && (
+                  <span className={cn('mx-1 h-px w-5 sm:mx-2 sm:w-8', isDay ? 'bg-slate-200' : 'bg-white/10')} />
+                )}
                 {blocked && <span className="ml-1 text-[10px] font-bold text-red-500">!</span>}
               </li>
             );
@@ -395,7 +403,7 @@ const MatchEditor: React.FC = () => {
                 options={teamBased ? teamOptions : playerOptions}
               />
             </FormGrid>
-            <p className="mt-3 text-[12px] text-slate-400">
+            <p className={cn('mt-3 text-[12px]', isDay ? 'text-slate-500' : 'text-slate-400')}>
               Participants are read from the Teams/Players collections — create them first if they are missing.
             </p>
           </FormSection>
@@ -458,20 +466,26 @@ const MatchEditor: React.FC = () => {
                   className={cn(
                     'rounded-lg border p-4 text-left transition-colors',
                     form.displayMode === option.value
-                      ? 'border-[#1264FF] bg-[#1264FF]/5 ring-2 ring-[#1264FF]/20'
-                      : 'border-slate-200 hover:border-slate-300',
+                      ? isDay
+                        ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20'
+                        : 'border-blue-500 bg-blue-950/30 ring-2 ring-blue-500/20'
+                      : isDay
+                        ? 'border-slate-200 bg-white hover:border-slate-300'
+                        : 'border-white/10 bg-white/[0.02] hover:border-white/20',
                   )}
                 >
                   <span className="flex items-center gap-2">
                     <span
                       className={cn(
                         'h-3.5 w-3.5 rounded-full border-2',
-                        form.displayMode === option.value ? 'border-[#1264FF] bg-[#1264FF]' : 'border-slate-300',
+                        form.displayMode === option.value
+                          ? 'border-blue-600 bg-blue-600'
+                          : isDay ? 'border-slate-300' : 'border-white/30',
                       )}
                     />
-                    <span className="text-[13px] font-bold text-slate-800">{option.title}</span>
+                    <span className={cn('text-[13px] font-bold', isDay ? 'text-slate-800' : 'text-slate-100')}>{option.title}</span>
                   </span>
-                  <span className="mt-2 block text-[12px] leading-relaxed text-slate-500">{option.copy}</span>
+                  <span className={cn('mt-2 block text-[12px] leading-relaxed', isDay ? 'text-slate-500' : 'text-slate-400')}>{option.copy}</span>
                 </button>
               ))}
             </div>
@@ -546,9 +560,9 @@ const MatchEditor: React.FC = () => {
                 ],
                 ['Featured', form.featured ? `Yes (priority ${form.featuredPriority})` : 'No'],
               ].map(([term, detail]) => (
-                <div key={term} className="flex items-baseline justify-between gap-4 border-b border-slate-100 py-2.5">
+                <div key={term} className={cn('flex items-baseline justify-between gap-4 border-b py-2.5', isDay ? 'border-slate-100' : 'border-white/5')}>
                   <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{term}</dt>
-                  <dd className="truncate text-right text-[13px] font-medium text-slate-800">{detail}</dd>
+                  <dd className={cn('truncate text-right text-[13px] font-medium', isDay ? 'text-slate-800' : 'text-slate-100')}>{detail}</dd>
                 </div>
               ))}
             </dl>
@@ -557,8 +571,11 @@ const MatchEditor: React.FC = () => {
               <ErrorNotice message={currentError} className="mt-4" />
             )}
 
-            <div className="mt-5 flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3">
-              <span className="text-[12px] font-semibold text-slate-600">
+            <div className={cn(
+              'mt-5 flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-4 py-3',
+              isDay ? 'border-slate-300 bg-slate-50 text-slate-600' : 'border-white/10 bg-white/[0.02] text-slate-400'
+            )}>
+              <span className="text-[12px] font-semibold">
                 {form.sportId && form.teamAId && form.teamBId && form.date
                   ? 'All required fields are complete.'
                   : 'Some required fields are still empty — use the step rail above to jump back.'}

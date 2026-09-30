@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useCollection } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   AdminHeader,
   Btn,
@@ -51,24 +52,24 @@ const endOfDay = (value: string): number | null => {
 };
 
 /** Compact monospace chip, coloured by action family. */
-const actionTone = (action: string): string => {
+const getActionTone = (action: string, isDay: boolean): string => {
   const family = (action ?? '').split('_')[0];
   switch (family) {
     case 'MATCH':
     case 'SCORE':
     case 'EVENT':
     case 'FIXTURE':
-      return 'border-blue-200 bg-blue-50 text-blue-700';
+      return isDay ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-[#1264FF]/40 bg-[#1264FF]/15 text-[#60A5FA]';
     case 'TEAM':
     case 'PLAYER':
     case 'ROSTER':
-      return 'border-[#F0DFB8] bg-[#FFF7E6] text-[#A9761B]';
+      return isDay ? 'border-[#F0DFB8] bg-[#FFF7E6] text-[#A9761B]' : 'border-[#D9A441]/40 bg-[#D9A441]/10 text-[#F5CA6E]';
     case 'ADMIN':
-      return 'border-red-200 bg-red-50 text-red-700';
+      return isDay ? 'border-red-200 bg-red-50 text-red-700' : 'border-rose-500/40 bg-rose-500/15 text-rose-300';
     case 'SETTINGS':
-      return 'border-slate-300 bg-slate-100 text-slate-700';
+      return isDay ? 'border-slate-300 bg-slate-100 text-slate-700' : 'border-slate-600 bg-slate-800 text-slate-200';
     default:
-      return 'border-slate-200 bg-white text-slate-600';
+      return isDay ? 'border-slate-200 bg-white text-slate-600' : 'border-white/10 bg-white/[0.05] text-white/70';
   }
 };
 
@@ -82,6 +83,9 @@ const prettyJson = (value: unknown): string => {
 };
 
 const AuditLogPage: React.FC = () => {
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
+
   const entries = useCollection<AuditEntry>('auditLogs', {
     sortBy: 'timestamp',
     direction: 'desc',
@@ -242,8 +246,12 @@ const AuditLogPage: React.FC = () => {
     toast.success(`Exported ${rows.length} entries`);
   };
 
-  const dateInputClass =
-    'h-9 rounded-md border border-slate-300 bg-white px-2.5 text-[13px] text-slate-700 outline-none transition-colors focus:border-[#1264FF] focus:ring-2 focus:ring-[#1264FF]/15';
+  const dateInputClass = cn(
+    'h-9 rounded-md border px-2.5 text-[13px] outline-none transition-colors focus:border-[#1264FF] focus:ring-2 focus:ring-[#1264FF]/15',
+    isDay
+      ? 'border-slate-300 bg-white text-slate-800'
+      : 'border-white/10 bg-[#071426] text-white/90 focus:border-[#1264FF]',
+  );
 
   return (
     <>
@@ -258,9 +266,16 @@ const AuditLogPage: React.FC = () => {
       />
 
       {/* -------------------------------------------------- pinned warning */}
-      <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-slate-300 bg-slate-100 px-4 py-3">
-        <FiLock className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
-        <p className="text-[13px] font-semibold leading-relaxed text-slate-600">
+      <div
+        className={cn(
+          'mb-5 flex items-start gap-2.5 rounded-lg border px-4 py-3 shadow-sm',
+          isDay
+            ? 'border-slate-300 bg-slate-100 text-slate-700'
+            : 'border-white/10 bg-white/[0.03] text-white/80',
+        )}
+      >
+        <FiLock className={cn('mt-0.5 h-4 w-4 shrink-0', isDay ? 'text-slate-500' : 'text-white/50')} />
+        <p className="text-[13px] font-semibold leading-relaxed">
           The audit log is append-only. Entries cannot be edited or deleted from this interface.
         </p>
       </div>
@@ -295,14 +310,14 @@ const AuditLogPage: React.FC = () => {
         <FilterSelect value={resourceType} onChange={setResourceType} options={resourceOptions} />
         <FilterSelect value={adminId} onChange={setAdminId} options={adminOptions} />
         <label className="inline-flex items-center gap-1.5">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">From</span>
+          <span className={cn('text-[11px] font-semibold uppercase tracking-wider', isDay ? 'text-slate-500' : 'text-white/50')}>From</span>
           <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={dateInputClass} />
         </label>
         <label className="inline-flex items-center gap-1.5">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">To</span>
+          <span className={cn('text-[11px] font-semibold uppercase tracking-wider', isDay ? 'text-slate-500' : 'text-white/50')}>To</span>
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={dateInputClass} />
         </label>
-        <span className="ml-auto text-[12px] tabular-nums text-slate-400">
+        <span className={cn('ml-auto text-[12px] tabular-nums', isDay ? 'text-slate-500' : 'text-white/50')}>
           {rows.length} of {entries.data.length} · newest {MAX_ROWS}
         </span>
       </Toolbar>
@@ -330,7 +345,14 @@ const AuditLogPage: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1160px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr
+                  className={cn(
+                    'border-b',
+                    isDay
+                      ? 'border-slate-200 bg-slate-100/90 text-slate-700'
+                      : 'border-white/10 bg-white/[0.04] text-white/70',
+                  )}
+                >
                   {[
                     'Timestamp',
                     'Admin',
@@ -342,14 +364,17 @@ const AuditLogPage: React.FC = () => {
                   ].map((heading) => (
                     <th
                       key={heading}
-                      className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                      className={cn(
+                        'whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider',
+                        isDay ? 'text-slate-600' : 'text-white/60',
+                      )}
                     >
                       {heading}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className={cn('divide-y', isDay ? 'divide-slate-200/70' : 'divide-white/5')}>
                 {rows.map((entry) => {
                   const date = toDate(entry.timestamp);
                   const open = openId === entry.id;
@@ -360,11 +385,18 @@ const AuditLogPage: React.FC = () => {
                       <tr
                         onClick={() => setOpenId(open ? null : entry.id)}
                         className={cn(
-                          'cursor-pointer transition-colors hover:bg-slate-50/70',
-                          open && 'bg-slate-50',
+                          'cursor-pointer transition-colors',
+                          open
+                            ? isDay ? 'bg-slate-100/80' : 'bg-white/[0.06]'
+                            : isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.03]',
                         )}
                       >
-                        <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[12px] tabular-nums text-slate-600">
+                        <td
+                          className={cn(
+                            'whitespace-nowrap px-3 py-2.5 font-mono text-[12px] tabular-nums',
+                            isDay ? 'text-slate-600' : 'text-white/70',
+                          )}
+                        >
                           {date
                             ? date.toLocaleString([], {
                                 day: '2-digit',
@@ -377,10 +409,20 @@ const AuditLogPage: React.FC = () => {
                             : '—'}
                         </td>
                         <td className="max-w-[220px] px-3 py-2.5">
-                          <span className="block truncate text-[13px] font-semibold text-slate-800">
+                          <span
+                            className={cn(
+                              'block truncate text-[13px] font-semibold',
+                              isDay ? 'text-slate-900' : 'text-white',
+                            )}
+                          >
                             {entry.adminName ?? entry.adminId ?? '—'}
                           </span>
-                          <span className="block truncate text-[11px] text-slate-400">
+                          <span
+                            className={cn(
+                              'block truncate text-[11px]',
+                              isDay ? 'text-slate-400' : 'text-white/40',
+                            )}
+                          >
                             {entry.adminEmail ?? entry.adminId}
                           </span>
                         </td>
@@ -388,19 +430,34 @@ const AuditLogPage: React.FC = () => {
                           <span
                             className={cn(
                               'inline-flex items-center rounded border px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider',
-                              actionTone(entry.action),
+                              getActionTone(entry.action, isDay),
                             )}
                           >
                             {entry.action}
                           </span>
                         </td>
-                        <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-slate-600">
+                        <td
+                          className={cn(
+                            'whitespace-nowrap px-3 py-2.5 text-[12px]',
+                            isDay ? 'text-slate-600' : 'text-white/70',
+                          )}
+                        >
                           {entry.resourceType || '—'}
                         </td>
-                        <td className="max-w-[160px] truncate px-3 py-2.5 font-mono text-[12px] text-slate-500">
+                        <td
+                          className={cn(
+                            'max-w-[160px] truncate px-3 py-2.5 font-mono text-[12px]',
+                            isDay ? 'text-slate-500' : 'text-white/50',
+                          )}
+                        >
                           <span title={entry.resourceId}>{entry.resourceId || '—'}</span>
                         </td>
-                        <td className="max-w-[240px] truncate px-3 py-2.5 text-[13px] text-slate-700">
+                        <td
+                          className={cn(
+                            'max-w-[240px] truncate px-3 py-2.5 text-[13px] font-medium',
+                            isDay ? 'text-slate-800' : 'text-white/90',
+                          )}
+                        >
                           {entry.resourceLabel || '—'}
                         </td>
                         <td
@@ -410,7 +467,14 @@ const AuditLogPage: React.FC = () => {
                             setJsonId(jsonOpen ? null : entry.id);
                           }}
                         >
-                          <span className="inline-flex items-center gap-1 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-800">
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-semibold transition-colors',
+                              isDay
+                                ? 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'
+                                : 'border-white/10 bg-white/[0.04] text-white/70 hover:border-white/20 hover:text-white',
+                            )}
+                          >
                             {metadataKeys > 0 ? `${metadataKeys} key${metadataKeys === 1 ? '' : 's'}` : 'none'}
                             {jsonOpen ? (
                               <FiChevronDown className="h-3 w-3" />
@@ -422,9 +486,9 @@ const AuditLogPage: React.FC = () => {
                       </tr>
 
                       {jsonOpen && !open && (
-                        <tr className="bg-slate-50">
+                        <tr className={isDay ? 'bg-slate-50' : 'bg-white/[0.02]'}>
                           <td colSpan={7} className="px-3 py-3">
-                            <pre className="overflow-x-auto rounded-md bg-[#071426] px-3 py-2.5 font-mono text-[11px] leading-relaxed text-[#D9A441]">
+                            <pre className="overflow-x-auto rounded-md border border-[#D9A441]/20 bg-[#071426] px-3 py-2.5 font-mono text-[11px] leading-relaxed text-[#D9A441]">
                               {prettyJson(entry.metadata)}
                             </pre>
                           </td>
@@ -432,7 +496,7 @@ const AuditLogPage: React.FC = () => {
                       )}
 
                       {open && (
-                        <tr className="bg-slate-50/80">
+                        <tr className={isDay ? 'bg-slate-50/80' : 'bg-white/[0.04]'}>
                           <td colSpan={7} className="px-3 py-3">
                             <div className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2 lg:grid-cols-3">
                               {[
@@ -446,11 +510,28 @@ const AuditLogPage: React.FC = () => {
                                 ['Resource ID', entry.resourceId],
                                 ['Resource label', entry.resourceLabel ?? '—'],
                               ].map(([label, value]) => (
-                                <div key={label} className="flex items-baseline justify-between gap-3 border-b border-slate-200 py-1.5">
-                                  <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                <div
+                                  key={label}
+                                  className={cn(
+                                    'flex items-baseline justify-between gap-3 border-b py-1.5',
+                                    isDay ? 'border-slate-200' : 'border-white/10',
+                                  )}
+                                >
+                                  <span
+                                    className={cn(
+                                      'shrink-0 text-[10px] font-bold uppercase tracking-wider',
+                                      isDay ? 'text-slate-500' : 'text-white/40',
+                                    )}
+                                  >
                                     {label}
                                   </span>
-                                  <span className="min-w-0 truncate text-right font-mono text-[12px] text-slate-700" title={value}>
+                                  <span
+                                    className={cn(
+                                      'min-w-0 truncate text-right font-mono text-[12px]',
+                                      isDay ? 'text-slate-800' : 'text-white/90',
+                                    )}
+                                    title={value}
+                                  >
                                     {value}
                                   </span>
                                 </div>
@@ -458,10 +539,15 @@ const AuditLogPage: React.FC = () => {
                             </div>
 
                             <div className="mt-3">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              <span
+                                className={cn(
+                                  'text-[10px] font-bold uppercase tracking-wider',
+                                  isDay ? 'text-slate-500' : 'text-white/40',
+                                )}
+                              >
                                 Metadata
                               </span>
-                              <pre className="mt-1 overflow-x-auto rounded-md bg-[#071426] px-3 py-2.5 font-mono text-[11px] leading-relaxed text-[#D9A441]">
+                              <pre className="mt-1 overflow-x-auto rounded-md border border-[#D9A441]/20 bg-[#071426] px-3 py-2.5 font-mono text-[11px] leading-relaxed text-[#D9A441]">
                                 {prettyJson(entry.metadata)}
                               </pre>
                             </div>

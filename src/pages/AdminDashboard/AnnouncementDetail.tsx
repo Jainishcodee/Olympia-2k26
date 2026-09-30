@@ -1,7 +1,8 @@
-import React from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import type { Timestamp } from 'firebase/firestore';
 import { useDoc } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import {
   AdminHeader,
@@ -13,13 +14,15 @@ import {
   PageLoading,
   StatusPill,
 } from '@/components/admin/kit';
-import { updateAnnouncement } from '@/services/announcements/announcementService';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
+import { deleteAnnouncement, updateAnnouncement } from '@/services/announcements/announcementService';
 import type { Announcement } from '@/types';
 import toast from 'react-hot-toast';
+import { FiTrash2 } from 'react-icons/fi';
+import { cn } from '@/utils/cn';
 
 /* ============================================================================
  *  Announcement detail — a faithful public preview plus the audit metadata.
- *  Archiving is soft (`active:false`, `archived:true`); nothing is deleted.
  * ==========================================================================*/
 
 type AnnouncementDoc = Announcement & { archived?: boolean; expiresAt?: Timestamp | null };
@@ -51,10 +54,14 @@ const fullDate = (value: unknown): string => {
 
 const AnnouncementDetail: React.FC = () => {
   const { announcementId } = useParams<{ announcementId: string }>();
+  const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
   const { log } = useAuditLog();
 
   const announcement = useDoc<AnnouncementDoc>('announcements', announcementId);
-  const [busy, setBusy] = React.useState(false);
+  const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const item = announcement.data;
 
@@ -76,6 +83,24 @@ const AnnouncementDetail: React.FC = () => {
       toast.error(error instanceof Error ? error.message : 'Update failed');
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!announcementId || !item || busy) return;
+    setBusy(true);
+    try {
+      await deleteAnnouncement(announcementId);
+      await log('ANNOUNCEMENT_DELETED', 'announcement', announcementId, {
+        label: `Deleted announcement ${item.title}`,
+      });
+      toast.success('Announcement deleted');
+      navigate('/admin/announcements');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Delete failed');
+    } finally {
+      setBusy(false);
+      setConfirmDelete(false);
     }
   };
 
@@ -163,16 +188,11 @@ const AnnouncementDetail: React.FC = () => {
             )}
             <Btn
               variant="danger"
-              disabled={busy || isArchived}
-              onClick={() =>
-                write(
-                  { active: false, archived: true },
-                  'ANNOUNCEMENT_ARCHIVED',
-                  'Announcement archived',
-                )
-              }
+              disabled={busy}
+              icon={<FiTrash2 className="h-4 w-4" />}
+              onClick={() => setConfirmDelete(true)}
             >
-              Archive
+              Delete
             </Btn>
           </>
         }
@@ -183,30 +203,33 @@ const AnnouncementDetail: React.FC = () => {
       <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
         {/* ------------------------------------------------ public preview */}
         <Card title="Public preview" hint="Exactly what spectators see" flush>
-          <div className="bg-[#071426]">
+          <div className={cn('rounded-lg overflow-hidden border', isDay ? 'bg-white border-slate-200 shadow-sm' : 'bg-[#071426] border-white/10')}>
             {item.image && (
               <img
                 src={item.image}
                 alt=""
-                className="h-56 w-full object-cover opacity-90"
+                className="h-56 w-full object-cover"
               />
             )}
             <div className="px-5 py-5">
               <div className="mb-3 flex items-center gap-2">
-                <span className="inline-flex items-center rounded border border-[#D9A441]/40 bg-[#D9A441]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#D9A441]">
+                <span className={cn(
+                  'inline-flex items-center rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+                  isDay ? 'border border-amber-300 bg-amber-50 text-amber-900' : 'border border-[#D9A441]/40 bg-[#D9A441]/10 text-[#D9A441]'
+                )}>
                   Priority {item.priority ?? '—'}
                 </span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-white/40">
+                <span className={cn('text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-400' : 'text-white/40')}>
                   OLYMPIA 2K26
                 </span>
               </div>
-              <h2 className="text-lg font-bold leading-snug text-white">
+              <h2 className={cn('text-lg font-bold leading-snug', isDay ? 'text-slate-900' : 'text-white')}>
                 {item.title || 'Untitled announcement'}
               </h2>
-              <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-white/70">
+              <p className={cn('mt-2 whitespace-pre-wrap text-[13px] leading-relaxed', isDay ? 'text-slate-600' : 'text-white/70')}>
                 {item.description || 'No description provided.'}
               </p>
-              <div className="mt-4 border-t border-white/10 pt-3 text-[11px] uppercase tracking-wider text-white/30">
+              <div className={cn('mt-4 border-t pt-3 text-[11px] uppercase tracking-wider', isDay ? 'border-slate-100 text-slate-400' : 'border-white/10 text-white/30')}>
                 {isActive ? 'Now showing on public surfaces' : 'Hidden from public surfaces'}
               </div>
             </div>
@@ -228,11 +251,9 @@ const AnnouncementDetail: React.FC = () => {
             </MetaRow>
           </dl>
 
-          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-3">
-            <p className="text-[12px] leading-relaxed text-slate-600">
-              Archiving never deletes this document — it sets{' '}
-              <span className="font-mono text-[11px]">active:false</span> and{' '}
-              <span className="font-mono text-[11px]">archived:true</span> so it can be restored later.
+          <div className={cn('mt-4 rounded-lg border px-3.5 py-3', isDay ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/[0.02]')}>
+            <p className={cn('text-[12px] leading-relaxed', isDay ? 'text-slate-600' : 'text-slate-400')}>
+              Deleting this announcement removes it permanently from Firestore in real-time.
             </p>
           </div>
 
@@ -242,6 +263,16 @@ const AnnouncementDetail: React.FC = () => {
           </div>
         </Card>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmDelete}
+        title={`Delete "${item.title}"?`}
+        message="This will permanently delete this announcement from Firestore in real-time."
+        confirmText="Delete announcement"
+        isDestructive
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </>
   );
 };

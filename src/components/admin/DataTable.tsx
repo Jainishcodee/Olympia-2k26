@@ -58,7 +58,7 @@ export function DataTable<T>({
       'rounded-xl border overflow-hidden transition-colors',
       isDay ? 'border-slate-200 bg-white/95 shadow-xs' : 'border-white/10 bg-[#071426]/85 backdrop-blur-xl',
     )}>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto smooth-scroll-x">
         <table className="min-w-full divide-y transition-colors">
           <thead className={isDay ? 'bg-slate-50/90 text-slate-600 border-b border-slate-200' : 'bg-[#0B1A30]/60 text-slate-400 border-b border-white/10'}>
             <tr>

@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { eq, useCollection, useDoc } from '@/hooks/useCollection';
-import { updateVenue } from '@/services/venues/venueService';
+import { useTheme } from '@/contexts/ThemeContext';
+import { deleteVenue, updateVenue } from '@/services/venues/venueService';
 import {
   AdminHeader,
   Btn,
@@ -18,7 +19,8 @@ import {
 } from '@/components/admin/kit';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import type { Match, Sport, Team, Venue } from '@/types';
-import { FiEdit2, FiPlay, FiPower } from 'react-icons/fi';
+import { FiEdit2, FiPlay, FiPower, FiTrash2 } from 'react-icons/fi';
+import { cn } from '@/utils/cn';
 
 /** Availability lives on the document as an optional extra field — see VenuesManager. */
 type VenueRecord = Venue & { available?: boolean };
@@ -45,6 +47,9 @@ const UPCOMING_STATUSES = ['scheduled', 'upcoming'];
 
 const VenueDetail: React.FC = () => {
   const { venueId } = useParams();
+  const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
   const { log } = useAuditLog();
 
   const venueDoc = useDoc<VenueRecord>('venues', venueId);
@@ -58,6 +63,7 @@ const VenueDetail: React.FC = () => {
   });
 
   const [confirmDisable, setConfirmDisable] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const venue = venueDoc.data;
@@ -104,6 +110,24 @@ const VenueDetail: React.FC = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!venueId || !venue || busy) return;
+    setBusy(true);
+    try {
+      await deleteVenue(venueId);
+      await log('VENUE_DELETED', 'venue', venueId, {
+        label: `Deleted venue ${venue.name}`,
+      });
+      toast.success(`Deleted ${venue.name}`);
+      navigate('/admin/venues');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Delete failed');
+    } finally {
+      setBusy(false);
+      setConfirmDelete(false);
+    }
+  };
+
   /* ------------------------------------------------------------- guards */
 
   if (!venueDoc.isReady) return <PageLoading label="Loading venue…" />;
@@ -147,7 +171,7 @@ const VenueDetail: React.FC = () => {
             </Btn>
             {active ? (
               <Btn
-                variant="danger"
+                variant="secondary"
                 icon={<FiPower className="h-4 w-4" />}
                 disabled={busy}
                 onClick={() => setConfirmDisable(true)}
@@ -156,7 +180,7 @@ const VenueDetail: React.FC = () => {
               </Btn>
             ) : (
               <Btn
-                variant="primary"
+                variant="secondary"
                 icon={<FiPower className="h-4 w-4" />}
                 disabled={busy}
                 onClick={() => setEnabled(true)}
@@ -164,6 +188,14 @@ const VenueDetail: React.FC = () => {
                 Enable
               </Btn>
             )}
+            <Btn
+              variant="danger"
+              icon={<FiTrash2 className="h-4 w-4" />}
+              disabled={busy}
+              onClick={() => setConfirmDelete(true)}
+            >
+              Delete
+            </Btn>
           </>
         }
       />
@@ -205,7 +237,7 @@ const VenueDetail: React.FC = () => {
             <img
               src={venue.image}
               alt={venue.name}
-              className="mt-4 h-40 w-full rounded-md border border-slate-200 object-cover"
+              className={cn('mt-4 h-40 w-full rounded-md border object-cover', isDay ? 'border-slate-200' : 'border-white/10')}
             />
           )}
         </Card>
@@ -227,35 +259,38 @@ const VenueDetail: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[720px] border-collapse text-left">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
+                  <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/[0.04]')}>
                     {['Date', 'Sport', 'Teams', 'Status', ''].map((heading) => (
                       <th
                         key={heading}
-                        className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                        className={cn(
+                          'whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider',
+                          isDay ? 'text-slate-500' : 'text-slate-400'
+                        )}
                       >
                         {heading}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
                   {matches.data.map((match) => (
-                    <tr key={match.id} className="transition-colors hover:bg-slate-50/70">
-                      <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-slate-600">
+                    <tr key={match.id} className={cn('transition-colors', isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]')}>
+                      <td className={cn('whitespace-nowrap px-3 py-2.5 text-[12px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                         {cellDate(match.scheduledAt)}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5">
                         <Link
                           to={`/admin/matches/${match.id}`}
-                          className="block text-[13px] text-slate-700 transition-colors hover:text-[#1264FF]"
+                          className={cn('block text-[13px] font-medium transition-colors hover:text-[#1264FF]', isDay ? 'text-slate-700' : 'text-slate-200')}
                         >
                           {sportName(match.sportId)}
                         </Link>
-                        <span className="block font-mono text-[11px] text-slate-400">
+                        <span className={cn('block font-mono text-[11px]', isDay ? 'text-slate-400' : 'text-slate-500')}>
                           {match.matchNumber ? `#${match.matchNumber}` : '—'}
                         </span>
                       </td>
-                      <td className="max-w-[260px] truncate px-3 py-2.5 text-[13px] font-semibold text-slate-800">
+                      <td className={cn('max-w-[260px] truncate px-3 py-2.5 text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-slate-100')}>
                         {teamsLabel(match)}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5">
@@ -288,6 +323,16 @@ const VenueDetail: React.FC = () => {
         isDestructive
         onConfirm={() => setEnabled(false)}
         onCancel={() => setConfirmDisable(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmDelete}
+        title={`Delete venue "${venue.name}"?`}
+        message="This will permanently delete this venue record from Firestore in real-time."
+        confirmText="Delete venue"
+        isDestructive
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
       />
     </>
   );

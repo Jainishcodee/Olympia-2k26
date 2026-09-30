@@ -1,141 +1,247 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Filter } from 'lucide-react';
 import { cn } from '@/utils/cn';
-
-// Dummy hooks for implementation
-const useTeams = () => ({ 
-  teams: [
-    { id: '1', name: 'Thunderbolts', shortName: 'THN', sportId: '1', sportName: 'Basketball', captain: 'John Doe', players: 12, wins: 5, losses: 2, draws: 0 },
-    { id: '2', name: 'Firebirds', shortName: 'FIR', sportId: '2', sportName: 'Football', captain: 'Jane Smith', players: 22, wins: 3, losses: 4, draws: 1 },
-  ], 
-  loading: false 
-});
-const useSports = () => ({ sports: [{ id: '1', name: 'Basketball' }, { id: '2', name: 'Football' }] });
+import { useCollection } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Container } from '@/components/ui/Container';
+import { SectionTitle } from '@/components/ui/SectionTitle';
+import { Footer } from '@/components/arena/Footer';
+import type { Team, Sport } from '@/types';
 
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.05 }
-  }
+    transition: { staggerChildren: 0.05 },
+  },
 };
 
 const cardVariants = {
   hidden: { y: 20, opacity: 0 },
-  visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 300, damping: 24 } },
 };
 
 export const Teams: React.FC = () => {
-  const { teams, loading } = useTeams();
-  const { sports } = useSports();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
+  const teamsCol = useCollection<Team>('teams', { sortBy: 'name' });
+  const sportsCol = useCollection<Sport>('sports', { sortBy: 'name' });
   const [selectedSport, setSelectedSport] = useState<string>('All');
+  const [search, setSearch] = useState('');
 
-  const filteredTeams = selectedSport === 'All' 
-    ? teams 
-    : teams.filter(t => t.sportId === selectedSport);
+  const sportsMap = useMemo(() => {
+    return new Map(sportsCol.data.map((s) => [s.id, s.name]));
+  }, [sportsCol.data]);
+
+  const filteredTeams = useMemo(() => {
+    return teamsCol.data.filter((t) => {
+      const matchesSport = selectedSport === 'All' || t.sportId === selectedSport;
+      const matchesSearch =
+        !search.trim() ||
+        t.name.toLowerCase().includes(search.toLowerCase()) ||
+        (t.shortName && t.shortName.toLowerCase().includes(search.toLowerCase()));
+      return matchesSport && matchesSearch;
+    });
+  }, [teamsCol.data, selectedSport, search]);
 
   return (
-    <div className="min-h-screen bg-navy text-white pt-24 pb-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+    <div
+      className={cn(
+        'min-h-screen pt-28 sm:pt-32 flex flex-col justify-between transition-colors duration-300',
+        isDay ? 'bg-[#F7F6F1] text-[#071426]' : 'bg-[#080A0D] text-white',
+      )}
+    >
+      <Container className="flex-1 pb-24">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div>
-            <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-white mb-2">
-              Teams <span className="text-gold">.</span>
-            </h1>
-            <p className="text-white/60">Discover and track all participating teams</p>
+            <SectionTitle
+              title="ALL TEAMS"
+              subtitle="Squad rosters, captaincy and tournament performance metrics"
+              className="mb-0"
+            />
           </div>
-          
-          {/* Filters */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            <Filter size={18} className="text-white/40 mr-2" />
-            <button
-              onClick={() => setSelectedSport('All')}
+
+          {/* Search input for mobile & desktop */}
+          <div className="w-full md:w-72">
+            <input
+              type="text"
+              placeholder="Search team or code…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className={cn(
-                "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
-                selectedSport === 'All' ? "bg-electric-blue text-white" : "bg-white/5 text-white/70 hover:bg-white/10"
+                'w-full px-4 py-2.5 rounded-xl text-sm border outline-none transition-all',
+                isDay
+                  ? 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[#1264FF] shadow-xs'
+                  : 'bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-[#D9A441]',
               )}
-            >
-              All Sports
-            </button>
-            {sports.map(sport => (
-              <button
-                key={sport.id}
-                onClick={() => setSelectedSport(sport.id)}
-                className={cn(
-                  "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
-                  selectedSport === sport.id ? "bg-electric-blue text-white" : "bg-white/5 text-white/70 hover:bg-white/10"
-                )}
-              >
-                {sport.name}
-              </button>
-            ))}
+            />
           </div>
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="h-48 bg-white/5 animate-pulse rounded-2xl border border-white/5"></div>
-            ))}
+        {/* Sports filter pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-4 hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 mb-8">
+          <Filter size={16} className={cn('shrink-0 mr-1', isDay ? 'text-slate-400' : 'text-white/40')} />
+          <button
+            onClick={() => setSelectedSport('All')}
+            className={cn(
+              'px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider shrink-0 transition-all active:scale-95 border',
+              selectedSport === 'All'
+                ? isDay
+                  ? 'bg-[#1264FF] border-[#1264FF] text-white shadow-sm'
+                  : 'bg-gradient-to-r from-[#D9A441] to-[#FFD21F] border-[#FFD21F] text-[#071426] shadow-[0_0_15px_rgba(217,164,65,0.35)]'
+                : isDay
+                ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10',
+            )}
+          >
+            All Sports
+          </button>
+          {sportsCol.data.map((sport) => (
+            <button
+              key={sport.id}
+              onClick={() => setSelectedSport(sport.id)}
+              className={cn(
+                'px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider shrink-0 transition-all active:scale-95 border',
+                selectedSport === sport.id
+                  ? isDay
+                    ? 'bg-[#1264FF] border-[#1264FF] text-white shadow-sm'
+                    : 'bg-gradient-to-r from-[#D9A441] to-[#FFD21F] border-[#FFD21F] text-[#071426] shadow-[0_0_15px_rgba(217,164,65,0.35)]'
+                  : isDay
+                  ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                  : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10',
+              )}
+            >
+              {sport.name}
+            </button>
+          ))}
+        </div>
+
+        {teamsCol.isLoading ? (
+          <div className="py-24 text-center text-slate-400">
+            <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-[#D9A441] inline-block mb-3" />
+            <p className="text-xs uppercase tracking-widest font-black text-[#D9A441]">Loading Teams…</p>
           </div>
         ) : filteredTeams.length > 0 ? (
-          <motion.div 
+          <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6"
           >
             <AnimatePresence>
-              {filteredTeams.map(team => (
-                <motion.div key={team.id} variants={cardVariants} layout>
-                  <Link to={`/teams/${team.id}`} className="block h-full group">
-                    <div className="bg-black/40 backdrop-blur-sm border border-white/10 rounded-2xl p-6 h-full transition-all duration-300 group-hover:bg-white/5 group-hover:border-electric-blue/50 group-hover:shadow-[0_8px_30px_rgba(18,100,255,0.15)] relative overflow-hidden">
-                      {/* Decorative gradient */}
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-electric-blue/10 rounded-full blur-[40px] -mr-16 -mt-16 transition-opacity group-hover:opacity-100 opacity-50"></div>
-                      
-                      <div className="flex items-start gap-4 mb-6 relative z-10">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 border border-white/20 flex items-center justify-center text-xl font-black text-white shrink-0 group-hover:scale-110 transition-transform duration-300">
-                          {team.shortName}
+              {filteredTeams.map((team) => {
+                const sportName = sportsMap.get(team.sportId) || team.sportId || 'Sport';
+                const wins = team.wins ?? 0;
+                const losses = team.losses ?? 0;
+                const draws = team.draws ?? 0;
+                const memberCount = Array.isArray(team.playerIds) ? team.playerIds.length : 0;
+
+                return (
+                  <motion.div key={team.id} variants={cardVariants} layout>
+                    <Link to={`/teams/${team.id}`} className="block h-full group">
+                      <div
+                        className={cn(
+                          'rounded-3xl p-6 h-full transition-all duration-300 border flex flex-col justify-between relative overflow-hidden backdrop-blur-md active:scale-98',
+                          isDay
+                            ? 'bg-white/90 border-[#071426]/10 shadow-[0_10px_30px_rgba(7,20,38,0.04)] hover:border-[#1264FF]/50 hover:shadow-lg'
+                            : 'bg-[#071426]/80 border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.6)] hover:border-[#D9A441]/50 hover:bg-[#071426]',
+                        )}
+                      >
+                        <div className="flex items-start gap-4 mb-5 relative z-10">
+                          <div
+                            className={cn(
+                              'w-14 h-14 rounded-2xl border flex items-center justify-center text-lg font-black shrink-0 transition-transform duration-300 group-hover:scale-105',
+                              isDay
+                                ? 'bg-slate-100 border-slate-200 text-slate-900 shadow-sm'
+                                : 'bg-gradient-to-br from-gray-800 to-gray-900 border-white/20 text-white',
+                            )}
+                          >
+                            {team.logo ? (
+                              <img src={team.logo} alt={team.name} className="w-full h-full object-cover rounded-2xl" />
+                            ) : (
+                              (team.shortName || team.name.slice(0, 3)).toUpperCase()
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h3
+                              className={cn(
+                                'text-lg sm:text-xl font-black uppercase tracking-tight truncate group-hover:text-[#1264FF] dark:group-hover:text-[#D9A441] transition-colors',
+                                isDay ? 'text-slate-900' : 'text-white',
+                              )}
+                            >
+                              {team.name}
+                            </h3>
+                            <span
+                              className={cn(
+                                'inline-block mt-1 px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider',
+                                isDay ? 'bg-slate-100 text-[#1264FF]' : 'bg-white/10 text-[#D9A441]',
+                              )}
+                            >
+                              {sportName}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-white group-hover:text-electric-blue transition-colors line-clamp-1">{team.name}</h3>
-                          <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-white/10 text-xs font-medium text-white/80">
-                            {team.sportName}
+
+                        <div
+                          className={cn(
+                            'grid grid-cols-2 gap-3 pt-4 border-t text-xs',
+                            isDay ? 'border-slate-100' : 'border-white/10',
+                          )}
+                        >
+                          <div>
+                            <div className={cn('text-[10px] font-bold uppercase tracking-wider mb-0.5', isDay ? 'text-slate-400' : 'text-white/40')}>
+                              Coach / Leader
+                            </div>
+                            <div className={cn('font-bold truncate text-xs', isDay ? 'text-slate-800' : 'text-white/90')}>
+                              {team.coach || team.captainId || 'Assigned in Arena'}
+                            </div>
+                          </div>
+                          <div>
+                            <div className={cn('text-[10px] font-bold uppercase tracking-wider mb-0.5', isDay ? 'text-slate-400' : 'text-white/40')}>
+                              Record (W-L-D)
+                            </div>
+                            <div className={cn('font-black text-xs', isDay ? 'text-slate-800' : 'text-white/90')}>
+                              {wins}W - {losses}L {draws > 0 ? `- ${draws}D` : ''}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs">
+                          <span className={cn('inline-flex items-center gap-1.5 font-bold text-[11px]', isDay ? 'text-slate-500' : 'text-white/50')}>
+                            <Users size={13} />
+                            <span>{memberCount} Roster Athletes</span>
+                          </span>
+                          <span className={cn('font-black text-[11px] uppercase tracking-wider group-hover:translate-x-1 transition-transform', isDay ? 'text-[#1264FF]' : 'text-[#D9A441]')}>
+                            Squad Details →
                           </span>
                         </div>
                       </div>
-
-                      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
-                        <div>
-                          <div className="text-xs text-white/50 mb-1">Captain</div>
-                          <div className="text-sm font-medium text-white/90 truncate">{team.captain}</div>
-                        </div>
-                        <div>
-                          <div className="text-xs text-white/50 mb-1">Record (W-L-D)</div>
-                          <div className="text-sm font-medium text-white/90">{team.wins}-{team.losses}-{team.draws}</div>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 flex items-center gap-1.5 text-xs text-white/50">
-                        <Users size={14} />
-                        <span>{team.players} Players</span>
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
+                    </Link>
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </motion.div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center bg-white/5 rounded-2xl border border-white/10">
-            <Users size={48} className="text-white/20 mb-4" />
-            <h3 className="text-xl font-bold text-white mb-2">No teams found</h3>
-            <p className="text-white/60">Try adjusting your filters to see more results.</p>
+          <div
+            className={cn(
+              'flex flex-col items-center justify-center py-20 text-center rounded-3xl border max-w-md mx-auto shadow-xl',
+              isDay ? 'bg-white/80 border-[#071426]/10' : 'bg-[#071426]/60 border-white/10',
+            )}
+          >
+            <Users size={40} className={cn('mb-3', isDay ? 'text-slate-400' : 'text-white/30')} />
+            <h3 className={cn('text-lg font-black uppercase mb-1', isDay ? 'text-slate-900' : 'text-white')}>
+              No teams found
+            </h3>
+            <p className={cn('text-xs leading-relaxed max-w-xs', isDay ? 'text-slate-500' : 'text-white/60')}>
+              Try adjusting your sport filter or search query to explore tournament squads.
+            </p>
           </div>
         )}
-      </div>
+      </Container>
+      <Footer />
     </div>
   );
 };

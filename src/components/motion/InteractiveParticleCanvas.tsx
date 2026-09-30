@@ -37,6 +37,8 @@ export const InteractiveParticleCanvas: React.FC<{ className?: string }> = ({
       isActive: false,
     };
 
+    const isMobile = window.innerWidth < 768;
+
     const handleResize = () => {
       if (!canvas) return;
       width = canvas.width = window.innerWidth;
@@ -50,6 +52,14 @@ export const InteractiveParticleCanvas: React.FC<{ className?: string }> = ({
       mouse.isActive = true;
     };
 
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches[0]) {
+        mouse.x = e.touches[0].clientX;
+        mouse.y = e.touches[0].clientY;
+        mouse.isActive = true;
+      }
+    };
+
     const handleMouseLeave = () => {
       mouse.x = -1000;
       mouse.y = -1000;
@@ -58,6 +68,8 @@ export const InteractiveParticleCanvas: React.FC<{ className?: string }> = ({
 
     window.addEventListener('resize', handleResize);
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', handleMouseLeave, { passive: true });
     document.addEventListener('mouseleave', handleMouseLeave);
 
     const palette = isDay
@@ -65,7 +77,7 @@ export const InteractiveParticleCanvas: React.FC<{ className?: string }> = ({
       : ['#FFD21F', '#1264FF', '#D9A441', '#FF4D3D'];
 
     let particles: Particle[] = [];
-    const particleCount = Math.min(Math.floor((width * height) / 18000), 75);
+    const particleCount = isMobile ? 18 : Math.min(Math.floor((width * height) / 18000), 65);
 
     function initParticles() {
       particles = [];
@@ -77,8 +89,8 @@ export const InteractiveParticleCanvas: React.FC<{ className?: string }> = ({
           y,
           originX: x,
           originY: y,
-          vx: (Math.random() - 0.5) * 0.45,
-          vy: (Math.random() - 0.5) * 0.45,
+          vx: (Math.random() - 0.5) * 0.4,
+          vy: (Math.random() - 0.5) * 0.4,
           radius: Math.random() * 2 + 1,
           color: palette[Math.floor(Math.random() * palette.length)],
           alpha: Math.random() * 0.4 + 0.15,

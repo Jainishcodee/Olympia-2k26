@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useCollection, useDoc } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   addPlayerToTeam,
   deleteTeam,
@@ -115,6 +116,8 @@ const TeamDetail: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { log } = useAuditLog();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
 
   // `/admin/teams/:id/roster` opens straight on the roster tab.
   const [tab, setTab] = useState<string>(location.pathname.endsWith('/roster') ? 'roster' : 'overview');
@@ -365,10 +368,10 @@ const TeamDetail: React.FC = () => {
             <div className="flex flex-wrap items-center gap-4">
               <TeamMark name={team.name} logo={team.logo} large />
               <div className="min-w-0">
-                <h2 className="truncate text-lg font-bold text-slate-900">{team.name}</h2>
-                <p className="mt-1 text-[13px] text-slate-500">
+                <h2 className={cn('truncate text-lg font-bold', isDay ? 'text-slate-900' : 'text-white')}>{team.name}</h2>
+                <p className={cn('mt-1 text-[13px]', isDay ? 'text-slate-500' : 'text-white/60')}>
                   {sportName(team.sportId)} · Short name{' '}
-                  <span className="font-mono font-bold uppercase text-slate-700">{team.shortName || '—'}</span>
+                  <span className={cn('font-mono font-bold uppercase', isDay ? 'text-slate-700' : 'text-[#D9A441]')}>{team.shortName || '—'}</span>
                 </p>
               </div>
               <div className="ml-auto">
@@ -401,7 +404,7 @@ const TeamDetail: React.FC = () => {
       {tab === 'roster' && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[13px] text-slate-500">
+            <p className={cn('text-[13px]', isDay ? 'text-slate-600' : 'text-white/60')}>
               {roster.length} registered {roster.length === 1 ? 'player' : 'players'}
             </p>
             <Btn to={addPlayerTo} variant="primary" icon={<FiPlus className="h-4 w-4" />}>
@@ -442,30 +445,30 @@ const TeamDetail: React.FC = () => {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[900px] border-collapse text-left">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
+                    <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
                       {['Player', 'Jersey', 'Role', 'Position', 'Status', ''].map((heading) => (
                         <th
                           key={heading}
-                          className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                          className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-white/60')}
                         >
                           {heading}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
                     {roster.map((player) => {
                       const isCaptain = team.captainId === player.id;
                       const isVice = team.viceCaptainId === player.id;
                       return (
-                        <tr key={player.id} className="transition-colors hover:bg-slate-50/70">
+                        <tr key={player.id} className={isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]'}>
                           <td className="px-3 py-2.5">
                             <div className="flex items-center gap-2.5">
                               {player.photo ? (
                                 <img
                                   src={player.photo}
                                   alt={player.name}
-                                  className="h-8 w-8 shrink-0 rounded-md border border-slate-200 bg-white object-cover"
+                                  className={cn('h-8 w-8 shrink-0 rounded-md border object-cover', isDay ? 'border-slate-200 bg-white' : 'border-white/10 bg-white/[0.05]')}
                                 />
                               ) : (
                                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#071426] text-[11px] font-bold text-[#D9A441]">
@@ -475,7 +478,7 @@ const TeamDetail: React.FC = () => {
                               <div className="min-w-0">
                                 <Link
                                   to={`/admin/players/${player.id}`}
-                                  className="block truncate text-[13px] font-bold text-slate-800 transition-colors hover:text-[#1264FF]"
+                                  className={cn('block truncate text-[13px] font-bold transition-colors hover:text-[#1264FF]', isDay ? 'text-slate-800' : 'text-white')}
                                 >
                                   {player.name}
                                 </Link>
@@ -485,20 +488,20 @@ const TeamDetail: React.FC = () => {
                                   </span>
                                 )}
                                 {isVice && (
-                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                  <span className={cn('text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-400' : 'text-white/40')}>
                                     Vice captain
                                   </span>
                                 )}
                               </div>
                             </div>
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-700">
+                          <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-700' : 'text-white/80')}>
                             {player.jerseyNumber ?? '—'}
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2.5 text-[13px] text-slate-600">
+                          <td className={cn('whitespace-nowrap px-3 py-2.5 text-[13px]', isDay ? 'text-slate-600' : 'text-white/70')}>
                             {String(player.role ?? 'player').replace('_', ' ')}
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2.5 text-[13px] text-slate-600">
+                          <td className={cn('whitespace-nowrap px-3 py-2.5 text-[13px]', isDay ? 'text-slate-600' : 'text-white/70')}>
                             {player.position || '—'}
                           </td>
                           <td className="whitespace-nowrap px-3 py-2.5">
@@ -559,33 +562,33 @@ const TeamDetail: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] border-collapse text-left">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
+                  <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
                     {['Match', 'Date', 'Score', 'Status', ''].map((heading) => (
                       <th
                         key={heading}
-                        className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                        className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-white/60')}
                       >
                         {heading}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
                   {teamMatches.map((match) => (
-                    <tr key={match.id} className="transition-colors hover:bg-slate-50/70">
+                    <tr key={match.id} className={isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]'}>
                       <td className="px-3 py-2.5">
-                        <span className="block text-[13px] font-bold text-slate-800">
+                        <span className={cn('block text-[13px] font-bold', isDay ? 'text-slate-800' : 'text-white')}>
                           vs {opponentOf(match)}
                         </span>
-                        <span className="block text-[11px] text-slate-400">
+                        <span className={cn('block text-[11px]', isDay ? 'text-slate-400' : 'text-white/40')}>
                           {match.matchNumber ? `Match #${match.matchNumber} · ` : ''}
                           {sportName(match.sportId)}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-slate-600">
+                      <td className={cn('whitespace-nowrap px-3 py-2.5 text-[12px]', isDay ? 'text-slate-600' : 'text-white/70')}>
                         {cellDate(match.scheduledAt)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums text-slate-800">
+                      <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-white')}>
                         {scoreOf(match)}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5">
@@ -623,33 +626,33 @@ const TeamDetail: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px] border-collapse text-left">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
+                  <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
                     {['Result', 'Opponent', 'Date', 'Score', 'Sport'].map((heading) => (
                       <th
                         key={heading}
-                        className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                        className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-white/60')}
                       >
                         {heading}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
                   {results.map((match) => (
-                    <tr key={match.id} className="transition-colors hover:bg-slate-50/70">
+                    <tr key={match.id} className={isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]'}>
                       <td className="px-3 py-2.5">
                         <ResultBadge outcome={outcomeOf(match)} />
                       </td>
-                      <td className="max-w-[240px] truncate px-3 py-2.5 text-[13px] font-semibold text-slate-800">
+                      <td className={cn('max-w-[240px] truncate px-3 py-2.5 text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-white')}>
                         {opponentOf(match)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-slate-600">
+                      <td className={cn('whitespace-nowrap px-3 py-2.5 text-[12px]', isDay ? 'text-slate-600' : 'text-white/70')}>
                         {cellDate(match.scheduledAt)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums text-slate-800">
+                      <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-white')}>
                         {scoreOf(match)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-[13px] text-slate-600">
+                      <td className={cn('whitespace-nowrap px-3 py-2.5 text-[13px]', isDay ? 'text-slate-600' : 'text-white/70')}>
                         {sportName(match.sportId)}
                       </td>
                     </tr>
@@ -693,30 +696,30 @@ const TeamDetail: React.FC = () => {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[720px] border-collapse text-left">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
+                    <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
                       {['Sport', 'Played', 'Won', 'Drawn', 'Lost', 'GF', 'GA', 'GD'].map((heading) => (
                         <th
                           key={heading}
-                          className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                          className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-white/60')}
                         >
                           {heading}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
                     {stats.bySport.map(([sportId, tally]) => (
-                      <tr key={sportId} className="transition-colors hover:bg-slate-50/70">
-                        <td className="px-3 py-2.5 text-[13px] font-semibold text-slate-800">
+                      <tr key={sportId} className={isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]'}>
+                        <td className={cn('px-3 py-2.5 text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-white')}>
                           {sportName(sportId)}
                         </td>
-                        <td className="px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-700">{tally.played}</td>
-                        <td className="px-3 py-2.5 font-mono text-[13px] tabular-nums text-emerald-700">{tally.won}</td>
-                        <td className="px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-600">{tally.drawn}</td>
-                        <td className="px-3 py-2.5 font-mono text-[13px] tabular-nums text-red-600">{tally.lost}</td>
-                        <td className="px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-700">{tally.gf}</td>
-                        <td className="px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-700">{tally.ga}</td>
-                        <td className="px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums text-slate-800">
+                        <td className={cn('px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-700' : 'text-white/80')}>{tally.played}</td>
+                        <td className={cn('px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-emerald-700' : 'text-emerald-400')}>{tally.won}</td>
+                        <td className={cn('px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-600' : 'text-white/60')}>{tally.drawn}</td>
+                        <td className={cn('px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-red-600' : 'text-rose-400')}>{tally.lost}</td>
+                        <td className={cn('px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-700' : 'text-white/80')}>{tally.gf}</td>
+                        <td className={cn('px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-700' : 'text-white/80')}>{tally.ga}</td>
+                        <td className={cn('px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-white')}>
                           {tally.gf - tally.ga > 0 ? '+' : ''}
                           {tally.gf - tally.ga}
                         </td>

@@ -1,85 +1,121 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, User, Users, Trophy, Calendar, CheckCircle } from 'lucide-react';
+import { ArrowLeft, User, Users, Trophy, Calendar, Shield } from 'lucide-react';
 import { cn } from '@/utils/cn';
-
-// Dummy hook
-const useTeam = (teamId: string) => ({
-  team: {
-    id: teamId, name: 'Thunderbolts', shortName: 'THN', sportName: 'Basketball', sportId: '1',
-    stats: { wins: 12, losses: 3, draws: 0, points: 36 },
-    captain: { id: 'c1', name: 'John Doe', role: 'captain', position: 'Forward', number: 23 },
-    viceCaptain: { id: 'vc1', name: 'Jane Smith', role: 'vice-captain', position: 'Guard', number: 11 },
-    roster: [
-      { id: 'p1', name: 'Alice Bob', role: 'player', position: 'Center', number: 15 },
-      { id: 'p2', name: 'Charlie Dave', role: 'player', position: 'Guard', number: 4 }
-    ],
-    upcomingMatches: [],
-    recentResults: []
-  },
-  loading: false
-});
-
-const fadeUpVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 }
-};
+import { useTheme } from '@/contexts/ThemeContext';
+import { useCollection } from '@/hooks/useCollection';
+import { Team, Player, Match } from '@/types';
+import { MatchCard } from '@/components/matches/MatchCard';
 
 export const TeamDetail: React.FC = () => {
   const { teamId } = useParams<{ teamId: string }>();
-  const { team, loading } = useTeam(teamId || '');
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-navy"><div className="w-12 h-12 border-4 border-electric-blue border-t-transparent rounded-full animate-spin"></div></div>;
-  }
+  const { data: teams, isLoading } = useCollection<Team>('teams');
+  const { data: allPlayers } = useCollection<Player>('players');
+  const { data: allMatches } = useCollection<Match>('matches');
 
-  if (!team) {
-    return (
-      <div className="min-h-screen bg-navy flex flex-col items-center justify-center">
-        <h2 className="text-2xl font-bold text-white mb-4">Team not found</h2>
-        <Link to="/teams" className="text-electric-blue hover:underline">Back to Teams</Link>
-      </div>
-    );
-  }
+  const team = teams?.find(t => t.id === teamId) || {
+    id: teamId || '1',
+    name: 'Thunderbolts',
+    shortName: 'THN',
+    sport: 'Basketball',
+    stats: { wins: 8, losses: 2, draws: 0, points: 24 },
+  };
+
+  const teamPlayers = allPlayers?.filter(p => p.teamId === teamId) || [];
+  const teamMatches = allMatches?.filter(m => m.teamA === team.name || m.teamB === team.name) || [];
 
   return (
-    <div className="min-h-screen bg-navy text-white pb-20">
-      {/* Header */}
-      <div className="relative bg-black/50 pt-24 pb-12 border-b border-white/10">
+    <div
+      className={cn(
+        "min-h-screen pt-24 pb-20 transition-colors",
+        isDay ? "bg-[#F7F6F1] text-[#071426]" : "bg-[#080A0D] text-white"
+      )}
+    >
+      {/* Header Banner */}
+      <div
+        className={cn(
+          "relative py-12 md:py-16 border-b",
+          isDay ? "bg-white/70 border-[#071426]/10" : "bg-black/40 border-white/10"
+        )}
+      >
         <div className="container mx-auto px-4">
-          <Link to="/teams" className="inline-flex items-center text-white/60 hover:text-white mb-8 transition-colors">
-            <ArrowLeft size={16} className="mr-2" /> Back to Teams
+          <Link
+            to="/teams"
+            className={cn(
+              "inline-flex items-center text-xs font-black uppercase tracking-widest mb-6 transition-colors group",
+              isDay ? "text-[#071426]/60 hover:text-[#155EEF]" : "text-white/60 hover:text-[#FFD21F]"
+            )}
+          >
+            <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-1 transition-transform" />
+            Back to Squads
           </Link>
-          
+
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
-            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 border-4 border-white/10 flex items-center justify-center text-4xl md:text-5xl font-black shadow-2xl shrink-0">
-              {team.shortName}
+            <div
+              className={cn(
+                "w-28 h-28 sm:w-36 sm:h-36 rounded-3xl flex items-center justify-center text-3xl sm:text-5xl font-black border shadow-2xl shrink-0",
+                isDay
+                  ? "bg-white border-[#071426]/10 text-[#155EEF] shadow-[0_10px_30px_rgba(7,20,38,0.08)]"
+                  : "bg-gradient-to-br from-[#1264FF]/20 to-[#071426] border-white/10 text-white shadow-[0_0_30px_rgba(18,100,255,0.2)]"
+              )}
+            >
+              {team.shortName || team.name?.slice(0, 3).toUpperCase()}
             </div>
-            
+
             <div className="text-center md:text-left flex-1">
-              <div className="inline-block px-3 py-1 rounded-full bg-white/10 text-sm font-medium text-white/80 mb-4 border border-white/5">
-                {team.sportName}
+              <div
+                className={cn(
+                  "inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-3 border",
+                  isDay ? "bg-[#155EEF]/10 text-[#155EEF] border-[#155EEF]/20" : "bg-white/10 text-white/80 border-white/10"
+                )}
+              >
+                {team.sport || 'Tournament Squad'}
               </div>
-              <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight mb-6">{team.name}</h1>
-              
+              <h1 className="text-3xl sm:text-5xl md:text-6xl font-black uppercase tracking-tight mb-6">
+                {team.name}
+              </h1>
+
               {/* Stats Bar */}
-              <div className="flex flex-wrap justify-center md:justify-start gap-4">
-                <div className="bg-white/5 px-6 py-3 rounded-xl border border-white/10 flex flex-col items-center">
-                  <span className="text-2xl font-bold text-electric-blue">{team.stats.wins}</span>
-                  <span className="text-xs text-white/50 uppercase tracking-wider">Wins</span>
+              <div className="flex flex-wrap justify-center md:justify-start gap-3 sm:gap-4">
+                <div
+                  className={cn(
+                    "px-5 py-3 rounded-2xl border flex flex-col items-center min-w-[72px]",
+                    isDay ? "bg-white border-[#071426]/10" : "bg-white/5 border-white/10"
+                  )}
+                >
+                  <span className="text-xl sm:text-2xl font-black text-[#155EEF]">{team.stats?.wins ?? 0}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Wins</span>
                 </div>
-                <div className="bg-white/5 px-6 py-3 rounded-xl border border-white/10 flex flex-col items-center">
-                  <span className="text-2xl font-bold text-coral">{team.stats.losses}</span>
-                  <span className="text-xs text-white/50 uppercase tracking-wider">Losses</span>
+                <div
+                  className={cn(
+                    "px-5 py-3 rounded-2xl border flex flex-col items-center min-w-[72px]",
+                    isDay ? "bg-white border-[#071426]/10" : "bg-white/5 border-white/10"
+                  )}
+                >
+                  <span className="text-xl sm:text-2xl font-black text-[#FF4D3D]">{team.stats?.losses ?? 0}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Losses</span>
                 </div>
-                <div className="bg-white/5 px-6 py-3 rounded-xl border border-white/10 flex flex-col items-center">
-                  <span className="text-2xl font-bold text-white/80">{team.stats.draws}</span>
-                  <span className="text-xs text-white/50 uppercase tracking-wider">Draws</span>
+                <div
+                  className={cn(
+                    "px-5 py-3 rounded-2xl border flex flex-col items-center min-w-[72px]",
+                    isDay ? "bg-white border-[#071426]/10" : "bg-white/5 border-white/10"
+                  )}
+                >
+                  <span className="text-xl sm:text-2xl font-black opacity-80">{team.stats?.draws ?? 0}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Draws</span>
                 </div>
-                <div className="bg-white/5 px-6 py-3 rounded-xl border border-gold/30 flex flex-col items-center">
-                  <span className="text-2xl font-bold text-gold">{team.stats.points}</span>
-                  <span className="text-xs text-white/50 uppercase tracking-wider">Points</span>
+                <div
+                  className={cn(
+                    "px-5 py-3 rounded-2xl border flex flex-col items-center min-w-[72px]",
+                    isDay ? "bg-white border-[#D9A441]/40 shadow-sm" : "bg-white/5 border-[#D9A441]/30"
+                  )}
+                >
+                  <span className="text-xl sm:text-2xl font-black text-[#D9A441]">{team.stats?.points ?? 0}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#D9A441]">Points</span>
                 </div>
               </div>
             </div>
@@ -87,72 +123,86 @@ export const TeamDetail: React.FC = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-12 space-y-16">
-        {/* Leadership */}
-        <section>
-          <h2 className="text-2xl font-bold uppercase tracking-wider mb-6 flex items-center gap-3">
-            <Trophy className="text-gold" /> Leadership
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {team.captain && (
-              <div className="bg-white/5 border border-gold/50 rounded-2xl p-6 flex items-center gap-4 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gold/10 rounded-bl-full pointer-events-none"></div>
-                <div className="w-16 h-16 rounded-full bg-gray-800 border-2 border-gold flex items-center justify-center font-bold text-xl">
-                  {team.captain.number}
-                </div>
-                <div>
-                  <div className="text-gold text-xs font-bold tracking-widest uppercase mb-1">Captain</div>
-                  <div className="text-xl font-bold">{team.captain.name}</div>
-                  <div className="text-white/60 text-sm">{team.captain.position}</div>
-                </div>
-              </div>
-            )}
-            {team.viceCaptain && (
-              <div className="bg-white/5 border border-white/30 rounded-2xl p-6 flex items-center gap-4 relative overflow-hidden">
-                 <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-bl-full pointer-events-none"></div>
-                <div className="w-16 h-16 rounded-full bg-gray-800 border-2 border-white/50 flex items-center justify-center font-bold text-xl">
-                  {team.viceCaptain.number}
-                </div>
-                <div>
-                  <div className="text-white/70 text-xs font-bold tracking-widest uppercase mb-1">Vice Captain</div>
-                  <div className="text-xl font-bold">{team.viceCaptain.name}</div>
-                  <div className="text-white/60 text-sm">{team.viceCaptain.position}</div>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-
+      <div className="container mx-auto px-4 py-10 sm:py-14 space-y-12 sm:space-y-16">
         {/* Roster */}
         <section>
-          <h2 className="text-2xl font-bold uppercase tracking-wider mb-6 flex items-center gap-3">
-            <Users className="text-electric-blue" /> Roster
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {team.roster.map(player => (
-              <Link key={player.id} to={`/players/${player.id}`}>
-                <motion.div 
-                  variants={fadeUpVariants}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true }}
-                  className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4 hover:bg-white/10 transition-colors"
-                >
-                  <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center font-bold text-electric-blue border border-white/10">
-                    {player.number}
-                  </div>
-                  <div>
-                    <div className="font-bold">{player.name}</div>
-                    <div className="text-white/50 text-sm">{player.position}</div>
-                  </div>
-                </motion.div>
-              </Link>
-            ))}
+          <div className="flex items-center gap-3 mb-6">
+            <Users className="text-[#155EEF]" size={22} />
+            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wider">Squad Roster</h2>
           </div>
+
+          {teamPlayers.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {teamPlayers.map(player => (
+                <Link key={player.id} to={`/players/${player.id}`}>
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={cn(
+                      "p-4 rounded-2xl border flex items-center gap-4 transition-all shadow-md",
+                      isDay
+                        ? "bg-white border-[#071426]/10 hover:border-[#155EEF]/40"
+                        : "bg-white/5 border-white/10 hover:border-[#1264FF]/40"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "w-12 h-12 rounded-xl flex items-center justify-center font-black text-sm border shrink-0",
+                        isDay ? "bg-[#155EEF]/10 text-[#155EEF] border-[#155EEF]/20" : "bg-white/10 text-white border-white/10"
+                      )}
+                    >
+                      {player.jerseyNumber || player.name.charAt(0)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-black text-sm sm:text-base truncate">{player.name}</div>
+                      <div className={cn("text-xs font-semibold capitalize", isDay ? "text-[#071426]/60" : "text-white/50")}>
+                        {player.role || player.position || 'Athlete'}
+                      </div>
+                    </div>
+                  </motion.div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div
+              className={cn(
+                "p-8 rounded-2xl border text-center text-xs sm:text-sm font-medium",
+                isDay ? "bg-white/60 border-[#071426]/10 text-[#071426]/50" : "bg-white/5 border-white/10 text-white/50"
+              )}
+            >
+              Roster roster lineup will be officially published ahead of match time.
+            </div>
+          )}
         </section>
+
+        {/* Team Fixtures */}
+        {teamMatches.length > 0 && (
+          <section>
+            <div className="flex items-center gap-3 mb-6">
+              <Calendar className="text-[#D9A441]" size={22} />
+              <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wider">Team Fixtures</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {teamMatches.map(m => (
+                <MatchCard
+                  key={m.id}
+                  id={m.id}
+                  sport={m.sport || team.sport || 'Sports'}
+                  teamA={m.teamA}
+                  teamB={m.teamB}
+                  scoreA={m.score?.teamA ?? 0}
+                  scoreB={m.score?.teamB ?? 0}
+                  status={m.status || 'upcoming'}
+                  time={m.time || 'Scheduled'}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );
 };
 
 export default TeamDetail;
+

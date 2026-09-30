@@ -1,6 +1,10 @@
-import React from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useCollection, useDoc } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useAuditLog } from '@/hooks/useAuditLog';
+import { deleteFixture } from '@/services/fixtures/fixtureService';
 import {
   AdminHeader,
   Btn,
@@ -11,7 +15,10 @@ import {
   PageLoading,
   StatusPill,
 } from '@/components/admin/kit';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import type { Fixture, Match, Team, Tournament, Venue } from '@/types';
+import { FiTrash2 } from 'react-icons/fi';
+import { cn } from '@/utils/cn';
 
 /* ============================================================================
  *  Fixture detail — read-only record of one scheduled slot: who plays, when,
@@ -43,6 +50,13 @@ const renderScore = (match: Match) => {
 
 const FixtureDetail: React.FC = () => {
   const { fixtureId } = useParams<{ fixtureId: string }>();
+  const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
+  const { log } = useAuditLog();
+
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const fixture = useDoc<Fixture>('fixtures', fixtureId);
   const tournaments = useCollection<Tournament>('tournaments', { sortBy: 'name' });
@@ -58,6 +72,24 @@ const FixtureDetail: React.FC = () => {
     id ? (tournaments.data.find((row) => row.id === id)?.name ?? id) : '—';
   const venueName = (id?: string) =>
     id ? (venues.data.find((row) => row.id === id)?.name ?? id) : '—';
+
+  const handleDelete = async () => {
+    if (!fixtureId || busy) return;
+    setBusy(true);
+    try {
+      await deleteFixture(fixtureId);
+      await log('FIXTURE_DELETED', 'fixture', fixtureId, {
+        label: `Deleted fixture ${fixtureId}`,
+      });
+      toast.success('Fixture deleted');
+      navigate('/admin/fixtures');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Delete failed');
+    } finally {
+      setBusy(false);
+      setConfirmDelete(false);
+    }
+  };
 
   if (fixture.isLoading) return <PageLoading label="Loading fixture…" />;
 
@@ -124,6 +156,14 @@ const FixtureDetail: React.FC = () => {
                 Open scoring
               </Btn>
             )}
+            <Btn
+              variant="danger"
+              icon={<FiTrash2 className="h-4 w-4" />}
+              disabled={busy}
+              onClick={() => setConfirmDelete(true)}
+            >
+              Delete
+            </Btn>
           </>
         }
       />
@@ -161,14 +201,20 @@ const FixtureDetail: React.FC = () => {
             <MetaRow label="Team A id">{row.teamAId || '—'}</MetaRow>
             <MetaRow label="Team B id">{row.teamBId || '—'}</MetaRow>
           </dl>
-          <div className="mt-4 flex items-center justify-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-4">
-            <span className="min-w-0 flex-1 truncate text-right text-[13px] font-semibold text-slate-800">
+          <div className={cn(
+            'mt-4 flex items-center justify-center gap-3 rounded-lg border px-4 py-4',
+            isDay ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/[0.02]'
+          )}>
+            <span className={cn('min-w-0 flex-1 truncate text-right text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-slate-100')}>
               {sideA}
             </span>
-            <span className="rounded bg-[#071426] px-2.5 py-1 font-mono text-[13px] font-bold tabular-nums text-[#FFD21F]">
+            <span className={cn(
+              'rounded px-2.5 py-1 font-mono text-[13px] font-bold tabular-nums',
+              isDay ? 'bg-slate-900 text-amber-300' : 'bg-black/60 text-[#FFD21F] border border-amber-500/20'
+            )}>
               VS
             </span>
-            <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-slate-800">
+            <span className={cn('min-w-0 flex-1 truncate text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-slate-100')}>
               {sideB}
             </span>
           </div>
@@ -228,6 +274,16 @@ const FixtureDetail: React.FC = () => {
           </MetaRow>
         </dl>
       </Card>
+
+      <ConfirmDialog
+        isOpen={confirmDelete}
+        title="Delete this fixture?"
+        message="This will permanently delete this fixture schedule entry from Firestore in real-time."
+        confirmText="Delete fixture"
+        isDestructive
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </>
   );
 };

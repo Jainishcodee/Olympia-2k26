@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Timestamp } from 'firebase/firestore';
 import { useCollection, useDoc } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   AdminHeader,
   Btn,
@@ -17,6 +18,7 @@ import { useAuditLog } from '@/hooks/useAuditLog';
 import { createFixture, updateFixture } from '@/services/fixtures/fixtureService';
 import type { Fixture, Match, Team, Tournament, Venue } from '@/types';
 import toast from 'react-hot-toast';
+import { cn } from '@/utils/cn';
 
 /* ============================================================================
  *  Fixture editor — one screen, two modes: link the fixture to an existing
@@ -75,6 +77,8 @@ const FixtureEditor: React.FC = () => {
   const isEdit = Boolean(fixtureId);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
   const { log } = useAuditLog();
 
   const tournaments = useCollection<Tournament>('tournaments', { sortBy: 'name' });
@@ -253,7 +257,10 @@ const FixtureEditor: React.FC = () => {
           title="Participants"
           description="Link the fixture to a match, or pick the two sides yourself."
         >
-          <div className="mb-4 inline-flex rounded-md border border-slate-300 bg-slate-50 p-0.5">
+          <div className={cn(
+            'mb-4 inline-flex rounded-md border p-0.5',
+            isDay ? 'border-slate-300 bg-slate-50' : 'border-white/10 bg-white/[0.04]'
+          )}>
             {(
               [
                 { id: 'match', label: 'Linked match' },
@@ -264,11 +271,12 @@ const FixtureEditor: React.FC = () => {
                 key={option.id}
                 type="button"
                 onClick={() => set('mode', option.id)}
-                className={`h-8 rounded px-3 text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                className={cn(
+                  'h-8 rounded px-3 text-[11px] font-bold uppercase tracking-wider transition-colors',
                   form.mode === option.id
-                    ? 'bg-[#071426] text-[#FFD21F]'
-                    : 'text-slate-500 hover:text-slate-900'
-                }`}
+                    ? isDay ? 'bg-slate-900 text-amber-300' : 'bg-[#071426] text-[#FFD21F] border border-amber-500/30'
+                    : isDay ? 'text-slate-500 hover:text-slate-900' : 'text-slate-400 hover:text-white'
+                )}
               >
                 {option.label}
               </button>

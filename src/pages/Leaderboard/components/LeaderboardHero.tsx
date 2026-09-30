@@ -83,15 +83,15 @@ export const LeaderboardHero: React.FC<{
         </div>
 
         {/* Right side controls: Mode Toggle & Stats */}
-        <div className="flex flex-col items-start md:items-end gap-4">
+        <div className="flex flex-col items-start sm:items-end gap-3 w-full sm:w-auto">
           <span className={`text-[11px] font-bold uppercase tracking-widest ${isDay ? 'text-[#071426]/60' : 'text-white/60'}`}>
             Tracking <span className="font-black text-[#D9A441]">{totalEntries}</span> Contenders
           </span>
 
           {/* Animated PLAYERS | TEAMS Toggle */}
           <div
-            className={`relative p-1.5 rounded-2xl flex items-center border ${
-              isDay ? 'bg-white/80 border-[#071426]/10 shadow-sm' : 'bg-[#071426] border-white/10'
+            className={`relative p-1 rounded-2xl flex items-center border w-full sm:w-auto ${
+              isDay ? 'bg-white/90 border-[#071426]/10 shadow-sm' : 'bg-[#071426] border-white/10'
             }`}
           >
             {(['players', 'teams'] as const).map((m) => {
@@ -100,7 +100,7 @@ export const LeaderboardHero: React.FC<{
                 <button
                   key={m}
                   onClick={() => onModeChange(m)}
-                  className={`relative z-10 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-colors duration-300 ${
+                  className={`relative z-10 flex-1 sm:flex-initial px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-center transition-colors duration-300 active:scale-95 ${
                     active
                       ? isDay
                         ? 'text-white'

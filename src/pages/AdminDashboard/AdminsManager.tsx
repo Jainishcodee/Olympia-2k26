@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCollection } from '@/hooks/useCollection';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuditLog } from '@/hooks/useAuditLog';
+import { useTheme } from '@/contexts/ThemeContext';
 import { updateAdminProfile } from '@/services/admin/adminService';
 import {
   AdminHeader,
@@ -41,11 +42,17 @@ const ROLE_LABEL: Record<AdminRole, string> = {
   content_manager: 'Content manager',
 };
 
-const ROLE_TONE: Record<AdminRole, string> = {
-  super_admin: 'border-[#F0DFB8] bg-[#FFF7E6] text-[#A9761B]',
-  admin: 'border-blue-200 bg-blue-50 text-blue-700',
-  score_operator: 'border-slate-200 bg-slate-50 text-slate-600',
-  content_manager: 'border-slate-200 bg-slate-50 text-slate-600',
+const getRoleTone = (role: AdminRole, isDay: boolean): string => {
+  switch (role) {
+    case 'super_admin':
+      return isDay ? 'border-[#F0DFB8] bg-[#FFF7E6] text-[#A9761B]' : 'border-[#D9A441]/40 bg-[#D9A441]/10 text-[#F5CA6E]';
+    case 'admin':
+      return isDay ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-[#1264FF]/40 bg-[#1264FF]/15 text-[#60A5FA]';
+    case 'score_operator':
+    case 'content_manager':
+    default:
+      return isDay ? 'border-slate-200 bg-slate-100 text-slate-700' : 'border-white/10 bg-white/[0.05] text-white/70';
+  }
 };
 
 const toDate = (value: unknown): Date | null => {
@@ -80,6 +87,8 @@ const AdminsManager: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { log } = useAuditLog();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
 
   const admins = useCollection<AdminRow>('admins', { sortBy: 'displayName' });
 
@@ -137,14 +146,21 @@ const AdminsManager: React.FC = () => {
       />
 
       {/* ------------------------------------------------- security banner */}
-      <div className="mb-5 flex items-start gap-3 rounded-lg border border-[#F0DFB8] bg-[#FFF7E6] px-4 py-3">
-        <FiShield className="mt-0.5 h-4 w-4 shrink-0 text-[#A9761B]" />
+      <div
+        className={cn(
+          'mb-5 flex items-start gap-3 rounded-lg border px-4 py-3 shadow-sm',
+          isDay
+            ? 'border-[#F0DFB8] bg-[#FFF7E6]'
+            : 'border-[#D9A441]/30 bg-[#D9A441]/10 text-white/90',
+        )}
+      >
+        <FiShield className={cn('mt-0.5 h-4 w-4 shrink-0', isDay ? 'text-[#A9761B]' : 'text-[#F5CA6E]')} />
         <div className="min-w-0">
-          <p className="text-[13px] font-bold text-[#7A5A17]">
+          <p className={cn('text-[13px] font-bold', isDay ? 'text-[#7A5A17]' : 'text-[#F5CA6E]')}>
             Passwords are never displayed or stored here. Authentication is handled by Firebase
             Authentication.
           </p>
-          <p className="mt-0.5 text-[12px] leading-relaxed text-[#8A6A2A]">
+          <p className={cn('mt-0.5 text-[12px] leading-relaxed', isDay ? 'text-[#8A6A2A]' : 'text-white/70')}>
             This panel can only read and update the{' '}
             <span className="font-mono text-[11px]">admins/&#123;uid&#125;</span> profile document and its{' '}
             <span className="font-mono text-[11px]">active</span> flag. Accounts themselves are
@@ -157,12 +173,18 @@ const AdminsManager: React.FC = () => {
       {error && <ErrorNotice message={error} className="mb-4" />}
 
       <Toolbar>
-        <span className="text-[12px] text-slate-500">
+        <span className={cn('text-[12px] font-semibold', isDay ? 'text-slate-600' : 'text-white/60')}>
           {rows.length} administrator{rows.length === 1 ? '' : 's'}
         </span>
-        <span className="ml-auto flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+        <span className="ml-auto flex flex-wrap items-center gap-2 text-[11px]">
           {[...roleCounts.entries()].map(([role, count]) => (
-            <span key={role} className="rounded border border-slate-200 bg-white px-2 py-0.5">
+            <span
+              key={role}
+              className={cn(
+                'rounded border px-2 py-0.5 font-medium',
+                isDay ? 'border-slate-200 bg-white text-slate-600' : 'border-white/10 bg-white/[0.04] text-white/70',
+              )}
+            >
               {roleLabel(role)} · {count}
             </span>
           ))}
@@ -190,42 +212,73 @@ const AdminsManager: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1000px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr
+                  className={cn(
+                    'border-b',
+                    isDay
+                      ? 'border-slate-200 bg-slate-100/90 text-slate-700'
+                      : 'border-white/10 bg-white/[0.04] text-white/70',
+                  )}
+                >
                   {['Name', 'Email', 'Role', 'Status', 'Created at', 'Last active', 'Actions'].map((heading) => (
                     <th
                       key={heading}
-                      className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                      className={cn(
+                        'whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider',
+                        isDay ? 'text-slate-600' : 'text-white/60',
+                      )}
                     >
                       {heading}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className={cn('divide-y', isDay ? 'divide-slate-200/70' : 'divide-white/5')}>
                 {rows.map((row) => {
                   const uid = uidOf(row);
                   const active = row.active !== false;
                   const isSelf = user?.uid === uid;
                   const busy = busyId === uid;
                   return (
-                    <tr key={uid} className="transition-colors hover:bg-slate-50/70">
+                    <tr
+                      key={uid}
+                      className={cn(
+                        'transition-colors',
+                        isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.03]',
+                      )}
+                    >
                       <td className="max-w-[220px] px-3 py-2.5">
-                        <span className="block truncate text-[13px] font-semibold text-slate-800">
+                        <span
+                          className={cn(
+                            'block truncate text-[13px] font-semibold',
+                            isDay ? 'text-slate-900' : 'text-white',
+                          )}
+                        >
                           {row.displayName || 'Unnamed administrator'}
                         </span>
-                        <span className="block truncate font-mono text-[11px] text-slate-400">
+                        <span
+                          className={cn(
+                            'block truncate font-mono text-[11px]',
+                            isDay ? 'text-slate-400' : 'text-white/40',
+                          )}
+                        >
                           {uid.slice(0, 16)}
                           {isSelf && ' · you'}
                         </span>
                       </td>
-                      <td className="max-w-[260px] truncate px-3 py-2.5 text-[13px] text-slate-600">
+                      <td
+                        className={cn(
+                          'max-w-[260px] truncate px-3 py-2.5 text-[13px]',
+                          isDay ? 'text-slate-600' : 'text-white/70',
+                        )}
+                      >
                         {row.email || '—'}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5">
                         <span
                           className={cn(
                             'inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
-                            ROLE_TONE[row.role] ?? 'border-slate-200 bg-slate-50 text-slate-600',
+                            getRoleTone(row.role, isDay),
                           )}
                         >
                           {roleLabel(row.role)}
@@ -234,14 +287,29 @@ const AdminsManager: React.FC = () => {
                       <td className="whitespace-nowrap px-3 py-2.5">
                         <StatusPill value={active ? 'active' : 'inactive'} />
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-slate-600">
+                      <td
+                        className={cn(
+                          'whitespace-nowrap px-3 py-2.5 text-[12px]',
+                          isDay ? 'text-slate-600' : 'text-white/70',
+                        )}
+                      >
                         {formatDateTime(row.createdAt)}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5">
-                        <span className="block text-[12px] text-slate-600">
+                        <span
+                          className={cn(
+                            'block text-[12px]',
+                            isDay ? 'text-slate-600' : 'text-white/70',
+                          )}
+                        >
                           {formatDateTime(row.updatedAt ?? row.createdAt)}
                         </span>
-                        <span className="block text-[10px] uppercase tracking-wider text-slate-400">
+                        <span
+                          className={cn(
+                            'block text-[10px] uppercase tracking-wider',
+                            isDay ? 'text-slate-400' : 'text-white/40',
+                          )}
+                        >
                           from updatedAt
                         </span>
                       </td>

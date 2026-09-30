@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useCollection, useDoc, eq } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import { deletePlayer } from '@/services/players/playerService';
 import {
   AdminHeader,
@@ -64,6 +65,8 @@ const PlayerDetail: React.FC = () => {
   const { playerId } = useParams();
   const navigate = useNavigate();
   const { log } = useAuditLog();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
 
   const playerDoc = useDoc<Player>('players', playerId);
   const teams = useCollection<Team>('teams', { sortBy: 'name' });
@@ -221,7 +224,7 @@ const PlayerDetail: React.FC = () => {
             <img
               src={player.photo}
               alt={player.name}
-              className="h-16 w-16 shrink-0 rounded-md border border-slate-200 bg-white object-cover"
+              className={cn('h-16 w-16 shrink-0 rounded-md border object-cover', isDay ? 'border-slate-200 bg-white' : 'border-white/10 bg-white/[0.05]')}
             />
           ) : (
             <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-[#071426] text-xl font-bold text-[#D9A441]">
@@ -233,22 +236,22 @@ const PlayerDetail: React.FC = () => {
               <span className="flex h-9 min-w-9 items-center justify-center rounded-md bg-[#071426] px-2 font-mono text-sm font-bold tabular-nums text-[#FFD21F]">
                 {player.jerseyNumber ?? '—'}
               </span>
-              <h2 className="truncate text-lg font-bold text-slate-900">{player.name}</h2>
+              <h2 className={cn('truncate text-lg font-bold', isDay ? 'text-slate-900' : 'text-white')}>{player.name}</h2>
             </div>
-            <p className="mt-1 text-[13px] text-slate-500">
+            <p className={cn('mt-1 text-[13px]', isDay ? 'text-slate-500' : 'text-white/60')}>
               {team ? (
                 <Link
                   to={`/admin/teams/${team.id}`}
-                  className="font-semibold text-slate-700 transition-colors hover:text-[#1264FF]"
+                  className={cn('font-semibold transition-colors hover:text-[#1264FF]', isDay ? 'text-slate-700' : 'text-white/80')}
                 >
                   {team.name}
                 </Link>
               ) : (
-                <span className="font-semibold text-slate-400">Free agent</span>
+                <span className={cn('font-semibold', isDay ? 'text-slate-400' : 'text-white/40')}>Free agent</span>
               )}
-              <span className="mx-1.5 text-slate-300">·</span>
+              <span className={cn('mx-1.5', isDay ? 'text-slate-300' : 'text-white/20')}>·</span>
               {sportNames(sportId)}
-              <span className="mx-1.5 text-slate-300">·</span>
+              <span className={cn('mx-1.5', isDay ? 'text-slate-300' : 'text-white/20')}>·</span>
               {roleLabel(player.role)}
             </p>
           </div>
@@ -290,11 +293,11 @@ const PlayerDetail: React.FC = () => {
                 <div className="min-w-0">
                   <Link
                     to={`/admin/teams/${team.id}`}
-                    className="block text-[15px] font-bold text-slate-900 transition-colors hover:text-[#1264FF]"
+                    className={cn('block text-[15px] font-bold transition-colors hover:text-[#1264FF]', isDay ? 'text-slate-900' : 'text-white')}
                   >
                     {team.name}
                   </Link>
-                  <p className="mt-0.5 text-[13px] text-slate-500">
+                  <p className={cn('mt-0.5 text-[13px]', isDay ? 'text-slate-500' : 'text-white/60')}>
                     {sportNames(team.sportId)} · {team.shortName || '—'}
                   </p>
                 </div>
@@ -326,14 +329,14 @@ const PlayerDetail: React.FC = () => {
             ) : squadMates.length === 0 ? (
               <EmptyNotice title="No squad-mates" message="Nobody else is on this roster yet." />
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
                 {squadMates.map((mate) => (
-                  <li key={mate.id} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-50/70">
+                  <li key={mate.id} className={cn('flex items-center gap-3 px-4 py-2.5 transition-colors', isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]')}>
                     {mate.photo ? (
                       <img
                         src={mate.photo}
                         alt={mate.name}
-                        className="h-7 w-7 shrink-0 rounded-md border border-slate-200 bg-white object-cover"
+                        className={cn('h-7 w-7 shrink-0 rounded-md border object-cover', isDay ? 'border-slate-200 bg-white' : 'border-white/10 bg-white/[0.05]')}
                       />
                     ) : (
                       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#071426] text-[10px] font-bold text-[#D9A441]">
@@ -342,14 +345,14 @@ const PlayerDetail: React.FC = () => {
                     )}
                     <Link
                       to={`/admin/players/${mate.id}`}
-                      className="min-w-0 flex-1 truncate text-[13px] font-semibold text-slate-800 transition-colors hover:text-[#1264FF]"
+                      className={cn('min-w-0 flex-1 truncate text-[13px] font-semibold transition-colors hover:text-[#1264FF]', isDay ? 'text-slate-800' : 'text-white')}
                     >
                       {mate.name}
                     </Link>
-                    <span className="font-mono text-[12px] tabular-nums text-slate-400">
+                    <span className={cn('font-mono text-[12px] tabular-nums', isDay ? 'text-slate-400' : 'text-white/40')}>
                       {mate.jerseyNumber ?? '—'}
                     </span>
-                    <span className="w-24 truncate text-right text-[12px] text-slate-500">
+                    <span className={cn('w-24 truncate text-right text-[12px]', isDay ? 'text-slate-500' : 'text-white/60')}>
                       {mate.position || roleLabel(mate.role)}
                     </span>
                   </li>
@@ -405,27 +408,27 @@ const PlayerDetail: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px] border-collapse text-left">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
+                  <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
                     {['Opponent', 'Date', 'Score', 'Status', ''].map((heading) => (
                       <th
                         key={heading}
-                        className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                        className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-white/60')}
                       >
                         {heading}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
                   {teamMatches.map((match) => (
-                    <tr key={match.id} className="transition-colors hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5 text-[13px] font-semibold text-slate-800">
+                    <tr key={match.id} className={isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]'}>
+                      <td className={cn('px-3 py-2.5 text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-white')}>
                         vs {opponentOf(match)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-slate-600">
+                      <td className={cn('whitespace-nowrap px-3 py-2.5 text-[12px]', isDay ? 'text-slate-600' : 'text-white/70')}>
                         {cellDate(match.scheduledAt)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums text-slate-800">
+                      <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-white')}>
                         {scoreOf(match)}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5">
@@ -487,19 +490,19 @@ const PlayerDetail: React.FC = () => {
                   const pct = ratingSummary.count > 0 ? Math.round((count / ratingSummary.count) * 100) : 0;
                   return (
                     <div key={star} className="flex items-center gap-3">
-                      <span className="w-8 shrink-0 text-right text-[11px] font-bold tabular-nums text-slate-500">
+                      <span className={cn('w-8 shrink-0 text-right text-[11px] font-bold tabular-nums', isDay ? 'text-slate-500' : 'text-white/60')}>
                         {star}★
                       </span>
-                      <div className="h-3 flex-1 overflow-hidden rounded-sm bg-slate-100">
+                      <div className={cn('h-3 flex-1 overflow-hidden rounded-sm', isDay ? 'bg-slate-100' : 'bg-white/10')}>
                         <div
                           className={cn(
                             'h-3 rounded-sm transition-colors',
-                            star >= 4 ? 'bg-[#D9A441]' : star === 3 ? 'bg-slate-400' : 'bg-red-300',
+                            star >= 4 ? 'bg-[#D9A441]' : star === 3 ? 'bg-slate-400' : 'bg-red-400',
                           )}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                      <span className="w-20 shrink-0 text-right text-[11px] tabular-nums text-slate-400">
+                      <span className={cn('w-20 shrink-0 text-right text-[11px] tabular-nums', isDay ? 'text-slate-400' : 'text-white/40')}>
                         {count} · {pct}%
                       </span>
                     </div>

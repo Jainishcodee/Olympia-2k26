@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Timestamp } from 'firebase/firestore';
 import { useDoc } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import {
   AdminHeader,
@@ -19,6 +20,7 @@ import { createAdminProfile, updateAdminProfile } from '@/services/admin/adminSe
 import type { Admin, AdminRole, AuditAction } from '@/types';
 import toast from 'react-hot-toast';
 import { FiCopy, FiLock, FiShield } from 'react-icons/fi';
+import { cn } from '@/utils/cn';
 
 /* ============================================================================
  *  Administrator editor — create (`/admin/admins/create`) and edit
@@ -87,6 +89,8 @@ const AdminEditor: React.FC = () => {
   const { adminId } = useParams<{ adminId: string }>();
   const isEdit = Boolean(adminId);
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
   const { log } = useAuditLog();
 
   const existing = useDoc<AdminRow>('admins', adminId);
@@ -256,12 +260,21 @@ const AdminEditor: React.FC = () => {
       />
 
       {/* ------------------------------------------- security note banner */}
-      <div className="mb-5 flex items-start gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
+      <div
+        className={cn(
+          'mb-5 flex items-start gap-3 rounded-lg border px-4 py-3',
+          isDay
+            ? 'border-slate-200 bg-white text-slate-600 shadow-sm'
+            : 'border-white/10 bg-white/[0.04] text-slate-300'
+        )}
+      >
         <FiShield className="mt-0.5 h-4 w-4 shrink-0 text-[#1264FF]" />
-        <p className="text-[13px] leading-relaxed text-slate-600">
-          <span className="font-bold text-slate-800">No password fields, ever.</span> Account
-          credentials are created in Firebase Authentication by an administrator via Cloud Functions —
-          this form only writes the <span className="font-mono text-[12px]">admins/&#123;uid&#125;</span>{' '}
+        <p className="text-[13px] leading-relaxed">
+          <span className={cn('font-bold', isDay ? 'text-slate-800' : 'text-white')}>
+            No password fields, ever.
+          </span>{' '}
+          Account credentials are created in Firebase Authentication by an administrator via Cloud Functions —
+          this form only writes the <span className={cn('font-mono text-[12px]', isDay ? 'text-amber-700 bg-amber-50 px-1 py-0.5 rounded' : 'text-amber-400 bg-amber-400/10 px-1 py-0.5 rounded')}>admins/&#123;uid&#125;</span>{' '}
           profile document.
         </p>
       </div>
@@ -303,7 +316,14 @@ const AdminEditor: React.FC = () => {
               />
             </FormGrid>
 
-            <p className="-mt-2 mb-4 flex items-start gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12px] leading-relaxed text-slate-600">
+            <p
+              className={cn(
+                '-mt-2 mb-4 flex items-start gap-2 rounded-md border px-3 py-2.5 text-[12px] leading-relaxed',
+                isDay
+                  ? 'border-slate-200 bg-slate-50 text-slate-600'
+                  : 'border-white/10 bg-white/[0.03] text-slate-400'
+              )}
+            >
               <FiLock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
               <span>
                 Account credentials are created in Firebase Authentication by an administrator via Cloud
@@ -353,11 +373,16 @@ const AdminEditor: React.FC = () => {
                 return (
                   <label
                     key={permission.key}
-                    className={
+                    className={cn(
+                      'flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 transition-all',
                       checked
-                        ? 'flex cursor-pointer items-start gap-2.5 rounded-lg border border-[#1264FF] bg-[#1264FF]/5 px-3 py-2.5'
-                        : 'flex cursor-pointer items-start gap-2.5 rounded-lg border border-slate-200 px-3 py-2.5 transition-colors hover:border-slate-300'
-                    }
+                        ? isDay
+                          ? 'border-[#1264FF] bg-[#1264FF]/10 text-slate-900 shadow-sm'
+                          : 'border-[#1264FF] bg-[#1264FF]/20 text-white'
+                        : isDay
+                        ? 'border-slate-200 bg-white hover:border-slate-300 text-slate-700'
+                        : 'border-white/10 bg-white/[0.02] hover:border-white/20 text-slate-300'
+                    )}
                   >
                     <input
                       type="checkbox"
@@ -366,10 +391,10 @@ const AdminEditor: React.FC = () => {
                       className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 accent-[#1264FF]"
                     />
                     <span className="min-w-0">
-                      <span className="block text-[13px] font-semibold text-slate-800">
+                      <span className={cn('block text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-white')}>
                         {permission.label}
                       </span>
-                      <span className="block text-[11px] leading-relaxed text-slate-400">
+                      <span className={cn('block text-[11px] leading-relaxed', isDay ? 'text-slate-500' : 'text-slate-400')}>
                         {permission.hint} · <span className="font-mono">{permission.key}</span>
                       </span>
                     </span>
@@ -387,19 +412,24 @@ const AdminEditor: React.FC = () => {
               description="The browser cannot create Firebase Authentication users. This is a deliberate security boundary."
             >
               <div
-                className={
+                className={cn(
+                  'rounded-lg border px-4 py-4',
                   highlightPanel
-                    ? 'rounded-lg border-2 border-[#D9A441] bg-[#FFF7E6] px-4 py-4'
-                    : 'rounded-lg border border-slate-200 bg-slate-50 px-4 py-4'
-                }
+                    ? isDay
+                      ? 'border-2 border-[#D9A441] bg-[#FFF7E6]'
+                      : 'border-2 border-[#D9A441] bg-[#D9A441]/10'
+                    : isDay
+                    ? 'border-slate-200 bg-slate-50'
+                    : 'border-white/10 bg-white/[0.03]'
+                )}
               >
-                <p className="text-[13px] font-bold text-slate-800">
-                  Create the account with the <span className="font-mono">createAdmin</span> Cloud
+                <p className={cn('text-[13px] font-bold', isDay ? 'text-slate-800' : 'text-white')}>
+                  Create the account with the <span className="font-mono text-amber-500">createAdmin</span> Cloud
                   Function, then paste the returned UID above.
                 </p>
-                <ol className="mt-2 list-decimal space-y-1 pl-5 text-[12px] leading-relaxed text-slate-600">
+                <ol className={cn('mt-2 list-decimal space-y-1 pl-5 text-[12px] leading-relaxed', isDay ? 'text-slate-600' : 'text-slate-400')}>
                   <li>
-                    Callable function <span className="font-mono">createAdmin</span>, exported from{' '}
+                    Callable function <span className="font-mono text-amber-500">createAdmin</span>, exported from{' '}
                     <span className="font-mono">functions/src/admins/createAdmin.ts</span> via{' '}
                     <span className="font-mono">functions/src/index.ts</span>.
                   </li>
@@ -420,18 +450,18 @@ const AdminEditor: React.FC = () => {
                 </ol>
 
                 <div className="mt-3 flex items-center justify-between gap-3">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  <span className={cn('text-[11px] font-bold uppercase tracking-wider', isDay ? 'text-slate-500' : 'text-slate-400')}>
                     Request payload
                   </span>
                   <Btn size="xs" onClick={copyPayload} icon={<FiCopy className="h-3.5 w-3.5" />}>
                     Copy payload
                   </Btn>
                 </div>
-                <pre className="mt-2 overflow-x-auto rounded-md bg-[#071426] px-3 py-3 font-mono text-[11px] leading-relaxed text-[#D9A441]">
+                <pre className={cn('mt-2 overflow-x-auto rounded-md px-3 py-3 font-mono text-[11px] leading-relaxed', isDay ? 'bg-slate-900 text-amber-400' : 'bg-[#071426] text-[#D9A441]')}>
 {provisionPayload}
                 </pre>
 
-                <p className="mt-3 text-[12px] leading-relaxed text-slate-500">
+                <p className={cn('mt-3 text-[12px] leading-relaxed', isDay ? 'text-slate-500' : 'text-slate-400')}>
                   The password field above is a placeholder for the backend operator only — this UI never
                   receives, renders or stores a password.
                 </p>
