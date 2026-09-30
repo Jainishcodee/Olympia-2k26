@@ -28,6 +28,7 @@ import {
   StatusPill,
 } from '@/components/admin/kit';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
+import { getTeamLogo } from '@/utils/teamLogos';
 import { cn } from '@/utils/cn';
 import type { Match, Player, Sport, Team } from '@/types';
 import { FiArchive, FiEdit2, FiPlay, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi';
@@ -57,10 +58,11 @@ const cellDate = (value: unknown): string => {
   return date ? date.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 };
 
-const TeamMark: React.FC<{ name: string; logo?: string; large?: boolean }> = ({ name, logo, large }) =>
-  logo ? (
+const TeamMark: React.FC<{ name: string; logo?: string; large?: boolean }> = ({ name, logo, large }) => {
+  const finalLogo = logo || getTeamLogo(name);
+  return finalLogo ? (
     <img
-      src={logo}
+      src={finalLogo}
       alt={name}
       className={cn(
         'shrink-0 rounded-md border border-slate-200 bg-white object-cover',
@@ -77,6 +79,7 @@ const TeamMark: React.FC<{ name: string; logo?: string; large?: boolean }> = ({ 
       {initialsOf(name)}
     </span>
   );
+};
 
 const ResultBadge: React.FC<{ outcome: 'W' | 'D' | 'L' }> = ({ outcome }) => {
   const tone =

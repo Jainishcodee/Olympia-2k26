@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
 import { RollingScore, Magnetic } from '@/components/motion';
+import { getTeamLogo } from '@/utils/teamLogos';
 import type { LeaderboardItem } from './PodiumHero';
 
 export const RankingRow: React.FC<{
@@ -118,7 +119,7 @@ export const RankingRow: React.FC<{
           {/* Portrait Image Cutout */}
           <div className="relative h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 rounded-xl overflow-hidden shrink-0 border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
             <img
-              src={item.photo || item.logo || fallbackAvatar}
+              src={item.photo || item.logo || getTeamLogo(item.name) || fallbackAvatar}
               alt={item.name}
               className="h-full w-full object-cover object-top group-hover:scale-110 transition-transform duration-500"
             />

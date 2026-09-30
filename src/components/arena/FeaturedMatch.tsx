@@ -5,6 +5,7 @@ import { Container } from '../ui/Container';
 import { useCollection } from '@/hooks/useCollection';
 import { useTheme } from '@/contexts/ThemeContext';
 import { TiltCard, Magnetic, RollingScore } from '@/components/motion';
+import { getTeamLogo } from '@/utils/teamLogos';
 import type { Match, Team } from '@/types';
 
 export const FeaturedMatch: React.FC = () => {
@@ -31,6 +32,8 @@ export const FeaturedMatch: React.FC = () => {
 
   const teamA = featured.participantA?.name || teamById.get(featured.teamAId)?.name || 'Team A';
   const teamB = featured.participantB?.name || teamById.get(featured.teamBId)?.name || 'Team B';
+  const logoA = teamById.get(featured.teamAId)?.logo || getTeamLogo(teamA) || getTeamLogo(featured.teamAId);
+  const logoB = teamById.get(featured.teamBId)?.logo || getTeamLogo(teamB) || getTeamLogo(featured.teamBId);
   const isLive = featured.status === 'live';
   const scoreObj = featured.score as any;
   const scoreA = Number(scoreObj?.teamA ?? 0);
@@ -105,6 +108,11 @@ export const FeaturedMatch: React.FC = () => {
                   whileHover={{ scale: 1.03, x: -4 }}
                   className="flex-1 flex flex-col items-center md:items-end text-center md:text-right"
                 >
+                  {logoA && (
+                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden mb-3 border border-black/10 dark:border-white/15 shadow-lg bg-black/5 dark:bg-white/5 shrink-0">
+                      <img src={logoA} alt={teamA} className="w-full h-full object-cover" />
+                    </div>
+                  )}
                   <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${
                     isDay ? 'text-[#071426]/50' : 'text-white/50'
                   }`}>
@@ -148,6 +156,11 @@ export const FeaturedMatch: React.FC = () => {
                   whileHover={{ scale: 1.03, x: 4 }}
                   className="flex-1 flex flex-col items-center md:items-start text-center md:text-left"
                 >
+                  {logoB && (
+                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden mb-3 border border-black/10 dark:border-white/15 shadow-lg bg-black/5 dark:bg-white/5 shrink-0">
+                      <img src={logoB} alt={teamB} className="w-full h-full object-cover" />
+                    </div>
+                  )}
                   <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${
                     isDay ? 'text-[#071426]/50' : 'text-white/50'
                   }`}>

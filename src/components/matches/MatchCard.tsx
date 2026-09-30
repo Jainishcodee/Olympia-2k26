@@ -5,6 +5,7 @@ import { Badge } from '../ui/Badge';
 import { cn } from '@/utils/cn';
 import { useTheme } from '@/contexts/ThemeContext';
 import { TiltCard, RollingScore } from '@/components/motion';
+import { getTeamLogo } from '@/utils/teamLogos';
 
 interface MatchCardProps {
   id: string;
@@ -68,9 +69,22 @@ export const MatchCard: React.FC<MatchCardProps> = ({
             </div>
             
             <div className="flex justify-between items-center relative z-10 gap-3 my-2">
-              <div className="text-center flex-1 min-w-0">
+              {/* Team A */}
+              <div className="flex flex-col items-center text-center flex-1 min-w-0">
+                {getTeamLogo(teamA) ? (
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden mb-2 border border-black/10 dark:border-white/10 shadow-sm shrink-0 bg-black/5 dark:bg-white/5">
+                    <img src={getTeamLogo(teamA)} alt={teamA} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  </div>
+                ) : (
+                  <div className={cn(
+                    "w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center font-black text-xs sm:text-sm mb-2 border shadow-sm shrink-0",
+                    isDay ? "bg-slate-100 border-slate-200 text-slate-800" : "bg-[#0B1A30] border-white/10 text-white"
+                  )}>
+                    {teamA.slice(0, 3).toUpperCase()}
+                  </div>
+                )}
                 <h3 className={cn(
-                  "font-black uppercase text-base md:text-lg truncate",
+                  "font-black uppercase text-xs sm:text-sm md:text-base truncate w-full",
                   isDay ? "text-[#071426]" : "text-white"
                 )}>
                   {teamA}
@@ -97,9 +111,22 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                 )}
               </div>
               
-              <div className="text-center flex-1 min-w-0">
+              {/* Team B */}
+              <div className="flex flex-col items-center text-center flex-1 min-w-0">
+                {getTeamLogo(teamB) ? (
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden mb-2 border border-black/10 dark:border-white/10 shadow-sm shrink-0 bg-black/5 dark:bg-white/5">
+                    <img src={getTeamLogo(teamB)} alt={teamB} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  </div>
+                ) : (
+                  <div className={cn(
+                    "w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center font-black text-xs sm:text-sm mb-2 border shadow-sm shrink-0",
+                    isDay ? "bg-slate-100 border-slate-200 text-slate-800" : "bg-[#0B1A30] border-white/10 text-white"
+                  )}>
+                    {teamB.slice(0, 3).toUpperCase()}
+                  </div>
+                )}
                 <h3 className={cn(
-                  "font-black uppercase text-base md:text-lg truncate",
+                  "font-black uppercase text-xs sm:text-sm md:text-base truncate w-full",
                   isDay ? "text-[#071426]" : "text-white"
                 )}>
                   {teamB}

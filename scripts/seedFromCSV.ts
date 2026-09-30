@@ -240,6 +240,36 @@ async function run() {
         const draws = teamIdx % 4 === 0 ? 1 : 0;
         const points = wins * 3 + draws;
 
+        const LOGO_MAP: Record<string, string> = {
+          apexattackers: '/logos/apex-attackers.jpg',
+          boundarybreakers: '/logos/boundary-breakers.jpg',
+          courtkings: '/logos/court-kings.jpg',
+          fragninjas: '/logos/frag-ninjas.jpg',
+          gcspikers: '/logos/gc-spikers.png',
+          handhitters: '/logos/hand-hitters.jpg',
+          jinussmashers: '/logos/jinus-smashers.jpg',
+          kstrike: '/logos/k-strike.png',
+          laggaslegends: '/logos/laggas-legends.jpg',
+          legendarylions: '/logos/legendary-lions.jpg',
+          netwarriors: '/logos/net-warriors.jpg',
+          powerhitters: '/logos/power-hitters.jpg',
+          powerpalm: '/logos/power-palm.jpg',
+          reignfc: '/logos/reign-fc.jpg',
+          roninxi: '/logos/ronin-xi.png',
+          shadowspikers: '/logos/shadow-spikers.png',
+          shadowstrikers: '/logos/shadow-strikers.jpg',
+          shadowx: '/logos/shadow-x.jpg',
+          spikewarriors: '/logos/spike-warriors.jpg',
+          superstrikers: '/logos/super-strikers.jpg',
+          vedantblackfangs: '/logos/vedant-blackfangs.jpg',
+          vedantblackfang: '/logos/vedant-blackfangs.jpg',
+          vedantspikers: '/logos/vedant-spikers.jpg',
+          vortexaces: '/logos/vortex-aces.jpg',
+          vrajkeveterans: '/logos/vraj-ke-veterans.jpg',
+        };
+        const normName = teamName.toLowerCase().replace(/['']/g, '').replace(/[^a-z0-9]/g, '');
+        const teamLogo = LOGO_MAP[normName] || `/logos/${teamSlug}.jpg`;
+
         teamMap.set(teamKey, {
           id: teamDocId,
           name: teamName,
@@ -253,7 +283,7 @@ async function run() {
           losses: 0,
           draws: 0,
           points: 0,
-          logo: '',
+          logo: teamLogo,
           coach: '',
           playerIds: [],
         });

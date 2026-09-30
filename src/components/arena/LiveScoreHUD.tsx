@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCollection } from '@/hooks/useCollection';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getTeamLogo } from '@/utils/teamLogos';
 import type { Match, Team } from '@/types';
 
 /** Two-digit pad with a vertical roll on every value change. */
@@ -61,6 +62,8 @@ export const LiveScoreHUD: React.FC<{ className?: string }> = ({ className = '' 
   const match = liveMatches[index % liveMatches.length];
   const teamA = match.participantA?.name || teamById.get(match.teamAId)?.name || 'Team A';
   const teamB = match.participantB?.name || teamById.get(match.teamBId)?.name || 'Team B';
+  const logoA = teamById.get(match.teamAId)?.logo || getTeamLogo(teamA) || getTeamLogo(match.teamAId);
+  const logoB = teamById.get(match.teamBId)?.logo || getTeamLogo(teamB) || getTeamLogo(match.teamBId);
   const score = match.score as unknown as Record<string, unknown> | undefined;
   const scoreA = Number(score?.teamA ?? 0);
   const scoreB = Number(score?.teamB ?? 0);
@@ -110,44 +113,54 @@ export const LiveScoreHUD: React.FC<{ className?: string }> = ({ className = '' 
           </div>
 
           <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <div
-                className={`truncate text-[10px] font-black uppercase tracking-[0.14em] ${
-                  isDay ? 'text-[#071426]/50' : 'text-white/40'
-                }`}
-              >
-                TEAM A
-              </div>
-              <div
-                className={`truncate font-black uppercase tracking-tight text-base sm:text-lg ${
-                  isDay ? 'text-[#071426]' : 'text-white'
-                }`}
-              >
-                {teamA}
+            <div className="min-w-0 flex-1 flex items-center gap-2.5">
+              {logoA && (
+                <img src={logoA} alt={teamA} className="w-8 h-8 rounded-lg object-cover border border-black/10 dark:border-white/10 shrink-0" />
+              )}
+              <div className="min-w-0 flex-1">
+                <div
+                  className={`truncate text-[10px] font-black uppercase tracking-[0.14em] ${
+                    isDay ? 'text-[#071426]/50' : 'text-white/40'
+                  }`}
+                >
+                  TEAM A
+                </div>
+                <div
+                  className={`truncate font-black uppercase tracking-tight text-sm sm:text-base ${
+                    isDay ? 'text-[#071426]' : 'text-white'
+                  }`}
+                >
+                  {teamA}
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 font-black tracking-tighter text-[#D9A441] text-3xl sm:text-4xl leading-none">
+            <div className="flex items-center gap-1.5 font-black tracking-tighter text-[#D9A441] text-3xl sm:text-4xl leading-none shrink-0 px-1">
               <Roll value={scoreA} />
               <span className={isDay ? 'text-[#071426]/30 text-xl' : 'text-white/30 text-xl'}>:</span>
               <Roll value={scoreB} className={isDay ? 'text-[#071426]' : 'text-white'} />
             </div>
 
-            <div className="min-w-0 flex-1 text-right">
-              <div
-                className={`truncate text-[10px] font-black uppercase tracking-[0.14em] ${
-                  isDay ? 'text-[#071426]/50' : 'text-white/40'
-                }`}
-              >
-                TEAM B
+            <div className="min-w-0 flex-1 flex items-center justify-end gap-2.5 text-right">
+              <div className="min-w-0 flex-1">
+                <div
+                  className={`truncate text-[10px] font-black uppercase tracking-[0.14em] ${
+                    isDay ? 'text-[#071426]/50' : 'text-white/40'
+                  }`}
+                >
+                  TEAM B
+                </div>
+                <div
+                  className={`truncate font-black uppercase tracking-tight text-sm sm:text-base ${
+                    isDay ? 'text-[#071426]' : 'text-white'
+                  }`}
+                >
+                  {teamB}
+                </div>
               </div>
-              <div
-                className={`truncate font-black uppercase tracking-tight text-base sm:text-lg ${
-                  isDay ? 'text-[#071426]' : 'text-white'
-                }`}
-              >
-                {teamB}
-              </div>
+              {logoB && (
+                <img src={logoB} alt={teamB} className="w-8 h-8 rounded-lg object-cover border border-black/10 dark:border-white/10 shrink-0" />
+              )}
             </div>
           </div>
         </div>

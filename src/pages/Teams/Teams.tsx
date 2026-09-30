@@ -8,6 +8,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Container } from '@/components/ui/Container';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { Footer } from '@/components/arena/Footer';
+import { getTeamLogo } from '@/utils/teamLogos';
 import type { Team, Sport } from '@/types';
 
 const containerVariants = {
@@ -158,8 +159,12 @@ export const Teams: React.FC = () => {
                                 : 'bg-gradient-to-br from-gray-800 to-gray-900 border-white/20 text-white',
                             )}
                           >
-                            {team.logo ? (
-                              <img src={team.logo} alt={team.name} className="w-full h-full object-cover rounded-2xl" />
+                            {(team.logo || getTeamLogo(team.name) || getTeamLogo(team.id)) ? (
+                              <img
+                                src={team.logo || getTeamLogo(team.name) || getTeamLogo(team.id)}
+                                alt={team.name}
+                                className="w-full h-full object-cover rounded-2xl"
+                              />
                             ) : (
                               (team.shortName || team.name.slice(0, 3)).toUpperCase()
                             )}

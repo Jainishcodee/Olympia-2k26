@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
 import { RollingScore } from '@/components/motion';
 import { Link } from 'react-router-dom';
+import { getTeamLogo } from '@/utils/teamLogos';
 import type { LeaderboardItem } from './PodiumHero';
 
 export const EntityProfileModal: React.FC<{
@@ -71,7 +72,7 @@ export const EntityProfileModal: React.FC<{
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-8 relative z-10">
             <div className="relative w-32 h-32 sm:w-36 sm:h-36 rounded-2xl overflow-hidden shrink-0 border-2 border-[#D9A441] shadow-lg bg-black/10">
               <img
-                src={item.photo || item.logo || fallbackAvatar}
+                src={item.photo || item.logo || getTeamLogo(item.name) || fallbackAvatar}
                 alt={item.name}
                 className="w-full h-full object-cover object-top"
               />

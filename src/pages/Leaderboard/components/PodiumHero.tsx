@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
 import { TiltCard, RollingScore } from '@/components/motion';
+import { getTeamLogo } from '@/utils/teamLogos';
 
 export interface LeaderboardItem {
   id: string;
@@ -91,7 +92,7 @@ export const PodiumHero: React.FC<{
               <div className="relative h-40 sm:h-48 md:h-52 w-full mb-3 sm:mb-5 flex items-center justify-center">
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-[#155EEF]/20 to-transparent" />
                 <img
-                  src={second.photo || second.logo || getFallbackAvatar(second.name, 2)}
+                  src={second.photo || second.logo || getTeamLogo(second.name) || getFallbackAvatar(second.name, 2)}
                   alt={second.name}
                   className="h-full w-full object-cover object-top rounded-2xl filter drop-shadow-md group-hover:scale-105 transition-transform duration-500"
                 />
@@ -191,7 +192,7 @@ export const PodiumHero: React.FC<{
               <div className="relative h-48 sm:h-60 md:h-72 w-full mb-4 sm:mb-6 flex items-center justify-center">
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-t from-[#D9A441]/20 to-transparent" />
                 <img
-                  src={first.photo || first.logo || getFallbackAvatar(first.name, 1)}
+                  src={first.photo || first.logo || getTeamLogo(first.name) || getFallbackAvatar(first.name, 1)}
                   alt={first.name}
                   className="h-full w-full object-cover object-top rounded-3xl filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.4)] group-hover:scale-105 transition-transform duration-700"
                 />
@@ -284,7 +285,7 @@ export const PodiumHero: React.FC<{
               <div className="relative h-40 sm:h-48 md:h-52 w-full mb-3 sm:mb-5 flex items-center justify-center">
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-[#FF6A00]/20 to-transparent" />
                 <img
-                  src={third.photo || third.logo || getFallbackAvatar(third.name, 3)}
+                  src={third.photo || third.logo || getTeamLogo(third.name) || getFallbackAvatar(third.name, 3)}
                   alt={third.name}
                   className="h-full w-full object-cover object-top rounded-2xl filter drop-shadow-md group-hover:scale-105 transition-transform duration-500"
                 />

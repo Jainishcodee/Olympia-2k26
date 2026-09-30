@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/utils/cn';
+import { getTeamLogo } from '@/utils/teamLogos';
 
 interface ScoreDisplayProps {
   teamA: string;
@@ -63,13 +64,17 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ teamA, teamB, scoreA
           <div className="flex-1 flex flex-col items-center text-center min-w-0 px-2">
             <div
               className={cn(
-                "w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-full mb-3 sm:mb-5 flex items-center justify-center text-2xl sm:text-4xl font-black border shadow-lg transition-transform hover:scale-105",
+                "w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-3xl mb-3 sm:mb-5 flex items-center justify-center text-2xl sm:text-4xl font-black border shadow-lg transition-transform hover:scale-105 overflow-hidden",
                 isDay
                   ? "bg-white border-[#071426]/10 text-[#155EEF] shadow-sm"
                   : "bg-white/5 border-white/10 text-[#FFD21F] shadow-2xl"
               )}
             >
-              {teamA.charAt(0)}
+              {getTeamLogo(teamA) ? (
+                <img src={getTeamLogo(teamA)} alt={teamA} className="w-full h-full object-cover" />
+              ) : (
+                teamA.charAt(0)
+              )}
             </div>
             <h2
               className={cn(
@@ -103,13 +108,17 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ teamA, teamB, scoreA
           <div className="flex-1 flex flex-col items-center text-center min-w-0 px-2">
             <div
               className={cn(
-                "w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-full mb-3 sm:mb-5 flex items-center justify-center text-2xl sm:text-4xl font-black border shadow-lg transition-transform hover:scale-105",
+                "w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-3xl mb-3 sm:mb-5 flex items-center justify-center text-2xl sm:text-4xl font-black border shadow-lg transition-transform hover:scale-105 overflow-hidden",
                 isDay
                   ? "bg-white border-[#071426]/10 text-[#FF4D3D] shadow-sm"
                   : "bg-white/5 border-white/10 text-[#FF4D3D] shadow-2xl"
               )}
             >
-              {teamB.charAt(0)}
+              {getTeamLogo(teamB) ? (
+                <img src={getTeamLogo(teamB)} alt={teamB} className="w-full h-full object-cover" />
+              ) : (
+                teamB.charAt(0)
+              )}
             </div>
             <h2
               className={cn(

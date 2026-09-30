@@ -13,6 +13,7 @@ import { ChampionsArchive } from './components/ChampionsArchive';
 import { MultiSportLeaderboardGrid } from './components/MultiSportLeaderboardGrid';
 import { EntityProfileModal } from './components/EntityProfileModal';
 import { LeaderboardCTA } from './components/LeaderboardCTA';
+import { getTeamLogo } from '@/utils/teamLogos';
 import type { Player, Team, Sport } from '@/types';
 
 export const Leaderboard: React.FC = () => {
@@ -299,7 +300,7 @@ export const Leaderboard: React.FC = () => {
         wins,
         losses,
         rating: 4.6,
-        logo: t.logo,
+        logo: t.logo || getTeamLogo(t.name) || getTeamLogo(t.id) || '',
         trend: (idx % 2 === 0 ? 1 : -1),
         type: 'team' as const,
       };

@@ -6,6 +6,7 @@ import { SectionTitle } from '../ui/SectionTitle';
 import { useCollection } from '@/hooks/useCollection';
 import { useTheme } from '@/contexts/ThemeContext';
 import { TiltCard, Magnetic, SplitText } from '@/components/motion';
+import { getTeamLogo } from '@/utils/teamLogos';
 import type { Match, Team } from '@/types';
 
 export const UpcomingMatches: React.FC = () => {
@@ -78,6 +79,8 @@ export const UpcomingMatches: React.FC = () => {
           {upcomingMatches.map((match, i) => {
             const teamA = getTeamName(match.teamAId, match.participantA?.name);
             const teamB = getTeamName(match.teamBId, match.participantB?.name);
+            const logoA = teamById.get(match.teamAId)?.logo || getTeamLogo(teamA) || getTeamLogo(match.teamAId);
+            const logoB = teamById.get(match.teamBId)?.logo || getTeamLogo(teamB) || getTeamLogo(match.teamBId);
 
             return (
               <motion.div
@@ -106,23 +109,33 @@ export const UpcomingMatches: React.FC = () => {
                         </span>
                         
                         <div className="flex items-center space-x-3 truncate">
-                          <span className={`text-base md:text-lg font-black uppercase truncate ${
-                            isDay ? 'text-[#071426]' : 'text-white'
-                          }`}>
-                            {teamA}
-                          </span>
-                          <span className={`text-xs font-black px-2 py-0.5 rounded ${
+                          <div className="flex items-center gap-2 min-w-0">
+                            {logoA && (
+                              <img src={logoA} alt={teamA} className="w-6 h-6 rounded-lg object-cover shrink-0 border border-black/10 dark:border-white/10" />
+                            )}
+                            <span className={`text-base md:text-lg font-black uppercase truncate ${
+                              isDay ? 'text-[#071426]' : 'text-white'
+                            }`}>
+                              {teamA}
+                            </span>
+                          </div>
+                          <span className={`text-xs font-black px-2 py-0.5 rounded shrink-0 ${
                             isDay 
                               ? 'bg-[#071426]/5 text-[#D9A441]' 
                               : 'bg-white/5 text-[#FFD21F]'
                           }`}>
                             VS
                           </span>
-                          <span className={`text-base md:text-lg font-black uppercase truncate ${
-                            isDay ? 'text-[#071426]' : 'text-white'
-                          }`}>
-                            {teamB}
-                          </span>
+                          <div className="flex items-center gap-2 min-w-0">
+                            {logoB && (
+                              <img src={logoB} alt={teamB} className="w-6 h-6 rounded-lg object-cover shrink-0 border border-black/10 dark:border-white/10" />
+                            )}
+                            <span className={`text-base md:text-lg font-black uppercase truncate ${
+                              isDay ? 'text-[#071426]' : 'text-white'
+                            }`}>
+                              {teamB}
+                            </span>
+                          </div>
                         </div>
                       </div>
 

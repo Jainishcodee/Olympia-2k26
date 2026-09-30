@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/utils/cn';
 import { SEED_MATCHES, SEED_SPORTS } from '@/data/seedData';
+import { getTeamLogo } from '@/utils/teamLogos';
 import toast from 'react-hot-toast';
 
 import { RollingScore, RollingLabel } from '@/components/scoring/RollingScore';
@@ -1153,34 +1154,41 @@ const toneColor = (tone?: MatchEvent['tone']): string => {
 const TeamPlate: React.FC<{
   team: { name: string; shortName: string };
   side: 'left' | 'right';
-}> = ({ team, side }) => (
-  <div
-    className={cn(
-      'flex min-w-0 items-center gap-3',
-      side === 'right' && 'flex-row-reverse text-right',
-    )}
-  >
-    <span
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[12px] font-black tracking-tight sm:h-14 sm:w-14 sm:text-sm"
-      style={{
-        background:
-          side === 'left'
-            ? 'linear-gradient(140deg, #1264FF, #0A3AA8)'
-            : 'linear-gradient(140deg, #FF4D3D, #A61E14)',
-        boxShadow: `0 14px 34px -18px ${side === 'left' ? 'rgba(18,100,255,1)' : 'rgba(255,77,61,1)'}`,
-      }}
+}> = ({ team, side }) => {
+  const logo = getTeamLogo(team.name);
+  return (
+    <div
+      className={cn(
+        'flex min-w-0 items-center gap-3',
+        side === 'right' && 'flex-row-reverse text-right',
+      )}
     >
-      {team.shortName}
-    </span>
-    <span className="min-w-0">
-      <span className="block truncate text-[13px] font-black uppercase tracking-[0.16em] text-[#EEF2F7] sm:text-base">
-        {team.name}
+      <span
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[12px] font-black tracking-tight sm:h-14 sm:w-14 sm:text-sm overflow-hidden border border-white/20"
+        style={{
+          background:
+            side === 'left'
+              ? 'linear-gradient(140deg, #1264FF, #0A3AA8)'
+              : 'linear-gradient(140deg, #FF4D3D, #A61E14)',
+          boxShadow: `0 14px 34px -18px ${side === 'left' ? 'rgba(18,100,255,1)' : 'rgba(255,77,61,1)'}`,
+        }}
+      >
+        {logo ? (
+          <img src={logo} alt={team.name} className="w-full h-full object-cover" />
+        ) : (
+          team.shortName
+        )}
       </span>
-      <span className="block text-[9px] font-black uppercase tracking-[0.3em] text-[#4C5B75]">
-        {side === 'left' ? 'Home' : 'Away'}
+      <span className="min-w-0">
+        <span className="block truncate text-[13px] font-black uppercase tracking-[0.16em] text-[#EEF2F7] sm:text-base">
+          {team.name}
+        </span>
+        <span className="block text-[9px] font-black uppercase tracking-[0.3em] text-[#4C5B75]">
+          {side === 'left' ? 'Home' : 'Away'}
+        </span>
       </span>
-    </span>
-  </div>
-);
+    </div>
+  );
+};
 
 export default ScoringConsole;

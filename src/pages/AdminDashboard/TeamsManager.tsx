@@ -21,6 +21,7 @@ import {
 import { cn } from '@/utils/cn';
 import type { Match, Player, Sport, Team } from '@/types';
 import { FiEdit2, FiEye, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi';
+import { getTeamLogo } from '@/utils/teamLogos';
 
 const initialsOf = (name: string): string => {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -30,10 +31,11 @@ const initialsOf = (name: string): string => {
 
 const isActive = (team: Team): boolean => team.active !== false;
 
-const Avatar: React.FC<{ name: string; logo?: string; isDay: boolean }> = ({ name, logo, isDay }) =>
-  logo ? (
+const Avatar: React.FC<{ name: string; logo?: string; isDay: boolean }> = ({ name, logo, isDay }) => {
+  const finalLogo = logo || getTeamLogo(name);
+  return finalLogo ? (
     <img
-      src={logo}
+      src={finalLogo}
       alt={name}
       className={cn(
         'h-8 w-8 shrink-0 rounded-lg border object-cover',
@@ -52,6 +54,7 @@ const Avatar: React.FC<{ name: string; logo?: string; isDay: boolean }> = ({ nam
       {initialsOf(name)}
     </span>
   );
+};
 
 const TeamsManager: React.FC = () => {
   const navigate = useNavigate();
