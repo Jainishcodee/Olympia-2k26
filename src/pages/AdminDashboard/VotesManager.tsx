@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useCollection } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { updateMatch } from '@/services/matches/matchService';
 import {
@@ -15,6 +16,7 @@ import {
   Toolbar,
 } from '@/components/admin/kit';
 import type { Match, Team, Vote } from '@/types';
+import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';
 
 /* ============================================================================
@@ -57,6 +59,7 @@ const votingState = (match: Match): 'open' | 'closed' | 'disabled' => {
 };
 
 const VotesManager: React.FC = () => {
+  const { isDay } = useTheme();
   const { log } = useAuditLog();
 
   const votes = useCollection<VoteDoc>('votes');
@@ -205,7 +208,7 @@ const VotesManager: React.FC = () => {
           placeholder="Search match…"
           className="w-full sm:w-72"
         />
-        <span className="ml-auto text-[12px] tabular-nums text-slate-400">
+        <span className={cn('ml-auto text-[12px] tabular-nums', isDay ? 'text-slate-500' : 'text-slate-400')}>
           {rows.length} of {matches.data.length} matches
         </span>
       </Toolbar>
@@ -234,7 +237,7 @@ const VotesManager: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1120px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
                   {[
                     'Match',
                     'Team A',
@@ -248,14 +251,14 @@ const VotesManager: React.FC = () => {
                   ].map((heading) => (
                     <th
                       key={heading}
-                      className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                      className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-slate-400')}
                     >
                       {heading}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
                 {rows.map((row) => {
                   const { match, total, a, b, other } = row;
                   const pctA = total ? (a / total) * 100 : 0;
@@ -264,19 +267,19 @@ const VotesManager: React.FC = () => {
                   const state = votingState(match);
                   const busy = busyId === match.id;
                   return (
-                    <tr key={match.id} className="transition-colors hover:bg-slate-50/70">
+                    <tr key={match.id} className={cn('transition-colors', isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.02]')}>
                       <td className="max-w-[240px] px-3 py-2.5">
-                        <span className="block truncate text-[13px] font-semibold text-slate-800">
+                        <span className={cn('block truncate text-[13px] font-semibold', isDay ? 'text-slate-900' : 'text-white')}>
                           {matchLabel(match)}
                         </span>
-                        <span className="block truncate text-[11px] text-slate-400">
+                        <span className={cn('block truncate text-[11px]', isDay ? 'text-slate-500' : 'text-slate-400')}>
                           #{match.matchNumber ?? '—'} · {match.id.slice(0, 10)}
                         </span>
                       </td>
-                      <td className="max-w-[150px] truncate px-3 py-2.5 text-[13px] text-slate-700">
+                      <td className={cn('max-w-[150px] truncate px-3 py-2.5 text-[13px]', isDay ? 'text-slate-800' : 'text-slate-200')}>
                         {nameA(match)}
                       </td>
-                      <td className="max-w-[150px] truncate px-3 py-2.5 text-[13px] text-slate-700">
+                      <td className={cn('max-w-[150px] truncate px-3 py-2.5 text-[13px]', isDay ? 'text-slate-800' : 'text-slate-200')}>
                         {nameB(match)}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums text-[#1264FF]">
@@ -287,11 +290,11 @@ const VotesManager: React.FC = () => {
                       </td>
                       <td className="px-3 py-2.5">
                         <div className="w-44">
-                          <div className="mb-1 flex items-center justify-between font-mono text-[10px] tabular-nums text-slate-400">
+                          <div className={cn('mb-1 flex items-center justify-between font-mono text-[10px] tabular-nums', isDay ? 'text-slate-500' : 'text-slate-400')}>
                             <span>{a} to {nameA(match)}</span>
                             <span>{b} to {nameB(match)}</span>
                           </div>
-                          <div className="flex h-3 w-full overflow-hidden rounded bg-slate-100">
+                          <div className={cn('flex h-3 w-full overflow-hidden rounded', isDay ? 'bg-slate-200' : 'bg-white/10')}>
                             <div
                               className="h-full bg-[#1264FF] transition-[width] duration-300"
                               style={{ width: `${pctA}%` }}
@@ -301,13 +304,13 @@ const VotesManager: React.FC = () => {
                               style={{ width: `${pctB}%` }}
                             />
                             <div
-                              className="h-full bg-slate-300 transition-[width] duration-300"
+                              className={cn('h-full transition-[width] duration-300', isDay ? 'bg-slate-300' : 'bg-white/20')}
                               style={{ width: `${pctOther}%` }}
                             />
                           </div>
                         </div>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums text-slate-700">
+                      <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-900' : 'text-slate-100')}>
                         {total}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5">
@@ -350,7 +353,7 @@ const VotesManager: React.FC = () => {
         )}
       </Card>
 
-      <p className="mt-3 text-[12px] leading-relaxed text-slate-400">
+      <p className={cn('mt-3 text-[12px] leading-relaxed', isDay ? 'text-slate-500' : 'text-slate-400')}>
         Closing a poll disables voting and marks the match <span className="font-mono">votingStatus: closed</span> —
         results stay visible, new ballots are refused. Only aggregated counts are shown on this screen.
       </p>

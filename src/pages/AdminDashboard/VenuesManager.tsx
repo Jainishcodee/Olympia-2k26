@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useCollection } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import { updateVenue } from '@/services/venues/venueService';
 import {
+  ActionIcon,
   AdminHeader,
   Btn,
   Card,
@@ -21,52 +23,26 @@ import { cn } from '@/utils/cn';
 import type { Match, Venue } from '@/types';
 import { FiCheck, FiEdit2, FiEye, FiPlus, FiSlash } from 'react-icons/fi';
 
-/**
- * `Venue` has no `available` column in the type file — the admin panel stores
- * availability as an extra optional field. Read it defensively: missing = true.
- */
 type VenueRecord = Venue & { available?: boolean };
 
-const AvailabilityBadge: React.FC<{ available: boolean }> = ({ available }) => (
+const AvailabilityBadge: React.FC<{ available: boolean; isDay: boolean }> = ({ available, isDay }) => (
   <span
     className={cn(
-      'inline-flex items-center rounded border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+      'inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-black uppercase tracking-wider',
       available
-        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-        : 'border-amber-200 bg-amber-50 text-amber-700',
+        ? isDay ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+        : isDay ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-amber-500/30 bg-amber-500/10 text-amber-300',
     )}
   >
     {available ? 'Available' : 'Unavailable'}
   </span>
 );
 
-const ActionIcon: React.FC<{
-  label: string;
-  onClick: () => void;
-  children: React.ReactNode;
-  primary?: boolean;
-  disabled?: boolean;
-}> = ({ label, onClick, children, primary, disabled }) => (
-  <button
-    type="button"
-    title={label}
-    aria-label={label}
-    disabled={disabled}
-    onClick={onClick}
-    className={cn(
-      'flex h-7 w-7 items-center justify-center rounded border transition-colors disabled:opacity-40',
-      primary
-        ? 'border-[#1264FF] bg-[#1264FF] text-white hover:bg-[#0B4FD1]'
-        : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-900',
-    )}
-  >
-    {children}
-  </button>
-);
-
 const VenuesManager: React.FC = () => {
   const navigate = useNavigate();
   const { log } = useAuditLog();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
 
   const venues = useCollection<VenueRecord>('venues', { sortBy: 'name' });
   const matches = useCollection<Match>('matches');
@@ -164,7 +140,7 @@ const VenuesManager: React.FC = () => {
           options={availableOptions}
         />
         <FilterSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} />
-        <span className="ml-auto text-[12px] tabular-nums text-slate-400">
+        <span className={cn('ml-auto text-[12px] tabular-nums font-bold', isDay ? 'text-slate-500' : 'text-slate-400')}>
           {rows.length} of {venues.data.length}
         </span>
       </Toolbar>
@@ -192,12 +168,15 @@ const VenuesManager: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[980px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr className={cn(
+                  'border-b transition-colors',
+                  isDay ? 'border-slate-200 bg-slate-50/90 text-slate-600' : 'border-white/10 bg-[#0B1A30]/60 text-slate-400'
+                )}>
                   {['Venue', 'Location', 'Capacity', 'Available', 'Matches hosted', 'Status', ''].map(
                     (heading) => (
                       <th
                         key={heading}
-                        className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                        className="whitespace-nowrap px-4 py-3.5 text-[10px] font-black uppercase tracking-wider"
                       >
                         {heading}
                       </th>
@@ -205,36 +184,45 @@ const VenuesManager: React.FC = () => {
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className={cn('divide-y', isDay ? 'divide-slate-100 bg-white' : 'divide-white/5 bg-transparent')}>
                 {rows.map((venue) => {
                   const active = venue.active !== false;
                   return (
-                    <tr key={venue.id} className="transition-colors hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5">
+                    <tr
+                      key={venue.id}
+                      className={cn(
+                        'transition-colors',
+                        isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.03]',
+                      )}
+                    >
+                      <td className="px-4 py-3.5">
                         <Link
                           to={`/admin/venues/${venue.id}`}
-                          className="block max-w-[220px] truncate text-[13px] font-bold text-slate-800 transition-colors hover:text-[#1264FF]"
+                          className={cn(
+                            'block max-w-[220px] truncate text-[13px] font-black transition-colors',
+                            isDay ? 'text-slate-900 hover:text-[#1264FF]' : 'text-white hover:text-[#D9A441]',
+                          )}
                         >
                           {venue.name}
                         </Link>
                       </td>
-                      <td className="max-w-[240px] truncate px-3 py-2.5 text-[13px] text-slate-600">
+                      <td className={cn('max-w-[240px] truncate px-4 py-3.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                         {venue.location || '—'}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-700">
+                      <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
                         {Number(venue.capacity ?? 0).toLocaleString()}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
-                        <AvailabilityBadge available={venue.available !== false} />
+                      <td className="whitespace-nowrap px-4 py-3.5">
+                        <AvailabilityBadge available={venue.available !== false} isDay={isDay} />
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-700">
+                      <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
                         {hostedCounts.get(venue.id) ?? 0}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
+                      <td className="whitespace-nowrap px-4 py-3.5">
                         <StatusPill value={active ? 'active' : 'disabled'} />
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
-                        <div className="flex items-center justify-end gap-1">
+                      <td className="whitespace-nowrap px-4 py-3.5">
+                        <div className="flex items-center justify-end gap-1.5">
                           <ActionIcon label="View" onClick={() => navigate(`/admin/venues/${venue.id}`)}>
                             <FiEye className="h-3.5 w-3.5" />
                           </ActionIcon>

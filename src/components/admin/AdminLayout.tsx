@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AdminSidebar from './AdminSidebar';
 import AdminTopbar from './AdminTopbar';
 import { BRAND } from '@/components/arena/BrandAssets';
+import { useTheme } from '@/contexts/ThemeContext';
+import { cn } from '@/utils/cn';
 
 const COLLAPSE_KEY = 'olympia.admin.sidebarCollapsed';
 
@@ -14,6 +16,8 @@ const AdminLayout: React.FC = () => {
     return window.localStorage.getItem(COLLAPSE_KEY) === '1';
   });
   const location = useLocation();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
 
   // Close the mobile drawer whenever the route changes
   useEffect(() => {
@@ -25,26 +29,40 @@ const AdminLayout: React.FC = () => {
   }, [collapsed]);
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-[#050C18] text-slate-100 font-sans">
+    <div
+      className={cn(
+        'relative flex h-screen overflow-hidden font-sans transition-colors duration-500',
+        isDay ? 'bg-[#F4F3EE] text-slate-900' : 'bg-[#050C18] text-slate-100',
+      )}
+    >
       {/* Background Stadium Glow & Ambient Grid */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         {/* Subtle arena stadium photo */}
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.08] mix-blend-screen"
+          className={cn(
+            'absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-700',
+            isDay ? 'opacity-[0.03] mix-blend-multiply' : 'opacity-[0.08] mix-blend-screen',
+          )}
           style={{ backgroundImage: `url(${BRAND.arena})` }}
         />
         {/* Cyan/Blue orbital glow */}
         <div 
-          className="absolute -top-[15%] left-[20%] w-[55vw] h-[450px] rounded-full blur-[140px] opacity-20 pointer-events-none"
-          style={{ background: 'radial-gradient(circle, #1264FF 0%, #1747B8 50%, transparent 80%)' }}
+          className={cn(
+            'absolute -top-[15%] left-[20%] w-[55vw] h-[450px] rounded-full blur-[140px] pointer-events-none transition-opacity duration-700',
+            isDay ? 'opacity-10' : 'opacity-20',
+          )}
+          style={{ background: isDay ? 'radial-gradient(circle, #1264FF 0%, #1747B8 50%, transparent 80%)' : 'radial-gradient(circle, #1264FF 0%, #1747B8 50%, transparent 80%)' }}
         />
         {/* Gold arena floodlight */}
         <div 
-          className="absolute -bottom-[10%] right-[10%] w-[45vw] h-[400px] rounded-full blur-[130px] opacity-15 pointer-events-none"
+          className={cn(
+            'absolute -bottom-[10%] right-[10%] w-[45vw] h-[400px] rounded-full blur-[130px] pointer-events-none transition-opacity duration-700',
+            isDay ? 'opacity-10' : 'opacity-15',
+          )}
           style={{ background: 'radial-gradient(circle, #D9A441 0%, #FFD21F 40%, transparent 80%)' }}
         />
         {/* Digital field line overlay */}
-        <div className="absolute inset-0 ol-night-field opacity-60" />
+        <div className={cn('absolute inset-0', isDay ? 'ol-day-field opacity-70' : 'ol-night-field opacity-60')} />
       </div>
 
       <AdminSidebar

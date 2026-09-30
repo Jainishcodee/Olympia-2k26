@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCollection } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   AdminHeader,
   Btn,
@@ -14,6 +15,7 @@ import {
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { pauseMatch, resumeMatch, endMatch } from '@/services/matches/matchService';
 import type { Match, MatchStatus, Tournament } from '@/types';
+import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';
 import { FiArrowRight, FiPause, FiPlay, FiSquare, FiClock, FiRadio } from 'react-icons/fi';
 
@@ -51,6 +53,7 @@ const MatchCard: React.FC<{
   onEnd?: () => void;
   busy?: boolean;
 }> = ({ match, sportLabel, tournamentLabel, onPause, onResume, onEnd, busy }) => {
+  const { isDay } = useTheme();
   const score = match.score as unknown as Record<string, unknown> | undefined;
   const cricket = match.sportId === 'cricket';
   const scoreline = cricket
@@ -71,19 +74,27 @@ const MatchCard: React.FC<{
     <motion.article 
       whileHover={{ y: -3, scale: 1.01 }}
       transition={{ duration: 0.2 }}
-      className="relative overflow-hidden rounded-xl border border-white/10 bg-[#071426]/90 backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.5)] transition-all duration-300 hover:border-[#D9A441]/40"
+      className={cn(
+        'relative overflow-hidden rounded-xl border backdrop-blur-xl transition-all duration-300',
+        isDay
+          ? 'border-slate-200/80 bg-white/95 shadow-[0_12px_30px_rgba(0,0,0,0.06)] hover:border-[#D9A441]/80'
+          : 'border-white/10 bg-[#071426]/90 shadow-[0_16px_40px_rgba(0,0,0,0.5)] hover:border-[#D9A441]/40'
+      )}
     >
       {/* Top radiant light beam */}
       {isLive && (
         <span className="absolute inset-x-0 top-0 h-[2.5px] bg-gradient-to-r from-transparent via-[#1264FF] to-transparent shadow-[0_0_12px_#1264FF]" />
       )}
 
-      <header className="flex items-center gap-2.5 border-b border-white/10 px-5 py-3.5 bg-white/[0.02]">
-        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-[#D9A441]">
+      <header className={cn(
+        'flex items-center gap-2.5 border-b px-5 py-3.5',
+        isDay ? 'border-slate-100 bg-slate-50/80' : 'border-white/10 bg-white/[0.02]'
+      )}>
+        <span className={cn('text-[11px] font-black uppercase tracking-[0.2em]', isDay ? 'text-[#A9761B]' : 'text-[#D9A441]')}>
           {sportLabel}
         </span>
-        <span className="h-3 w-px bg-white/20" />
-        <span className="truncate text-xs font-bold text-slate-400">
+        <span className={cn('h-3 w-px', isDay ? 'bg-slate-300' : 'bg-white/20')} />
+        <span className={cn('truncate text-xs font-bold', isDay ? 'text-slate-600' : 'text-slate-400')}>
           {tournamentLabel ? `${tournamentLabel} · ` : ''}Match #{match.matchNumber ?? '—'}
         </span>
         <span className="ml-auto">
@@ -92,24 +103,32 @@ const MatchCard: React.FC<{
       </header>
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-6">
-        <span className="truncate text-right text-sm md:text-base font-extrabold text-white">{a}</span>
+        <span className={cn('truncate text-right text-sm md:text-base font-extrabold', isDay ? 'text-slate-900' : 'text-white')}>{a}</span>
         
         <div className="flex flex-col items-center">
-          <div className="rounded-xl border border-[#D9A441]/40 bg-gradient-to-r from-[#0B1A30] to-[#071426] px-4 py-2 shadow-[0_0_20px_rgba(217,164,65,0.25)]">
-            <span className="text-xl md:text-2xl font-black tabular-nums tracking-widest text-[#FFD21F]">
+          <div className={cn(
+            'rounded-xl border px-4 py-2',
+            isDay
+              ? 'border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 shadow-[0_4px_16px_rgba(217,164,65,0.15)]'
+              : 'border-[#D9A441]/40 bg-gradient-to-r from-[#0B1A30] to-[#071426] shadow-[0_0_20px_rgba(217,164,65,0.25)]'
+          )}>
+            <span className={cn('text-xl md:text-2xl font-black tabular-nums tracking-widest', isDay ? 'text-amber-900' : 'text-[#FFD21F]')}>
               {scoreline}
             </span>
           </div>
-          <span className="mt-2 font-mono text-[11px] font-bold tabular-nums text-slate-400 flex items-center gap-1.5">
+          <span className={cn('mt-2 font-mono text-[11px] font-bold tabular-nums flex items-center gap-1.5', isDay ? 'text-slate-600' : 'text-slate-400')}>
             {isLive && <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-ping" />}
             {clock}
           </span>
         </div>
 
-        <span className="truncate text-left text-sm md:text-base font-extrabold text-white">{b}</span>
+        <span className={cn('truncate text-left text-sm md:text-base font-extrabold', isDay ? 'text-slate-900' : 'text-white')}>{b}</span>
       </div>
 
-      <footer className="flex flex-wrap items-center gap-2.5 border-t border-white/10 px-5 py-3.5 bg-white/[0.01]">
+      <footer className={cn(
+        'flex flex-wrap items-center gap-2.5 border-t px-5 py-3.5',
+        isDay ? 'border-slate-100 bg-slate-50/50' : 'border-white/10 bg-white/[0.01]'
+      )}>
         <Btn to={`/admin/matches/${match.id}/scoring`} variant="warn" size="xs" icon={<FiArrowRight className="h-3.5 w-3.5" />}>
           Scoring Console
         </Btn>
@@ -140,6 +159,7 @@ const MatchCard: React.FC<{
 };
 
 const LiveControl: React.FC = () => {
+  const { isDay } = useTheme();
   const matches = useCollection<Match>('matches', { sortBy: 'scheduledAt', direction: 'desc' });
   const tournaments = useCollection<Tournament>('tournaments');
   const sports = useCollection<{ id: string; name: string; icon?: string }>('sports');
@@ -207,21 +227,27 @@ const LiveControl: React.FC = () => {
   ) => (
     <section className="mb-8">
       <div className="mb-4 flex items-center gap-3">
-        <h2 className="text-xs font-black uppercase tracking-[0.24em] text-[#D9A441] flex items-center gap-2">
+        <h2 className={cn('text-xs font-black uppercase tracking-[0.24em] flex items-center gap-2', isDay ? 'text-[#A9761B]' : 'text-[#D9A441]')}>
           <FiRadio className="h-3.5 w-3.5" />
           {title}
         </h2>
-        <span className="rounded-full border border-white/10 bg-[#0B1A30] px-2.5 py-0.5 text-xs font-black tabular-nums text-white">
+        <span className={cn(
+          'rounded-full px-2.5 py-0.5 text-xs font-black tabular-nums border',
+          isDay ? 'border-slate-300 bg-slate-100 text-slate-800' : 'border-white/10 bg-[#0B1A30] text-white'
+        )}>
           {rows.length}
         </span>
-        <span className="h-px flex-1 bg-white/10" />
-        <span className="text-xs font-semibold text-slate-500">{hint}</span>
+        <span className={cn('h-px flex-1', isDay ? 'bg-slate-200' : 'bg-white/10')} />
+        <span className={cn('text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>{hint}</span>
       </div>
 
       {rows.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-8 text-center backdrop-blur-md">
-          <p className="text-sm font-bold text-slate-300">{emptyTitle}</p>
-          <p className="mt-1 text-xs text-slate-500">{emptyMessage}</p>
+        <div className={cn(
+          'rounded-xl border border-dashed p-8 text-center backdrop-blur-md',
+          isDay ? 'border-slate-200 bg-white/60' : 'border-white/10 bg-white/[0.02]'
+        )}>
+          <p className={cn('text-sm font-bold', isDay ? 'text-slate-700' : 'text-slate-300')}>{emptyTitle}</p>
+          <p className={cn('mt-1 text-xs', isDay ? 'text-slate-500' : 'text-slate-400')}>{emptyMessage}</p>
         </div>
       ) : (
         <div className="grid gap-5 lg:grid-cols-2 2xl:grid-cols-3">
@@ -266,12 +292,15 @@ const LiveControl: React.FC = () => {
         }
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-white/10 bg-[#071426]/70 p-4 backdrop-blur-md">
+      <div className={cn(
+        'flex flex-wrap items-center justify-between gap-4 rounded-xl border p-4 backdrop-blur-md',
+        isDay ? 'border-slate-200/80 bg-white/90 shadow-sm' : 'border-white/10 bg-[#071426]/70'
+      )}>
         <FilterSelect label="Discipline" value={sportFilter} onChange={setSportFilter} options={sportOptions} />
-        <div className="flex items-center gap-3 text-xs font-bold text-slate-400">
-          <span className="text-red-400 font-extrabold">{live.length} LIVE</span> ·{' '}
-          <span className="text-amber-400">{paused.length} PAUSED</span> ·{' '}
-          <span className="text-blue-400">{upcoming.length} UPCOMING TODAY</span>
+        <div className={cn('flex items-center gap-3 text-xs font-bold', isDay ? 'text-slate-600' : 'text-slate-400')}>
+          <span className="text-red-500 font-extrabold">{live.length} LIVE</span> ·{' '}
+          <span className={isDay ? 'text-amber-700' : 'text-amber-400'}>{paused.length} PAUSED</span> ·{' '}
+          <span className={isDay ? 'text-blue-700' : 'text-blue-400'}>{upcoming.length} UPCOMING TODAY</span>
         </div>
       </div>
 

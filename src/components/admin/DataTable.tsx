@@ -1,6 +1,7 @@
 import React from 'react';
 import { cn } from '@/utils/cn';
-import { FiChevronUp, FiChevronDown, FiMoreVertical, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { useTheme } from '@/contexts/ThemeContext';
 import LoadingSkeleton from './LoadingSkeleton';
 import EmptyState from './EmptyState';
 
@@ -32,9 +33,15 @@ export function DataTable<T>({
   isLoading,
   emptyState 
 }: Props<T>) {
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
+
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className={cn(
+        'rounded-xl border overflow-hidden transition-colors',
+        isDay ? 'border-slate-200 bg-white/95 shadow-xs' : 'border-white/10 bg-[#071426]/85 backdrop-blur-xl',
+      )}>
         <div className="p-4"><LoadingSkeleton type="table" /></div>
       </div>
     );
@@ -47,17 +54,20 @@ export function DataTable<T>({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className={cn(
+      'rounded-xl border overflow-hidden transition-colors',
+      isDay ? 'border-slate-200 bg-white/95 shadow-xs' : 'border-white/10 bg-[#071426]/85 backdrop-blur-xl',
+    )}>
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y transition-colors">
+          <thead className={isDay ? 'bg-slate-50/90 text-slate-600 border-b border-slate-200' : 'bg-[#0B1A30]/60 text-slate-400 border-b border-white/10'}>
             <tr>
               {columns.map((col, i) => (
                 <th 
                   key={i} 
                   scope="col" 
                   className={cn(
-                    "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
+                    "px-6 py-3.5 text-left text-[10px] font-black uppercase tracking-wider",
                     col.className
                   )}
                 >
@@ -65,38 +75,57 @@ export function DataTable<T>({
                 </th>
               ))}
               {(onEdit || onDelete) && (
-                <th scope="col" className="relative px-6 py-3">
-                  <span className="sr-only">Actions</span>
+                <th scope="col" className="relative px-6 py-3.5 text-right text-[10px] font-black uppercase tracking-wider">
+                  Actions
                 </th>
               )}
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className={cn('divide-y', isDay ? 'divide-slate-100 bg-white' : 'divide-white/5 bg-transparent')}>
             {data.map((item) => (
               <tr 
                 key={keyExtractor(item)}
                 onClick={() => onRowClick && onRowClick(item)}
                 className={cn(
-                  "hover:bg-gray-50 transition-colors", 
+                  "transition-colors",
+                  isDay ? "hover:bg-slate-50/80" : "hover:bg-white/[0.03]",
                   onRowClick ? "cursor-pointer" : ""
                 )}
               >
                 {columns.map((col, i) => (
-                  <td key={i} className={cn("px-6 py-4 whitespace-nowrap text-sm text-gray-900", col.className)}>
+                  <td key={i} className={cn("px-6 py-4 whitespace-nowrap text-sm", isDay ? "text-slate-800 font-medium" : "text-slate-200", col.className)}>
                     {typeof col.accessor === 'function' ? col.accessor(item) : String(item[col.accessor])}
                   </td>
                 ))}
                 {(onEdit || onDelete) && (
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                       {onEdit && (
-                        <button onClick={() => onEdit(item)} className="text-blue-600 hover:text-blue-900 bg-blue-50 p-1.5 rounded-md">
-                          <FiEdit2 size={16} />
+                        <button
+                          onClick={() => onEdit(item)}
+                          title="Edit"
+                          className={cn(
+                            'p-1.5 rounded-lg border transition-all',
+                            isDay
+                              ? 'border-blue-200 bg-blue-50 text-[#1264FF] hover:bg-blue-100'
+                              : 'border-blue-500/30 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20',
+                          )}
+                        >
+                          <FiEdit2 size={15} />
                         </button>
                       )}
                       {onDelete && (
-                        <button onClick={() => onDelete(item)} className="text-red-600 hover:text-red-900 bg-red-50 p-1.5 rounded-md">
-                          <FiTrash2 size={16} />
+                        <button
+                          onClick={() => onDelete(item)}
+                          title="Delete"
+                          className={cn(
+                            'p-1.5 rounded-lg border transition-all',
+                            isDay
+                              ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
+                              : 'border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20',
+                          )}
+                        >
+                          <FiTrash2 size={15} />
                         </button>
                       )}
                     </div>

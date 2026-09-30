@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useCollection } from '@/hooks/useCollection';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import {
+  ActionIcon,
   AdminHeader,
   Btn,
   Card,
@@ -17,10 +19,11 @@ import {
   StatusPill,
   Toolbar,
 } from '@/components/admin/kit';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import type { Match, Review } from '@/types';
 import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';
-import { FiEye, FiEyeOff, FiRotateCcw, FiX } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiRotateCcw, FiTrash2, FiX } from 'react-icons/fi';
 
 /* ============================================================================
  *  Reviews — moderation queue.
@@ -87,6 +90,7 @@ const Stars: React.FC<{ value: number }> = ({ value }) => {
 };
 
 const ReviewsManager: React.FC = () => {
+  const { isDay } = useTheme();
   const { log } = useAuditLog();
 
   const reviews = useCollection<ReviewDoc>('reviews', { sortBy: 'createdAt', direction: 'desc' });
@@ -99,6 +103,7 @@ const ReviewsManager: React.FC = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<ReviewDoc | null>(null);
+  const [deletePending, setDeletePending] = useState<ReviewDoc | null>(null);
   const [busy, setBusy] = useState(false);
 
   const error = reviews.error ?? matches.error;
@@ -162,6 +167,26 @@ const ReviewsManager: React.FC = () => {
       setSelected((current) => (current && current.id === review.id ? { ...current, hidden } : current));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Update failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deletePending || !db) return;
+    setBusy(true);
+    try {
+      await deleteDoc(doc(db, 'reviews', deletePending.id));
+      await log('REVIEW_HIDDEN', 'review', deletePending.id, {
+        label: `Permanently deleted: ${excerpt(deletePending.content, 48)}`,
+      });
+      toast.success('Review deleted permanently');
+      if (selected?.id === deletePending.id) {
+        setSelected(null);
+      }
+      setDeletePending(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Delete failed');
     } finally {
       setBusy(false);
     }
@@ -251,7 +276,7 @@ const ReviewsManager: React.FC = () => {
           value={statusFilter}
           onChange={setStatusFilter}
           options={[
-            { value: '', label: 'Any status' },
+            { value: '', label: 'All statuses' },
             { value: 'visible', label: 'Visible' },
             { value: 'hidden', label: 'Hidden' },
           ]}
@@ -269,14 +294,17 @@ const ReviewsManager: React.FC = () => {
             { value: '1', label: '1★ and up' },
           ]}
         />
-        <span className="ml-auto text-[12px] tabular-nums text-slate-400">
+        <span className={cn('ml-auto text-[12px] tabular-nums', isDay ? 'text-slate-500' : 'text-slate-400')}>
           {rows.length} of {reviews.data.length}
         </span>
       </Toolbar>
 
       {selectedIds.size > 0 && (
-        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-[#F0DFB8] bg-[#FFF7E6] px-3.5 py-2.5">
-          <span className="text-[13px] font-bold text-[#A9761B]">
+        <div className={cn(
+          'mb-4 flex flex-wrap items-center gap-3 rounded-lg border px-3.5 py-2.5',
+          isDay ? 'border-amber-200 bg-amber-50' : 'border-[#F0DFB8]/30 bg-[#FFF7E6]/10'
+        )}>
+          <span className={cn('text-[13px] font-bold', isDay ? 'text-amber-900' : 'text-[#FFD21F]')}>
             {selectedIds.size} selected
           </span>
           <Btn variant="warn" size="sm" onClick={hideSelected} disabled={busy} icon={<FiEyeOff className="h-3.5 w-3.5" />}>
@@ -308,7 +336,7 @@ const ReviewsManager: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1080px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
                   <th className="w-9 px-3 py-2.5">
                     <input
                       type="checkbox"
@@ -321,14 +349,14 @@ const ReviewsManager: React.FC = () => {
                   {['Reviewer', 'Match', 'Rating', 'Review', 'Created at', 'Status', ''].map((heading) => (
                     <th
                       key={heading}
-                      className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                      className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-slate-400')}
                     >
                       {heading}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
                 {rows.map((review) => {
                   const hidden = isHidden(review);
                   const created = toDate(review.createdAt) ?? toDate(review.updatedAt);
@@ -338,8 +366,9 @@ const ReviewsManager: React.FC = () => {
                       <tr
                         onClick={() => setExpandedId(expanded ? null : review.id)}
                         className={cn(
-                          'cursor-pointer transition-colors hover:bg-slate-50/70',
-                          hidden && 'bg-amber-50/40',
+                          'cursor-pointer transition-colors',
+                          isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.02]',
+                          hidden && (isDay ? 'bg-amber-50/60' : 'bg-amber-950/20'),
                         )}
                       >
                         <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
@@ -352,12 +381,12 @@ const ReviewsManager: React.FC = () => {
                           />
                         </td>
                         <td className="whitespace-nowrap px-3 py-2.5">
-                          <span className="block font-mono text-[12px] font-semibold text-slate-700">
+                          <span className={cn('block font-mono text-[12px] font-semibold', isDay ? 'text-slate-700' : 'text-slate-300')}>
                             {anonymise(review.userId ?? review.id)}
                           </span>
                         </td>
                         <td className="max-w-[200px] px-3 py-2.5">
-                          <span className="block truncate text-[13px] text-slate-700">
+                          <span className={cn('block truncate text-[13px]', isDay ? 'text-slate-800' : 'text-slate-200')}>
                             {matchTitle(review.matchId)}
                           </span>
                         </td>
@@ -368,20 +397,22 @@ const ReviewsManager: React.FC = () => {
                           <span
                             className={cn(
                               'block text-[13px] leading-relaxed',
-                              expanded ? 'whitespace-pre-wrap text-slate-700' : 'truncate text-slate-600',
+                              expanded
+                                ? isDay ? 'whitespace-pre-wrap text-slate-800' : 'whitespace-pre-wrap text-slate-200'
+                                : isDay ? 'truncate text-slate-600' : 'truncate text-slate-400',
                             )}
                           >
                             {review.content || '—'}
                           </span>
                           {!expanded && (
-                            <span className="block text-[11px] text-slate-400">Click to expand</span>
+                            <span className={cn('block text-[11px]', isDay ? 'text-slate-400' : 'text-slate-500')}>Click to expand</span>
                           )}
                         </td>
                         <td className="whitespace-nowrap px-3 py-2.5">
-                          <span className="block text-[12px] font-medium text-slate-600">
+                          <span className={cn('block text-[12px] font-medium', isDay ? 'text-slate-700' : 'text-slate-300')}>
                             {relative(created)}
                           </span>
-                          <span className="block font-mono text-[11px] tabular-nums text-slate-400">
+                          <span className={cn('block font-mono text-[11px] tabular-nums', isDay ? 'text-slate-400' : 'text-slate-500')}>
                             {created
                               ? created.toLocaleString([], {
                                   day: '2-digit',
@@ -398,35 +429,45 @@ const ReviewsManager: React.FC = () => {
                         </td>
                         <td className="whitespace-nowrap px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1">
-                            <ActionButton
+                            <ActionIcon
                               label="View review"
                               onClick={() => setSelected(review)}
-                              icon={<FiEye className="h-3.5 w-3.5" />}
-                            />
+                            >
+                              <FiEye className="h-3.5 w-3.5" />
+                            </ActionIcon>
                             {hidden ? (
-                              <ActionButton
+                              <ActionIcon
                                 label="Restore review"
-                                primary
                                 disabled={busy}
                                 onClick={() => setVisibility(review, false)}
-                                icon={<FiRotateCcw className="h-3.5 w-3.5" />}
-                              />
+                              >
+                                <FiRotateCcw className="h-3.5 w-3.5 text-blue-500" />
+                              </ActionIcon>
                             ) : (
-                              <ActionButton
+                              <ActionIcon
                                 label="Hide review"
                                 danger
                                 disabled={busy}
                                 onClick={() => setVisibility(review, true)}
-                                icon={<FiEyeOff className="h-3.5 w-3.5" />}
-                              />
+                              >
+                                <FiEyeOff className="h-3.5 w-3.5" />
+                              </ActionIcon>
                             )}
+                            <ActionIcon
+                              label="Delete review"
+                              danger
+                              disabled={busy}
+                              onClick={() => setDeletePending(review)}
+                            >
+                              <FiTrash2 className="h-3.5 w-3.5" />
+                            </ActionIcon>
                           </div>
                         </td>
                       </tr>
                       {expanded && (
-                        <tr className="bg-slate-50/70">
+                        <tr className={isDay ? 'bg-slate-50/80' : 'bg-white/[0.02]'}>
                           <td colSpan={8} className="px-3 py-3">
-                            <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-slate-700">
+                            <p className={cn('whitespace-pre-wrap text-[13px] leading-relaxed', isDay ? 'text-slate-800' : 'text-slate-200')}>
                               {review.content || 'Empty review body.'}
                             </p>
                           </td>
@@ -447,16 +488,22 @@ const ReviewsManager: React.FC = () => {
           <button
             type="button"
             aria-label="Close review detail"
-            className="absolute inset-0 bg-slate-900/40"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setSelected(null)}
           />
-          <aside className="relative flex h-full w-full max-w-md flex-col bg-white shadow-xl">
-            <header className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+          <aside className={cn(
+            'relative flex h-full w-full max-w-md flex-col shadow-2xl border-l',
+            isDay ? 'bg-white border-slate-200' : 'bg-[#071426] border-white/10'
+          )}>
+            <header className={cn(
+              'flex items-start justify-between gap-3 border-b px-5 py-4',
+              isDay ? 'border-slate-200' : 'border-white/10'
+            )}>
               <div className="min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                <p className={cn('text-[11px] font-bold uppercase tracking-[0.14em]', isDay ? 'text-slate-500' : 'text-slate-400')}>
                   Review detail
                 </p>
-                <h2 className="mt-1 truncate text-[15px] font-bold text-slate-900">
+                <h2 className={cn('mt-1 truncate text-[15px] font-bold', isDay ? 'text-slate-900' : 'text-white')}>
                   {matchTitle(selected.matchId)}
                 </h2>
               </div>
@@ -464,15 +511,18 @@ const ReviewsManager: React.FC = () => {
                 type="button"
                 onClick={() => setSelected(null)}
                 aria-label="Close"
-                className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                className={cn('rounded-md p-1.5 transition-colors', isDay ? 'text-slate-400 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-400 hover:bg-white/10 hover:text-white')}
               >
                 <FiX className="h-4 w-4" />
               </button>
             </header>
 
             <div className="flex-1 overflow-y-auto px-5 py-4">
-              <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-3">
-                <p className="text-[12px] leading-relaxed text-slate-600">{selected.content || 'Empty review body.'}</p>
+              <div className={cn(
+                'mb-4 rounded-lg border px-3.5 py-3',
+                isDay ? 'border-slate-200 bg-slate-50 text-slate-700' : 'border-white/10 bg-white/[0.03] text-slate-300'
+              )}>
+                <p className="text-[12px] leading-relaxed">{selected.content || 'Empty review body.'}</p>
               </div>
 
               <dl>
@@ -481,7 +531,7 @@ const ReviewsManager: React.FC = () => {
                 <MetaRow label="Rating">
                   <span className="inline-flex items-center gap-2">
                     <Stars value={Number(selected.rating) || 0} />
-                    <span className="font-mono text-[12px] text-slate-500">{selected.rating}/5</span>
+                    <span className={cn('font-mono text-[12px]', isDay ? 'text-slate-500' : 'text-slate-400')}>{selected.rating}/5</span>
                   </span>
                 </MetaRow>
                 <MetaRow label="Created">
@@ -501,14 +551,25 @@ const ReviewsManager: React.FC = () => {
                 </MetaRow>
               </dl>
 
-              <p className="mt-4 text-[12px] leading-relaxed text-slate-400">
+              <p className={cn('mt-4 text-[12px] leading-relaxed', isDay ? 'text-slate-500' : 'text-slate-400')}>
                 The reviewer's identity stays in Firebase Authentication. This panel only ever shows a
                 pseudonymised reference.
               </p>
             </div>
 
-            <footer className="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-3">
+            <footer className={cn(
+              'flex items-center justify-end gap-2 border-t px-5 py-3',
+              isDay ? 'border-slate-200' : 'border-white/10'
+            )}>
               <Btn onClick={() => setSelected(null)}>Close</Btn>
+              <Btn
+                variant="danger"
+                disabled={busy}
+                onClick={() => setDeletePending(selected)}
+                icon={<FiTrash2 className="h-3.5 w-3.5" />}
+              >
+                Delete
+              </Btn>
               {selectedHidden ? (
                 <Btn
                   variant="primary"
@@ -520,7 +581,7 @@ const ReviewsManager: React.FC = () => {
                 </Btn>
               ) : (
                 <Btn
-                  variant="danger"
+                  variant="warn"
                   disabled={busy}
                   onClick={() => setVisibility(selected, true)}
                   icon={<FiEyeOff className="h-3.5 w-3.5" />}
@@ -532,35 +593,22 @@ const ReviewsManager: React.FC = () => {
           </aside>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={deletePending !== null}
+        title="Delete this review permanently?"
+        message={
+          deletePending
+            ? `This review from ${anonymise(deletePending.userId ?? deletePending.id)} will be deleted immediately from Firestore.`
+            : ''
+        }
+        confirmText={busy ? 'Deleting…' : 'Delete review'}
+        isDestructive
+        onConfirm={confirmDelete}
+        onCancel={() => setDeletePending(null)}
+      />
     </>
   );
 };
-
-const ActionButton: React.FC<{
-  label: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-  primary?: boolean;
-  danger?: boolean;
-  disabled?: boolean;
-}> = ({ label, icon, onClick, primary, danger, disabled }) => (
-  <button
-    type="button"
-    title={label}
-    aria-label={label}
-    disabled={disabled}
-    onClick={onClick}
-    className={cn(
-      'flex h-7 w-7 items-center justify-center rounded border transition-colors disabled:opacity-40',
-      primary
-        ? 'border-[#1264FF] bg-[#1264FF] text-white hover:bg-[#0B4FD1]'
-        : danger
-          ? 'border-red-200 bg-white text-red-600 hover:bg-red-50'
-          : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-900',
-    )}
-  >
-    {icon}
-  </button>
-);
 
 export default ReviewsManager;

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useCollection } from '@/hooks/useCollection';
 import {
+  ActionIcon,
   AdminHeader,
   Btn,
   Card,
@@ -13,6 +14,7 @@ import {
   Toolbar,
 } from '@/components/admin/kit';
 import { useAuditLog } from '@/hooks/useAuditLog';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   createMatch,
   deleteMatch,
@@ -22,7 +24,7 @@ import type { Match, MatchStatus, Sport, Team, Tournament, Venue } from '@/types
 import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { FiEdit2, FiPlay, FiCopy, FiSlash, FiArchive, FiEye, FiRotateCcw, FiTrash2 } from 'react-icons/fi';
+import { FiEdit2, FiPlay, FiCopy, FiSlash, FiEye, FiTrash2 } from 'react-icons/fi';
 
 const PAGE_SIZE = 40;
 
@@ -50,6 +52,8 @@ const cellDate = (value: unknown) => {
 const MatchesManager: React.FC = () => {
   const navigate = useNavigate();
   const { log } = useAuditLog();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
 
   const matches = useCollection<Match>('matches', { sortBy: 'scheduledAt', direction: 'desc' });
   const sports = useCollection<Sport>('sports');
@@ -64,7 +68,6 @@ const MatchesManager: React.FC = () => {
   const [dateFilter, setDateFilter] = useState('');
   const [featuredFilter, setFeaturedFilter] = useState('');
   const [showArchived, setShowArchived] = useState(false);
-  const [autoShowArchived, setAutoShowArchived] = useState(false);
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [busy, setBusy] = useState(false);
 
@@ -90,7 +93,6 @@ const MatchesManager: React.FC = () => {
     const term = search.trim().toLowerCase();
     return matches.data.filter((match) => {
       const isArchived = (match as Match & { archived?: boolean }).archived;
-      // Show archived only when checkbox is checked, hide when unchecked
       if (!showArchived && isArchived) return false;
       if (showArchived && !isArchived) return false;
       if (sportFilter && match.sportId !== sportFilter) return false;
@@ -204,10 +206,10 @@ const MatchesManager: React.FC = () => {
         title="Matches"
         subtitle="Every scheduled, live and completed match. Filters apply instantly to the live Firestore stream."
         actions={
-          <>
+          <div className="flex items-center gap-2.5">
             <Btn to="/admin/live" variant="secondary">Live control room</Btn>
-            <Btn to="/admin/matches/create" variant="primary">Create match</Btn>
-          </>
+            <Btn to="/admin/matches/create" variant="primary">+ Create match</Btn>
+          </div>
         }
       />
 
@@ -231,29 +233,34 @@ const MatchesManager: React.FC = () => {
           type="date"
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
-          className="h-9 rounded-md border border-slate-300 bg-white px-2.5 text-[13px] text-slate-700 outline-none focus:border-[#1264FF]"
+          className={cn(
+            'h-10 rounded-lg px-3 text-xs font-bold outline-none backdrop-blur-md transition-all',
+            isDay
+              ? 'border border-slate-200 bg-white text-slate-800 shadow-xs focus:border-[#1264FF]'
+              : 'border border-white/15 bg-[#0B1A30]/90 text-white focus:border-[#D9A441]',
+          )}
           aria-label="Filter by date"
         />
         <Btn
-            variant={showArchived ? 'primary' : 'ghost'}
-            size="xs"
-            onClick={() => setShowArchived(!showArchived)}
-            className="gap-1"
-          >
-            <input
-              type="checkbox"
-              checked={showArchived}
-              onChange={(e) => setShowArchived(e.target.checked)}
-              className="sr-only"
-            />
-            Archived
-            {showArchived && (
-              <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-white/20 text-white">
-                {matches.data.filter((m) => (m as Match & { archived?: boolean }).archived).length}
-              </span>
-            )}
-          </Btn>
-        <span className="ml-auto text-[12px] tabular-nums text-slate-400">
+          variant={showArchived ? 'primary' : 'ghost'}
+          size="xs"
+          onClick={() => setShowArchived(!showArchived)}
+          className="gap-1.5"
+        >
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={(e) => setShowArchived(e.target.checked)}
+            className="sr-only"
+          />
+          Archived
+          {showArchived && (
+            <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-white/20 text-white">
+              {matches.data.filter((m) => (m as Match & { archived?: boolean }).archived).length}
+            </span>
+          )}
+        </Btn>
+        <span className={cn('ml-auto text-[12px] tabular-nums font-bold', isDay ? 'text-slate-500' : 'text-slate-400')}>
           {rows.length} of {matches.data.length}
         </span>
       </Toolbar>
@@ -275,12 +282,15 @@ const MatchesManager: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1180px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr className={cn(
+                  'border-b transition-colors',
+                  isDay ? 'border-slate-200 bg-slate-50/90 text-slate-600' : 'border-white/10 bg-[#0B1A30]/60 text-slate-400'
+                )}>
                   {['Match', 'Sport', 'Tournament', 'Teams / Players', 'Date', 'Time', 'Venue', 'Status', 'Featured', 'Display', ''].map(
                     (heading) => (
                       <th
                         key={heading}
-                        className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                        className="whitespace-nowrap px-4 py-3.5 text-[10px] font-black uppercase tracking-wider"
                       >
                         {heading}
                       </th>
@@ -288,53 +298,67 @@ const MatchesManager: React.FC = () => {
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className={cn('divide-y', isDay ? 'divide-slate-100 bg-white' : 'divide-white/5 bg-transparent')}>
                 {shown.map((match) => {
                   const when = cellDate(match.scheduledAt);
-                  const isArchived = (match as Match & { archived?: boolean }).archived;
                   return (
-                    <tr key={match.id} className="transition-colors hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5">
-                        <span className="block text-[13px] font-bold text-slate-800">
+                    <tr
+                      key={match.id}
+                      className={cn(
+                        'transition-colors',
+                        isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.03]',
+                      )}
+                    >
+                      <td className="px-4 py-3.5">
+                        <span className={cn('block text-[13px] font-black', isDay ? 'text-slate-900' : 'text-white')}>
                           #{match.matchNumber ?? '—'}
                         </span>
-                        <span className="block text-[11px] text-slate-400">{match.id.slice(0, 10)}</span>
+                        <span className={cn('block text-[11px] font-mono', isDay ? 'text-slate-400' : 'text-slate-500')}>
+                          {match.id.slice(0, 10)}
+                        </span>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-[13px] text-slate-600">
+                      <td className={cn('whitespace-nowrap px-4 py-3.5 text-[13px] font-semibold', isDay ? 'text-slate-700' : 'text-slate-300')}>
                         {lookups.sport(match.sportId)}
                       </td>
-                      <td className="max-w-[150px] truncate px-3 py-2.5 text-[13px] text-slate-600">
+                      <td className={cn('max-w-[150px] truncate px-4 py-3.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                         {lookups.tournament(match.tournamentId)}
                       </td>
-                      <td className="max-w-[240px] px-3 py-2.5">
-                        <span className="block truncate text-[13px] font-semibold text-slate-800">
+                      <td className="max-w-[240px] px-4 py-3.5">
+                        <span className={cn('block truncate text-[13px] font-bold', isDay ? 'text-slate-900' : 'text-white')}>
                           {label(match)}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-slate-600">{when.date}</td>
-                      <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[12px] tabular-nums text-slate-600">
+                      <td className={cn('whitespace-nowrap px-4 py-3.5 text-[12px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
+                        {when.date}
+                      </td>
+                      <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[12px] font-bold tabular-nums', isDay ? 'text-[#1264FF]' : 'text-[#D9A441]')}>
                         {when.time}
                       </td>
-                      <td className="max-w-[150px] truncate px-3 py-2.5 text-[13px] text-slate-600">
+                      <td className={cn('max-w-[150px] truncate px-4 py-3.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                         {lookups.venue(match.venueId)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
+                      <td className="whitespace-nowrap px-4 py-3.5">
                         <StatusPill value={match.status} />
                       </td>
-                      <td className="px-3 py-2.5">
+                      <td className="px-4 py-3.5">
                         {match.featured ? (
-                          <span className="inline-block rounded border border-[#F0DFB8] bg-[#FFF7E6] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[#A9761B]">
+                          <span className={cn(
+                            'inline-block rounded-md border px-2 py-0.5 text-[10px] font-black uppercase',
+                            isDay
+                              ? 'border-[#D9A441]/50 bg-[#FFF7E6] text-[#A9761B]'
+                              : 'border-[#D9A441]/40 bg-[#D9A441]/15 text-[#FFD21F]',
+                          )}>
                             Featured
                           </span>
                         ) : (
-                          <span className="text-[11px] text-slate-300">—</span>
+                          <span className={isDay ? 'text-slate-300' : 'text-slate-600'}>—</span>
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-[11px] text-slate-500">
+                      <td className={cn('whitespace-nowrap px-4 py-3.5 text-[11px]', isDay ? 'text-slate-500' : 'text-slate-400')}>
                         {match.displayMode === 'dual_portrait' ? 'Dual portrait' : 'Single landscape'}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
-                        <div className="flex items-center justify-end gap-1">
+                      <td className="whitespace-nowrap px-4 py-3.5">
+                        <div className="flex items-center justify-end gap-1.5">
                           <ActionIcon label="View" onClick={() => navigate(`/admin/matches/${match.id}`)}>
                             <FiEye className="h-3.5 w-3.5" />
                           </ActionIcon>
@@ -360,9 +384,10 @@ const MatchesManager: React.FC = () => {
                           </ActionIcon>
                           <ActionIcon
                             label="Delete"
+                            danger
                             onClick={() => handleDelete(match)}
                           >
-                            <FiTrash2 className="h-3.5 w-3.5 text-rose-500" />
+                            <FiTrash2 className="h-3.5 w-3.5" />
                           </ActionIcon>
                         </div>
                       </td>
@@ -385,29 +410,5 @@ const MatchesManager: React.FC = () => {
     </>
   );
 };
-
-const ActionIcon: React.FC<{
-  label: string;
-  onClick: () => void;
-  children: React.ReactNode;
-  primary?: boolean;
-  disabled?: boolean;
-}> = ({ label, onClick, children, primary, disabled }) => (
-  <button
-    type="button"
-    title={label}
-    aria-label={label}
-    disabled={disabled}
-    onClick={onClick}
-    className={cn(
-      'flex h-7 w-7 items-center justify-center rounded border transition-colors disabled:opacity-40',
-      primary
-        ? 'border-[#1264FF] bg-[#1264FF] text-white hover:bg-[#0B4FD1]'
-        : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-900',
-    )}
-  >
-    {children}
-  </button>
-);
 
 export default MatchesManager;

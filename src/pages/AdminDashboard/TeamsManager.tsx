@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useCollection } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import { deleteTeam } from '@/services/teams/teamService';
 import {
+  ActionIcon,
   AdminHeader,
   Btn,
   Card,
@@ -28,46 +30,34 @@ const initialsOf = (name: string): string => {
 
 const isActive = (team: Team): boolean => team.active !== false;
 
-const Avatar: React.FC<{ name: string; logo?: string }> = ({ name, logo }) =>
+const Avatar: React.FC<{ name: string; logo?: string; isDay: boolean }> = ({ name, logo, isDay }) =>
   logo ? (
     <img
       src={logo}
       alt={name}
-      className="h-8 w-8 shrink-0 rounded-md border border-slate-200 bg-white object-cover"
+      className={cn(
+        'h-8 w-8 shrink-0 rounded-lg border object-cover',
+        isDay ? 'border-slate-200 bg-white' : 'border-white/15 bg-[#0B1A30]',
+      )}
     />
   ) : (
-    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#071426] text-[11px] font-bold tracking-wide text-[#D9A441]">
+    <span
+      className={cn(
+        'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-black tracking-wide border',
+        isDay
+          ? 'bg-slate-100 border-slate-200 text-[#A9761B]'
+          : 'bg-[#071426] border-white/10 text-[#D9A441]',
+      )}
+    >
       {initialsOf(name)}
     </span>
   );
 
-const ActionIcon: React.FC<{
-  label: string;
-  onClick: () => void;
-  children: React.ReactNode;
-  primary?: boolean;
-  disabled?: boolean;
-}> = ({ label, onClick, children, primary, disabled }) => (
-  <button
-    type="button"
-    title={label}
-    aria-label={label}
-    disabled={disabled}
-    onClick={onClick}
-    className={cn(
-      'flex h-7 w-7 items-center justify-center rounded border transition-colors disabled:opacity-40',
-      primary
-        ? 'border-[#1264FF] bg-[#1264FF] text-white hover:bg-[#0B4FD1]'
-        : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-900',
-    )}
-  >
-    {children}
-  </button>
-);
-
 const TeamsManager: React.FC = () => {
   const navigate = useNavigate();
   const { log } = useAuditLog();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
 
   const teams = useCollection<Team>('teams', { sortBy: 'name' });
   const sports = useCollection<Sport>('sports', { sortBy: 'name' });
@@ -153,7 +143,7 @@ const TeamsManager: React.FC = () => {
     <>
       <AdminHeader
         title="Teams"
-        subtitle="Every registered squad. Archiving keeps the record and its match history intact."
+        subtitle="Every registered squad. Real-time rosters and match counts linked to each squad."
         actions={
           <Btn to="/admin/teams/create" variant="primary" icon={<FiPlus className="h-4 w-4" />}>
             Create team
@@ -172,7 +162,7 @@ const TeamsManager: React.FC = () => {
         />
         <FilterSelect value={sportFilter} onChange={setSportFilter} options={sportOptions} />
         <FilterSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} />
-        <span className="ml-auto text-[12px] tabular-nums text-slate-400">
+        <span className={cn('ml-auto text-[12px] tabular-nums font-bold', isDay ? 'text-slate-500' : 'text-slate-400')}>
           {rows.length} of {teams.data.length}
         </span>
       </Toolbar>
@@ -200,12 +190,15 @@ const TeamsManager: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1100px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr className={cn(
+                  'border-b transition-colors',
+                  isDay ? 'border-slate-200 bg-slate-50/90 text-slate-600' : 'border-white/10 bg-[#0B1A30]/60 text-slate-400'
+                )}>
                   {['Logo', 'Team', 'Sport', 'Captain', 'Vice captain', 'Players', 'Matches', 'Status', ''].map(
                     (heading) => (
                       <th
                         key={heading}
-                        className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                        className="whitespace-nowrap px-4 py-3.5 text-[10px] font-black uppercase tracking-wider"
                       >
                         {heading}
                       </th>
@@ -213,43 +206,52 @@ const TeamsManager: React.FC = () => {
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className={cn('divide-y', isDay ? 'divide-slate-100 bg-white' : 'divide-white/5 bg-transparent')}>
                 {rows.map((team) => (
-                  <tr key={team.id} className="transition-colors hover:bg-slate-50/70">
-                    <td className="px-3 py-2.5">
-                      <Avatar name={team.name} logo={team.logo} />
+                  <tr
+                    key={team.id}
+                    className={cn(
+                      'transition-colors',
+                      isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.03]',
+                    )}
+                  >
+                    <td className="px-4 py-3.5">
+                      <Avatar name={team.name} logo={team.logo} isDay={isDay} />
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td className="px-4 py-3.5">
                       <Link
                         to={`/admin/teams/${team.id}`}
-                        className="block text-[13px] font-bold text-slate-800 transition-colors hover:text-[#1264FF]"
+                        className={cn(
+                          'block text-[13px] font-black transition-colors',
+                          isDay ? 'text-slate-900 hover:text-[#1264FF]' : 'text-white hover:text-[#D9A441]',
+                        )}
                       >
                         {team.name}
                       </Link>
-                      <span className="block text-[11px] uppercase tracking-wider text-slate-400">
+                      <span className={cn('block text-[11px] uppercase tracking-wider font-bold', isDay ? 'text-slate-400' : 'text-slate-500')}>
                         {team.shortName || '—'}
                       </span>
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-[13px] text-slate-600">
+                    <td className={cn('whitespace-nowrap px-4 py-3.5 text-[13px] font-semibold', isDay ? 'text-slate-700' : 'text-slate-300')}>
                       {sportNames(team.sportId)}
                     </td>
-                    <td className="max-w-[160px] truncate px-3 py-2.5 text-[13px] text-slate-600">
+                    <td className={cn('max-w-[160px] truncate px-4 py-3.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                       {playerNames(team.captainId)}
                     </td>
-                    <td className="max-w-[160px] truncate px-3 py-2.5 text-[13px] text-slate-600">
+                    <td className={cn('max-w-[160px] truncate px-4 py-3.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                       {playerNames(team.viceCaptainId)}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-700">
+                    <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
                       {playerCounts.get(team.id) ?? 0}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] tabular-nums text-slate-700">
+                    <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
                       {matchCounts.get(team.id) ?? 0}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2.5">
+                    <td className="whitespace-nowrap px-4 py-3.5">
                       <StatusPill value={isActive(team) ? 'active' : 'inactive'} />
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2.5">
-                      <div className="flex items-center justify-end gap-1">
+                    <td className="whitespace-nowrap px-4 py-3.5">
+                      <div className="flex items-center justify-end gap-1.5">
                         <ActionIcon label="View" onClick={() => navigate(`/admin/teams/${team.id}`)}>
                           <FiEye className="h-3.5 w-3.5" />
                         </ActionIcon>
@@ -265,9 +267,10 @@ const TeamsManager: React.FC = () => {
                         </ActionIcon>
                         <ActionIcon
                           label="Delete"
+                          danger
                           onClick={() => handleDelete(team)}
                         >
-                          <FiTrash2 className="h-3.5 w-3.5 text-rose-500" />
+                          <FiTrash2 className="h-3.5 w-3.5" />
                         </ActionIcon>
                       </div>
                     </td>

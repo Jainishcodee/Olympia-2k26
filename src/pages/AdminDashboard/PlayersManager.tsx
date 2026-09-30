@@ -3,8 +3,10 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useCollection } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import { deletePlayer } from '@/services/players/playerService';
 import {
+  ActionIcon,
   AdminHeader,
   Btn,
   Card,
@@ -29,33 +31,11 @@ const initialsOf = (name: string): string => {
 const roleLabel = (role?: string): string =>
   (role || 'player').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-const ActionIcon: React.FC<{
-  label: string;
-  onClick: () => void;
-  children: React.ReactNode;
-  primary?: boolean;
-  disabled?: boolean;
-}> = ({ label, onClick, children, primary, disabled }) => (
-  <button
-    type="button"
-    title={label}
-    aria-label={label}
-    disabled={disabled}
-    onClick={onClick}
-    className={cn(
-      'flex h-7 w-7 items-center justify-center rounded border transition-colors disabled:opacity-40',
-      primary
-        ? 'border-[#1264FF] bg-[#1264FF] text-white hover:bg-[#0B4FD1]'
-        : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-900',
-    )}
-  >
-    {children}
-  </button>
-);
-
 const PlayersManager: React.FC = () => {
   const navigate = useNavigate();
   const { log } = useAuditLog();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Arriving from a roster (`/admin/players?teamId=…`) locks the team filter.
@@ -149,7 +129,7 @@ const PlayersManager: React.FC = () => {
     <>
       <AdminHeader
         title="Players"
-        subtitle="Every registered athlete. Archiving hides a player without touching their record."
+        subtitle="Every registered athlete across all tournament disciplines."
         actions={
           <Btn to={createHref} variant="primary" icon={<FiPlus className="h-4 w-4" />}>
             Add player
@@ -168,7 +148,10 @@ const PlayersManager: React.FC = () => {
         />
         <FilterSelect value={sportFilter} onChange={setSportFilter} options={sportOptions} />
         {teamParam ? (
-          <span className="inline-flex h-9 items-center gap-2 rounded-md border border-[#1264FF]/30 bg-[#1264FF]/5 pl-2.5 pr-1.5 text-[12px] font-semibold text-[#1264FF]">
+          <span className={cn(
+            'inline-flex h-9 items-center gap-2 rounded-lg border pl-2.5 pr-1.5 text-[12px] font-bold',
+            isDay ? 'border-[#1264FF]/30 bg-[#1264FF]/10 text-[#1264FF]' : 'border-[#1264FF]/40 bg-[#1264FF]/20 text-blue-300',
+          )}>
             {lockedTeamName || 'Filtered team'}
             <button
               type="button"
@@ -178,7 +161,7 @@ const PlayersManager: React.FC = () => {
                 setSearchParams({}, { replace: true });
                 setTeamFilter('');
               }}
-              className="flex h-5 w-5 items-center justify-center rounded text-[#1264FF] transition-colors hover:bg-[#1264FF]/15"
+              className="flex h-5 w-5 items-center justify-center rounded text-inherit transition-colors hover:bg-black/10 cursor-pointer"
             >
               <FiX className="h-3.5 w-3.5" />
             </button>
@@ -188,7 +171,7 @@ const PlayersManager: React.FC = () => {
         )}
         <FilterSelect value={roleFilter} onChange={setRoleFilter} options={roleOptions} />
         <FilterSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} />
-        <span className="ml-auto text-[12px] tabular-nums text-slate-400">
+        <span className={cn('ml-auto text-[12px] tabular-nums font-bold', isDay ? 'text-slate-500' : 'text-slate-400')}>
           {rows.length} of {players.data.length}
         </span>
       </Toolbar>
@@ -216,71 +199,89 @@ const PlayersManager: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1180px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr className={cn(
+                  'border-b transition-colors',
+                  isDay ? 'border-slate-200 bg-slate-50/90 text-slate-600' : 'border-white/10 bg-[#0B1A30]/60 text-slate-400'
+                )}>
                   {['Photo', 'Name', 'Jersey', 'Sport', 'Team', 'Role', 'Position', 'Status', ''].map((heading) => (
                     <th
                       key={heading}
-                      className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                      className="whitespace-nowrap px-4 py-3.5 text-[10px] font-black uppercase tracking-wider"
                     >
                       {heading}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className={cn('divide-y', isDay ? 'divide-slate-100 bg-white' : 'divide-white/5 bg-transparent')}>
                 {rows.map((player) => (
-                  <tr key={player.id} className="transition-colors hover:bg-slate-50/70">
-                    <td className="px-3 py-2.5">
+                  <tr
+                    key={player.id}
+                    className={cn(
+                      'transition-colors',
+                      isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.03]',
+                    )}
+                  >
+                    <td className="px-4 py-3.5">
                       {player.photo ? (
                         <img
                           src={player.photo}
                           alt={player.name}
-                          className="h-8 w-8 shrink-0 rounded-md border border-slate-200 bg-white object-cover"
+                          className={cn(
+                            'h-8 w-8 shrink-0 rounded-lg border object-cover',
+                            isDay ? 'border-slate-200 bg-white' : 'border-white/15 bg-[#0B1A30]',
+                          )}
                         />
                       ) : (
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#071426] text-[11px] font-bold text-[#D9A441]">
+                        <span className={cn(
+                          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-black border',
+                          isDay ? 'bg-slate-100 border-slate-200 text-[#A9761B]' : 'bg-[#071426] border-white/10 text-[#D9A441]',
+                        )}>
                           {initialsOf(player.name)}
                         </span>
                       )}
                     </td>
-                    <td className="max-w-[200px] px-3 py-2.5">
+                    <td className="max-w-[200px] px-4 py-3.5">
                       <Link
                         to={`/admin/players/${player.id}`}
-                        className="block truncate text-[13px] font-bold text-slate-800 transition-colors hover:text-[#1264FF]"
+                        className={cn(
+                          'block truncate text-[13px] font-black transition-colors',
+                          isDay ? 'text-slate-900 hover:text-[#1264FF]' : 'text-white hover:text-[#D9A441]',
+                        )}
                       >
                         {player.name}
                       </Link>
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums text-slate-700">
+                    <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[13px] font-black tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
                       {player.jerseyNumber ?? '—'}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-[13px] text-slate-600">
+                    <td className={cn('whitespace-nowrap px-4 py-3.5 text-[13px] font-semibold', isDay ? 'text-slate-700' : 'text-slate-300')}>
                       {sportNames(player.sportId || teamById.get(player.teamId)?.sportId || '')}
                     </td>
-                    <td className="max-w-[180px] truncate px-3 py-2.5 text-[13px] text-slate-600">
+                    <td className="max-w-[180px] truncate px-4 py-3.5 text-[13px]">
                       {player.teamId ? (
                         <button
                           type="button"
                           onClick={() => navigate(`/admin/teams/${player.teamId}/roster`)}
-                          className="truncate text-left transition-colors hover:text-[#1264FF]"
+                          className={cn('truncate text-left font-bold transition-colors cursor-pointer', isDay ? 'text-[#1264FF] hover:underline' : 'text-blue-300 hover:text-white')}
                         >
                           {teamName(player.teamId)}
                         </button>
                       ) : (
-                        <span className="text-slate-400">Free agent</span>
+                        <span className={isDay ? 'text-slate-400' : 'text-slate-500'}>Free agent</span>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-[13px] text-slate-600">
+                    <td className={cn('whitespace-nowrap px-4 py-3.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                       {roleLabel(player.role)}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-[13px] text-slate-600">
+                    <td className={cn('whitespace-nowrap px-4 py-3.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                       {player.position || '—'}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2.5">
+                    <td className="whitespace-nowrap px-4 py-3.5">
                       <StatusPill value={player.active !== false ? 'active' : 'inactive'} />
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2.5">
-                      <div className="flex items-center justify-end gap-1">
+                    <td className="whitespace-nowrap px-4 py-3.5">
+                      <div className="flex items-center justify-end gap-1.5">
                         <ActionIcon label="View" onClick={() => navigate(`/admin/players/${player.id}`)}>
                           <FiEye className="h-3.5 w-3.5" />
                         </ActionIcon>
@@ -289,9 +290,10 @@ const PlayersManager: React.FC = () => {
                         </ActionIcon>
                         <ActionIcon
                           label="Delete"
+                          danger
                           onClick={() => handleDelete(player)}
                         >
-                          <FiTrash2 className="h-3.5 w-3.5 text-rose-500" />
+                          <FiTrash2 className="h-3.5 w-3.5" />
                         </ActionIcon>
                       </div>
                     </td>

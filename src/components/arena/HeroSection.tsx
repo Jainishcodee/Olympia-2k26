@@ -191,7 +191,7 @@ export const HeroSection: React.FC = () => {
           opacity: emblemOpacity,
           filter: emblemBlur,
         }}
-        className="pointer-events-none absolute left-1/2 top-[31%] z-10 w-[min(48vh,68vw,460px)] -translate-x-1/2 -translate-y-1/2"
+        className="pointer-events-none absolute left-1/2 top-[42%] z-10 w-[min(54vh,74vw,490px)] -translate-x-1/2 -translate-y-1/2"
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.82, filter: 'blur(18px)' }}
@@ -207,24 +207,14 @@ export const HeroSection: React.FC = () => {
       {/* ============ L4 — typography (fastest) ============ */}
       <motion.div
         style={{ y: copyY, opacity: copyOpacity }}
-        className="relative z-20 flex h-full w-full flex-col items-center justify-center px-5 pb-[17vh] pt-[10vh] text-center"
+        className="relative z-20 flex h-full w-full flex-col items-center justify-between px-5 pb-[8vh] pt-[12vh] text-center pointer-events-none"
       >
-        {/* legibility scrim so the mark never fights the type */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-1/2 top-1/2 h-[240%] w-[140%] -translate-x-1/2 -translate-y-1/2"
-          style={{
-            background:
-              'radial-gradient(ellipse 50% 46% at 50% 50%, rgba(4,11,23,0.94) 0%, rgba(4,11,23,0.78) 42%, rgba(4,11,23,0) 76%)',
-          }}
-        />
-
-        {/* eyebrow */}
+        {/* eyebrow at top */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.7, ease: EASE_OUT }}
-          className="relative mb-4 flex items-center gap-3 sm:gap-4"
+          className="relative mb-4 flex items-center gap-3 sm:gap-4 pointer-events-auto"
         >
           <span className="h-px w-6 sm:w-14 bg-[#D9A441]/60" />
           <span className="text-[9px] sm:text-[11px] font-black uppercase tracking-[0.42em] text-[#D9A441] sm:tracking-[0.5em]">
@@ -233,78 +223,53 @@ export const HeroSection: React.FC = () => {
           <span className="h-px w-6 sm:w-14 bg-[#D9A441]/60" />
         </motion.div>
 
-        {/* wordmark */}
-        <div className="relative">
-          <RevealText
-            text={WORD}
-            delay={0.85}
-            className="justify-center"
-            letterClassName="text-[clamp(3.4rem,15vw,11.5rem)] font-black leading-[0.86] tracking-[-0.055em] text-white"
-            style={{ textShadow: '0 18px 60px rgba(0,0,0,0.75)' }}
-          />
+        {/* Center spacer so emblem breathes in the center */}
+        <div className="flex-1" />
+
+        {/* bottom info & CTA */}
+        <div className="relative flex flex-col items-center pointer-events-auto">
+          {/* tagline */}
           <motion.div
-            initial={{ opacity: 0, letterSpacing: '1.4em' }}
-            animate={{ opacity: 1, letterSpacing: '0.24em' }}
-            transition={{ duration: 1.1, delay: 1.35, ease: EASE_OUT }}
-            className="mt-1 flex items-center justify-center gap-3 sm:gap-5"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 1.2, ease: EASE_OUT }}
+            className="relative max-w-xl"
           >
-            <span className="h-px w-8 bg-gradient-to-r from-transparent to-[#D9A441]/70" />
-            <span
-              className="pr-[0.24em] text-[clamp(1.1rem,3.6vw,2.6rem)] font-black leading-none"
-              style={{
-                background: 'linear-gradient(100deg, #8C5F14 0%, #FFD21F 38%, #D9A441 62%, #FFF3C9 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                filter: 'drop-shadow(0 6px 24px rgba(217,164,65,0.35))',
-              }}
+            <p className="text-[11px] sm:text-sm font-black uppercase tracking-[0.26em] text-white/80">
+              One festival. Every sport. All heart.
+            </p>
+            <p className="mt-1 text-xs sm:text-sm text-white/50">
+              The arena is alive. Make your moment count.
+            </p>
+          </motion.div>
+
+          {/* CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 1.5, ease: EASE_OUT }}
+            className="relative mt-6"
+          >
+            <Link
+              to="/live"
+              data-cursor-label="ENTER"
+              className="group relative inline-flex items-center gap-3 overflow-hidden border border-[#D9A441]/70 px-8 py-4 backdrop-blur-sm focus:outline-none"
             >
-              {CODE.join('')}
-            </span>
-            <span className="h-px w-8 bg-gradient-to-l from-transparent to-[#D9A441]/70" />
+              <span className="absolute inset-0 origin-left scale-x-0 bg-[#D9A441] transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:scale-x-100" />
+              <span className="absolute inset-0 bg-[#040B17]/40" />
+              <span className="relative z-10 text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-[#D9A441] transition-colors duration-300 group-hover:text-[#040B17]">
+                EXPLORE LIVE SCORES
+              </span>
+              <motion.span
+                className="relative z-10 text-[#D9A441] transition-colors duration-300 group-hover:text-[#040B17]"
+                animate={{ y: [0, 4, 0] }}
+                transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                ↓
+              </motion.span>
+            </Link>
           </motion.div>
         </div>
-
-        {/* tagline */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1.6, ease: EASE_OUT }}
-          className="relative mt-6 max-w-xl"
-        >
-          <p className="text-[11px] sm:text-sm font-black uppercase tracking-[0.26em] text-white/70">
-            One festival. Every sport. All heart.
-          </p>
-          <p className="mt-2 text-xs sm:text-sm text-white/45">
-            The arena is alive. Make your moment count.
-          </p>
-        </motion.div>
-
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 1.8, ease: EASE_OUT }}
-          className="relative mt-8"
-        >
-          <Link
-            to="/live"
-            data-cursor-label="ENTER"
-            className="group relative inline-flex items-center gap-3 overflow-hidden border border-[#D9A441]/70 px-8 py-4 backdrop-blur-sm focus:outline-none"
-          >
-            <span className="absolute inset-0 origin-left scale-x-0 bg-[#D9A441] transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:scale-x-100" />
-            <span className="absolute inset-0 bg-[#040B17]/40" />
-            <span className="relative z-10 text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-[#D9A441] transition-colors duration-300 group-hover:text-[#040B17]">
-              EXPLORE LIVE SCORES
-            </span>
-            <motion.span
-              className="relative z-10 text-[#D9A441] transition-colors duration-300 group-hover:text-[#040B17]"
-              animate={{ y: [0, 4, 0] }}
-              transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              ↓
-            </motion.span>
-          </Link>
-        </motion.div>
       </motion.div>
 
       {/* ============ L5 — broadcast HUD ============ */}

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
+  ActionIcon,
   AdminHeader,
   Btn,
   Card,
@@ -15,16 +16,11 @@ import {
 } from '@/components/admin/kit';
 import { useCollection } from '@/hooks/useCollection';
 import { useAuditLog } from '@/hooks/useAuditLog';
+import { useTheme } from '@/contexts/ThemeContext';
 import { deleteTournament, updateTournament } from '@/services/tournaments/tournamentService';
 import type { Match, Sport, Team, Tournament, TournamentFormat } from '@/types';
 import { cn } from '@/utils/cn';
-import { FiCheck, FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi';
-
-/* ============================================================================
- *  Tournaments — one row per competition, with team/match counts derived from
- *  the live `teams` and `matches` streams. Archiving hides a tournament but
- *  never removes its data.
- * ==========================================================================*/
+import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi';
 
 type ArchivedTournament = Tournament & { archived?: boolean };
 
@@ -60,6 +56,8 @@ const FORMAT_LABEL: Record<TournamentFormat, string> = {
 const TournamentsManager: React.FC = () => {
   const { log } = useAuditLog();
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDay = theme === 'day';
 
   const tournaments = useCollection<Tournament>('tournaments');
   const sports = useCollection<Sport>('sports', { sortBy: 'name' });
@@ -126,19 +124,6 @@ const TournamentsManager: React.FC = () => {
     }
   };
 
-  const unarchive = async (tournament: ArchivedTournament) => {
-    try {
-      await updateTournament(tournament.id, { archived: false } as Partial<Tournament>);
-      await log('TOURNAMENT_UPDATED', 'tournament', tournament.id, {
-        label: tournament.name,
-        metadata: { restored: true },
-      });
-      toast.success('Tournament restored');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Restore failed');
-    }
-  };
-
   const options = {
     sport: [
       { value: '', label: 'All sports' },
@@ -166,14 +151,14 @@ const TournamentsManager: React.FC = () => {
         title="Tournaments"
         subtitle="Every competition in OLYMPIA 2K26. Team and match counts are read live from Firestore."
         actions={
-          <>
+          <div className="flex items-center gap-2.5">
             <Btn to="/admin/fixtures" variant="secondary">
               Fixtures
             </Btn>
             <Btn to="/admin/tournaments/create" variant="primary">
-              Create tournament
+              + Create tournament
             </Btn>
-          </>
+          </div>
         }
       />
 
@@ -189,16 +174,21 @@ const TournamentsManager: React.FC = () => {
         <FilterSelect value={sportFilter} onChange={setSportFilter} options={options.sport} />
         <FilterSelect value={formatFilter} onChange={setFormatFilter} options={options.format} />
         <FilterSelect value={statusFilter} onChange={setStatusFilter} options={options.status} />
-        <label className="inline-flex cursor-pointer items-center gap-2 text-[12px] font-semibold text-slate-500">
+        <Btn
+          variant={showArchived ? 'primary' : 'ghost'}
+          size="xs"
+          onClick={() => setShowArchived(!showArchived)}
+          className="gap-1.5"
+        >
           <input
             type="checkbox"
             checked={showArchived}
             onChange={(e) => setShowArchived(e.target.checked)}
-            className="h-3.5 w-3.5 rounded border-slate-300 accent-[#1264FF]"
+            className="sr-only"
           />
           Archived
-        </label>
-        <span className="ml-auto text-[12px] tabular-nums text-slate-400">
+        </Btn>
+        <span className={cn('ml-auto text-[12px] tabular-nums font-bold', isDay ? 'text-slate-500' : 'text-slate-400')}>
           {rows.length} of {tournaments.data.length}
         </span>
       </Toolbar>
@@ -228,63 +218,72 @@ const TournamentsManager: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1080px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr className={cn(
+                  'border-b transition-colors',
+                  isDay ? 'border-slate-200 bg-slate-50/90 text-slate-600' : 'border-white/10 bg-[#0B1A30]/60 text-slate-400'
+                )}>
                   {['Name', 'Sport', 'Format', 'Start Date', 'End Date', 'Status', 'Teams', 'Matches'].map(
                     (heading) => (
                       <th
                         key={heading}
-                        className="whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                        className="whitespace-nowrap px-4 py-3.5 text-[10px] font-black uppercase tracking-wider"
                       >
                         {heading}
                       </th>
                     ),
                   )}
-                  <th className="whitespace-nowrap px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  <th className="whitespace-nowrap px-4 py-3.5 text-right text-[10px] font-black uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className={cn('divide-y', isDay ? 'divide-slate-100 bg-white' : 'divide-white/5 bg-transparent')}>
                 {rows.map((tournament) => {
                   const archived = Boolean(tournament.archived);
                   return (
-                    <tr key={tournament.id} className="transition-colors hover:bg-slate-50/70">
-                      <td className="max-w-[240px] px-3 py-2.5">
+                    <tr
+                      key={tournament.id}
+                      className={cn(
+                        'transition-colors',
+                        isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.03]',
+                      )}
+                    >
+                      <td className="max-w-[240px] px-4 py-3.5">
                         <span
                           className={cn(
-                            'block truncate text-[13px] font-bold',
-                            archived ? 'text-slate-400' : 'text-slate-800',
+                            'block truncate text-[13px] font-black',
+                            archived ? 'text-slate-400' : isDay ? 'text-slate-900' : 'text-white',
                           )}
                         >
                           {tournament.name}
                         </span>
-                        <span className="block truncate text-[11px] text-slate-400">
+                        <span className={cn('block truncate text-[11px]', isDay ? 'text-slate-400' : 'text-slate-500')}>
                           {tournament.venue || 'Venue TBC'}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-[13px] text-slate-600">
+                      <td className={cn('whitespace-nowrap px-4 py-3.5 text-[13px] font-semibold', isDay ? 'text-slate-700' : 'text-slate-300')}>
                         {sportName(tournament.sportId)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-[13px] text-slate-600">
+                      <td className={cn('whitespace-nowrap px-4 py-3.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                         {FORMAT_LABEL[tournament.format] ?? tournament.format ?? '—'}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-slate-600">
+                      <td className={cn('whitespace-nowrap px-4 py-3.5 text-[12px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                         {cellDate(tournament.startDate)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-slate-600">
+                      <td className={cn('whitespace-nowrap px-4 py-3.5 text-[12px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                         {cellDate(tournament.endDate)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
+                      <td className="whitespace-nowrap px-4 py-3.5">
                         <StatusPill value={archived ? 'archived' : tournament.status} />
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums text-slate-700">
+                      <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
                         {counts.teamCounts.get(tournament.id) ?? 0}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums text-slate-700">
+                      <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
                         {counts.matchCounts.get(tournament.id) ?? 0}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
-                        <div className="flex items-center justify-end gap-1">
+                      <td className="whitespace-nowrap px-4 py-3.5">
+                        <div className="flex items-center justify-end gap-1.5">
                           <ActionIcon
                             label="View"
                             onClick={() => navigate(`/admin/tournaments/${tournament.id}`)}
@@ -299,9 +298,10 @@ const TournamentsManager: React.FC = () => {
                           </ActionIcon>
                           <ActionIcon
                             label="Delete"
+                            danger
                             onClick={() => handleDelete(tournament)}
                           >
-                            <FiTrash2 className="h-3.5 w-3.5 text-rose-500" />
+                            <FiTrash2 className="h-3.5 w-3.5" />
                           </ActionIcon>
                         </div>
                       </td>
@@ -316,23 +316,5 @@ const TournamentsManager: React.FC = () => {
     </>
   );
 };
-
-const ActionIcon: React.FC<{
-  label: string;
-  onClick: (() => void) | undefined;
-  children: React.ReactNode;
-  disabled?: boolean;
-}> = ({ label, onClick, children, disabled }) => (
-  <button
-    type="button"
-    title={label}
-    aria-label={label}
-    disabled={disabled}
-    onClick={onClick}
-    className="flex h-7 w-7 items-center justify-center rounded border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900 disabled:opacity-40"
-  >
-    {children}
-  </button>
-);
 
 export default TournamentsManager;

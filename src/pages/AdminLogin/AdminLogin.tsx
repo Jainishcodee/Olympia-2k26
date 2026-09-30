@@ -6,6 +6,7 @@ import { cn } from '@/utils/cn';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/config/firebase';
 import { FiLock, FiMail, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
+import olympiaLogo from '@/assets/olympia.png';
 
 const AdminLogin: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -108,13 +109,12 @@ const AdminLogin: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.1, type: 'spring', stiffness: 100, damping: 15 }}
             className="flex justify-center"
           >
-            <div className="relative w-20 h-20">
-              <div className="absolute inset-0 rounded-2xl" style={{ background: 'linear-gradient(135deg, #1264FF 0%, #D9A441 100%)' }} />
-              <div className="absolute inset-1.5 rounded-[1.1rem] bg-[#071426]" />
-              <div className="relative w-full h-full rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0B1B33 0%, #071426 100%)' }}>
-                <span className="text-4xl font-black tracking-[0.1em]" style={{ color: '#D9A441' }}>O</span>
-                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-bold uppercase tracking-[0.3em]" style={{ color: '#1264FF' }}>2K26</span>
-              </div>
+            <div className="relative flex items-center justify-center p-3 rounded-2xl bg-gradient-to-br from-white/10 to-transparent border border-white/15 backdrop-blur-xl shadow-[0_0_35px_rgba(217,164,65,0.25)]">
+              <img
+                src={olympiaLogo}
+                alt="Olympia 2K26"
+                className="h-16 w-auto object-contain drop-shadow-[0_0_20px_rgba(217,164,65,0.6)]"
+              />
             </div>
           </motion.div>
 
@@ -122,11 +122,15 @@ const AdminLogin: React.FC = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="mt-8 text-center"
+            className="mt-6 text-center"
           >
-            <h1 className="text-3xl font-black tracking-tight text-white">OLYMPIA 2K26</h1>
-            <p className="mt-2 text-sm font-medium" style={{ color: '#D9A441' }}>Admin Dashboard Portal</p>
-            <p className="mt-1 text-xs text-slate-500">Secure access to operations center</p>
+            <h1 className="text-3xl font-black tracking-tight text-white">
+              OLYMPIA <span className="text-[#D9A441]">2K26</span>
+            </h1>
+            <p className="mt-1.5 text-xs font-black uppercase tracking-[0.24em] text-[#1264FF]">
+              COMMAND CENTER PORTAL
+            </p>
+            <p className="mt-1 text-xs text-slate-400">Secure access to real-time operations</p>
           </motion.div>
         </div>
 

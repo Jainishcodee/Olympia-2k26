@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useCollection } from '@/hooks/useCollection';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   AdminHeader,
   Btn,
@@ -79,6 +80,7 @@ const itemVariants = {
 };
 
 const AdminDashboard: React.FC = () => {
+  const { isDay } = useTheme();
   const matches = useCollection<Match>('matches', { sortBy: 'scheduledAt', direction: 'desc' });
   const teams = useCollection<Team>('teams', { sortBy: 'name' });
   const players = useCollection<{ id: string }>('players');
@@ -283,187 +285,200 @@ const AdminDashboard: React.FC = () => {
               action={<Btn to="/admin/live" variant="primary">Launch Control Room</Btn>}
             />
           ) : (
-            <ul className="divide-y divide-white/10">
+            <ul className={cn('divide-y', isDay ? 'divide-slate-200/80' : 'divide-white/10')}>
               {liveMatches.map((match) => {
-                const sport = match.sportId;
-                const a = match.participantA?.name ?? teamName(match.teamAId);
-                const b = match.participantB?.name ?? teamName(match.teamBId);
-                return (
-                  <motion.li 
-                    key={match.id}
-                    whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.03)' }}
-                    className="p-5 transition-colors"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <span className="rounded-md bg-[#1264FF]/20 border border-blue-400/30 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-blue-300">
-                          {sport}
-                        </span>
-                        <StatusPill value="live" />
-                      </div>
-                      <span className="font-mono text-xs font-bold tabular-nums text-[#D9A441] flex items-center gap-1.5">
-                        <FiClock className="h-3.5 w-3.5" />
-                        {formatTime(match.scheduledAt)}
-                      </span>
-                    </div>
+                 const sport = match.sportId;
+                 const a = match.participantA?.name ?? teamName(match.teamAId);
+                 const b = match.participantB?.name ?? teamName(match.teamBId);
+                 return (
+                   <motion.li 
+                     key={match.id}
+                     whileHover={{ backgroundColor: isDay ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.03)' }}
+                     className="p-5 transition-colors"
+                   >
+                     <div className="flex items-center justify-between gap-3">
+                       <div className="flex items-center gap-2.5">
+                         <span className={cn(
+                           'rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wider',
+                           isDay
+                             ? 'border border-blue-500/30 bg-blue-50 text-blue-700'
+                             : 'border border-blue-400/30 bg-[#1264FF]/20 text-blue-300'
+                         )}>
+                           {sport}
+                         </span>
+                         <StatusPill value="live" />
+                       </div>
+                       <span className={cn('font-mono text-xs font-bold tabular-nums flex items-center gap-1.5', isDay ? 'text-[#A9761B]' : 'text-[#D9A441]')}>
+                         <FiClock className="h-3.5 w-3.5" />
+                         {formatTime(match.scheduledAt)}
+                       </span>
+                     </div>
 
-                    <div className="my-4 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-                      <span className="truncate text-right text-sm font-extrabold text-white">{a}</span>
-                      <div className="relative rounded-lg bg-gradient-to-r from-[#0B1A30] to-[#071426] border border-[#D9A441]/40 px-4 py-1.5 shadow-[0_0_20px_rgba(217,164,65,0.2)]">
-                        <span className="text-lg font-black tabular-nums tracking-wider text-[#FFD21F]">
-                          {renderScore(match)}
-                        </span>
-                      </div>
-                      <span className="truncate text-left text-sm font-extrabold text-white">{b}</span>
-                    </div>
+                     <div className="my-4 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+                       <span className={cn('truncate text-right text-sm font-extrabold', isDay ? 'text-slate-900' : 'text-white')}>{a}</span>
+                       <div className={cn(
+                         'relative rounded-lg px-4 py-1.5',
+                         isDay
+                           ? 'border border-amber-300/80 bg-gradient-to-r from-amber-50 to-orange-50/80 shadow-[0_4px_16px_rgba(217,164,65,0.15)]'
+                           : 'border border-[#D9A441]/40 bg-gradient-to-r from-[#0B1A30] to-[#071426] shadow-[0_0_20px_rgba(217,164,65,0.2)]'
+                       )}>
+                         <span className={cn('text-lg font-black tabular-nums tracking-wider', isDay ? 'text-amber-900' : 'text-[#FFD21F]')}>
+                           {renderScore(match)}
+                         </span>
+                       </div>
+                       <span className={cn('truncate text-left text-sm font-extrabold', isDay ? 'text-slate-900' : 'text-white')}>{b}</span>
+                     </div>
 
-                    <div className="flex justify-end">
-                      <Btn to={`/admin/matches/${match.id}/scoring`} variant="warn" size="xs">
-                        Open Scoring Console →
-                      </Btn>
-                    </div>
-                  </motion.li>
-                );
-              })}
-            </ul>
-          )}
-        </Card>
+                     <div className="flex justify-end">
+                       <Btn to={`/admin/matches/${match.id}/scoring`} variant="warn" size="xs">
+                         Open Scoring Console →
+                       </Btn>
+                     </div>
+                   </motion.li>
+                 );
+               })}
+             </ul>
+           )}
+         </Card>
 
-        {/* --------------------------------------------- Recent Events Timeline */}
-        <Card
-          title="Telemetry Event Stream"
-          hint="Live broadcast actions stream"
-          actions={<span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Live Pulse</span>}
-          flush
-        >
-          {events.isLoading ? (
-            <LoadingRows rows={5} cols={3} />
-          ) : events.error ? (
-            <div className="p-5"><ErrorNotice message={events.error} /></div>
-          ) : events.data.length === 0 ? (
-            <EmptyNotice
-              title="No Events Logged Yet"
-              message="Scores, goals, wickets and cards recorded in the console will appear here in real time."
-            />
-          ) : (
-            <ul className="divide-y divide-white/5">
-              {events.data.slice(0, 8).map((event) => (
-                <motion.li 
-                  key={event.id}
-                  whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.02)' }}
-                  className="flex items-start gap-3.5 px-5 py-3.5 transition-colors"
-                >
-                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#D9A441] shadow-[0_0_8px_#D9A441]" />
-                  <div className="min-w-0 flex-1">
-                    <span className="block truncate text-xs font-black uppercase tracking-wider text-white">
-                      {String(event.type ?? 'EVENT').replace(/_/g, ' ')}
-                      {event.teamId ? <span className="text-slate-400 font-normal"> · {teamName(event.teamId)}</span> : ''}
-                    </span>
-                    <span className="block truncate text-[11px] text-slate-400 mt-0.5">
-                      {event.undone ? <span className="text-red-400 font-bold">UNDONE · </span> : ''}
-                      {event.data ? Object.entries(event.data).map(([k, v]) => `${k}: ${String(v)}`).join(' · ') : 'Event registered'}
-                    </span>
-                  </div>
-                  <span className="shrink-0 font-mono text-[11px] font-bold tabular-nums text-slate-500">
-                    {(() => {
-                      const date = toDate(event.timestamp);
-                      return date ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
-                    })()}
-                  </span>
-                </motion.li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      </motion.div>
+         {/* --------------------------------------------- Recent Events Timeline */}
+         <Card
+           title="Telemetry Event Stream"
+           hint="Live broadcast actions stream"
+           actions={<span className={cn('text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-500' : 'text-slate-400')}>Live Pulse</span>}
+           flush
+         >
+           {events.isLoading ? (
+             <LoadingRows rows={5} cols={3} />
+           ) : events.error ? (
+             <div className="p-5"><ErrorNotice message={events.error} /></div>
+           ) : events.data.length === 0 ? (
+             <EmptyNotice
+               title="No Events Logged Yet"
+               message="Scores, goals, wickets and cards recorded in the console will appear here in real time."
+             />
+           ) : (
+             <ul className={cn('divide-y', isDay ? 'divide-slate-200/60' : 'divide-white/5')}>
+               {events.data.slice(0, 8).map((event) => (
+                 <motion.li 
+                   key={event.id}
+                   whileHover={{ backgroundColor: isDay ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.02)' }}
+                   className="flex items-start gap-3.5 px-5 py-3.5 transition-colors"
+                 >
+                   <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', isDay ? 'bg-[#A9761B]' : 'bg-[#D9A441] shadow-[0_0_8px_#D9A441]')} />
+                   <div className="min-w-0 flex-1">
+                     <span className={cn('block truncate text-xs font-black uppercase tracking-wider', isDay ? 'text-slate-900' : 'text-white')}>
+                       {String(event.type ?? 'EVENT').replace(/_/g, ' ')}
+                       {event.teamId ? <span className={cn('font-normal', isDay ? 'text-slate-500' : 'text-slate-400')}> · {teamName(event.teamId)}</span> : ''}
+                     </span>
+                     <span className={cn('block truncate text-[11px] mt-0.5', isDay ? 'text-slate-500' : 'text-slate-400')}>
+                       {event.undone ? <span className="text-red-500 font-bold">UNDONE · </span> : ''}
+                       {event.data ? Object.entries(event.data).map(([k, v]) => `${k}: ${String(v)}`).join(' · ') : 'Event registered'}
+                     </span>
+                   </div>
+                   <span className={cn('shrink-0 font-mono text-[11px] font-bold tabular-nums', isDay ? 'text-slate-500' : 'text-slate-400')}>
+                     {(() => {
+                       const date = toDate(event.timestamp);
+                       return date ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+                     })()}
+                   </span>
+                 </motion.li>
+               ))}
+             </ul>
+           )}
+         </Card>
+       </motion.div>
 
-      {/* ---------------------------------------- Fixtures + Audit Activity */}
-      <motion.div variants={itemVariants} className="grid gap-6 xl:grid-cols-2">
-        <Card
-          title="Upcoming Arena Fixtures"
-          actions={<Btn to="/admin/fixtures" size="xs">Manage Calendar</Btn>}
-          flush
-        >
-          {fixtures.isLoading ? (
-            <LoadingRows rows={4} cols={3} />
-          ) : fixtures.error ? (
-            <div className="p-5"><ErrorNotice message={fixtures.error} /></div>
-          ) : upcomingFixtures.length === 0 ? (
-            <EmptyNotice
-              title="No Fixtures Scheduled"
-              message="Build your tournament brackets and schedule upcoming arena clashes."
-              action={<Btn to="/admin/fixtures/create" variant="primary">Create Fixture</Btn>}
-            />
-          ) : (
-            <ul className="divide-y divide-white/5">
-              {upcomingFixtures.map((fixture) => (
-                <li key={fixture.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02] transition-colors">
-                  <div className="flex w-16 shrink-0 flex-col items-center rounded-lg border border-white/10 bg-[#0B1A30]/80 py-1.5 shadow-inner">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-[#D9A441]">
-                      {formatDay(fixture.scheduledAt)}
-                    </span>
-                    <span className="font-mono text-xs font-bold tabular-nums text-white">
-                      {formatTime(fixture.scheduledAt)}
-                    </span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="block truncate text-xs font-extrabold text-white">
-                      {teamName(fixture.teamAId)} <span className="text-[#D9A441] font-black">VS</span> {teamName(fixture.teamBId)}
-                    </span>
-                    <span className="block text-[11px] text-slate-400 mt-0.5">
-                      {fixture.round ?? 'Round Match'} · {fixture.venueId ?? 'Arena Main'}
-                    </span>
-                  </div>
-                  <StatusPill value={fixture.status ?? 'scheduled'} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
+       {/* ---------------------------------------- Fixtures + Audit Activity */}
+       <motion.div variants={itemVariants} className="grid gap-6 xl:grid-cols-2">
+         <Card
+           title="Upcoming Arena Fixtures"
+           actions={<Btn to="/admin/fixtures" size="xs">Manage Calendar</Btn>}
+           flush
+         >
+           {fixtures.isLoading ? (
+             <LoadingRows rows={4} cols={3} />
+           ) : fixtures.error ? (
+             <div className="p-5"><ErrorNotice message={fixtures.error} /></div>
+           ) : upcomingFixtures.length === 0 ? (
+             <EmptyNotice
+               title="No Fixtures Scheduled"
+               message="Build your tournament brackets and schedule upcoming arena clashes."
+               action={<Btn to="/admin/fixtures/create" variant="primary">Create Fixture</Btn>}
+             />
+           ) : (
+             <ul className={cn('divide-y', isDay ? 'divide-slate-200/60' : 'divide-white/5')}>
+               {upcomingFixtures.map((fixture) => (
+                 <li key={fixture.id} className={cn('flex items-center gap-4 px-5 py-3.5 transition-colors', isDay ? 'hover:bg-slate-50' : 'hover:bg-white/[0.02]')}>
+                   <div className={cn(
+                     'flex w-16 shrink-0 flex-col items-center rounded-lg py-1.5 shadow-inner',
+                     isDay ? 'border border-amber-200 bg-amber-50/80' : 'border border-white/10 bg-[#0B1A30]/80'
+                   )}>
+                     <span className={cn('text-[10px] font-black uppercase tracking-wider', isDay ? 'text-[#A9761B]' : 'text-[#D9A441]')}>
+                       {formatDay(fixture.scheduledAt)}
+                     </span>
+                     <span className={cn('font-mono text-xs font-bold tabular-nums', isDay ? 'text-slate-900' : 'text-white')}>
+                       {formatTime(fixture.scheduledAt)}
+                     </span>
+                   </div>
+                   <div className="min-w-0 flex-1">
+                     <span className={cn('block truncate text-xs font-extrabold', isDay ? 'text-slate-900' : 'text-white')}>
+                       {teamName(fixture.teamAId)} <span className={isDay ? 'text-[#A9761B] font-black' : 'text-[#D9A441] font-black'}>VS</span> {teamName(fixture.teamBId)}
+                     </span>
+                     <span className={cn('block text-[11px] mt-0.5', isDay ? 'text-slate-500' : 'text-slate-400')}>
+                       {fixture.round ?? 'Round Match'} · {fixture.venueId ?? 'Arena Main'}
+                     </span>
+                   </div>
+                   <StatusPill value={fixture.status ?? 'scheduled'} />
+                 </li>
+               ))}
+             </ul>
+           )}
+         </Card>
 
-        {/* --------------------------------------- Audit Log */}
-        <Card
-          title="Security & System Audit Log"
-          actions={<Btn to="/admin/audit" size="xs">Full Audit</Btn>}
-          flush
-        >
-          {activity.isLoading ? (
-            <LoadingRows rows={5} cols={3} />
-          ) : activity.error ? (
-            <div className="p-5"><ErrorNotice message={activity.error} /></div>
-          ) : activity.data.length === 0 ? (
-            <EmptyNotice
-              title="Audit Log Initialized"
-              message="Every privileged administrative operation is immutably timestamped."
-            />
-          ) : (
-            <ul className="divide-y divide-white/5">
-              {activity.data.slice(0, 8).map((entry) => (
-                <li key={entry.id} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors">
-                  <span
-                    className={cn(
-                      'shrink-0 rounded-md border px-2 py-0.5 font-mono text-[10px] font-black uppercase',
-                      entry.action?.startsWith('MATCH')
-                        ? 'border-blue-500/40 bg-blue-500/10 text-blue-300'
-                        : entry.action?.startsWith('ADMIN')
-                          ? 'border-red-500/40 bg-red-500/10 text-red-300'
-                          : 'border-yellow-500/40 bg-yellow-500/10 text-yellow-300',
-                    )}
-                  >
-                    {entry.action}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-xs text-slate-300">
-                    {entry.resourceLabel ?? entry.resourceId}
-                  </span>
-                  <span className="shrink-0 text-[11px] font-bold text-slate-500">{entry.adminName ?? entry.adminId}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      </motion.div>
-    </motion.div>
-  );
-};
+         {/* --------------------------------------- Audit Log */}
+         <Card
+           title="Security & System Audit Log"
+           actions={<Btn to="/admin/audit" size="xs">Full Audit</Btn>}
+           flush
+         >
+           {activity.isLoading ? (
+             <LoadingRows rows={5} cols={3} />
+           ) : activity.error ? (
+             <div className="p-5"><ErrorNotice message={activity.error} /></div>
+           ) : activity.data.length === 0 ? (
+             <EmptyNotice
+               title="Audit Log Initialized"
+               message="Every privileged administrative operation is immutably timestamped."
+             />
+           ) : (
+             <ul className={cn('divide-y', isDay ? 'divide-slate-200/60' : 'divide-white/5')}>
+               {activity.data.slice(0, 8).map((entry) => (
+                 <li key={entry.id} className={cn('flex items-center gap-3 px-5 py-3 transition-colors', isDay ? 'hover:bg-slate-50' : 'hover:bg-white/[0.02]')}>
+                   <span
+                     className={cn(
+                       'shrink-0 rounded-md border px-2 py-0.5 font-mono text-[10px] font-black uppercase',
+                       entry.action?.startsWith('MATCH')
+                         ? isDay ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-blue-500/40 bg-blue-500/10 text-blue-300'
+                         : entry.action?.startsWith('ADMIN')
+                           ? isDay ? 'border-red-300 bg-red-50 text-red-700' : 'border-red-500/40 bg-red-500/10 text-red-300'
+                           : isDay ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-yellow-500/40 bg-yellow-500/10 text-yellow-300',
+                     )}
+                   >
+                     {entry.action}
+                   </span>
+                   <span className={cn('min-w-0 flex-1 truncate text-xs', isDay ? 'text-slate-700' : 'text-slate-300')}>
+                     {entry.resourceLabel ?? entry.resourceId}
+                   </span>
+                   <span className={cn('shrink-0 text-[11px] font-bold', isDay ? 'text-slate-500' : 'text-slate-400')}>{entry.adminName ?? entry.adminId}</span>
+                 </li>
+               ))}
+             </ul>
+           )}
+         </Card>
+       </motion.div>
+     </motion.div>
+   );
+ };
 
-export default AdminDashboard;
+ export default AdminDashboard;

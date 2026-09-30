@@ -21,6 +21,7 @@ const SPORT_DISPLAY_CONFIG: Record<string, { gradient: string[]; accent: string;
   chess: { gradient: ['#111827', '#030712'], accent: '#FFD21F', icon: '♚' },
   carrom: { gradient: ['#7C2D12', '#431407'], accent: '#F97316', icon: '🎯' },
   'smash-karts': { gradient: ['#1B4F72', '#0D2B4A'], accent: '#1264FF', icon: '🏎️' },
+  'lan-games': { gradient: ['#111827', '#030712'], accent: '#FFD21F', icon: '🎮' },
   'counter-strike': { gradient: ['#111827', '#030712'], accent: '#FFD21F', icon: '🎮' },
 };
 
@@ -35,6 +36,8 @@ interface SportCardProps {
 }
 
 const SportCard: React.FC<SportCardProps> = ({ sport, index, isDay }) => {
+  if (!sport) return null;
+
   const cardVariants = {
     hidden: { opacity: 0, y: 30, scale: 0.95 },
     visible: { 
@@ -51,10 +54,13 @@ const SportCard: React.FC<SportCardProps> = ({ sport, index, isDay }) => {
     tap: { scale: 0.98 }
   };
 
-  const displayConfig = getDisplayConfig(sport.slug);
-  const gradientColors = displayConfig.gradient;
-  const accentColor = displayConfig.accent;
-  const icon = sport.icon || displayConfig.icon;
+  const sportSlug = sport.slug || (sport.id as any) || 'sport';
+  const displayConfig = getDisplayConfig(sportSlug);
+  const gradientColors = displayConfig.gradient || defaultConfig.gradient;
+  const accentColor = displayConfig.accent || defaultConfig.accent;
+  const icon = sport.icon || displayConfig.icon || '🏆';
+  const scoringTypeLabel = (sport.scoringType ? String(sport.scoringType).replace(/_/g, ' ') : 'Standard');
+  const teamTypeLabel = sport.teamBased ? 'Team' : 'Individual';
 
   const cardStyle = isDay ? {
     background: `linear-gradient(145deg, ${gradientColors[0]}20, ${gradientColors[1]}20)`,
@@ -73,9 +79,9 @@ const SportCard: React.FC<SportCardProps> = ({ sport, index, isDay }) => {
         transition={{ duration: 0.55, delay: Math.min(index * 0.045, 0.28), ease: [0.16, 1, 0.3, 1] }}
         className={`group relative border-b border-[#071426]/15 ${index === 0 ? 'md:col-span-2' : ''}`}
       >
-        <Link to={`/sports/${sport.slug}`} className="ol-sport-link">
+        <Link to={`/sports/${sportSlug}`} className="ol-sport-link">
           <span className="text-[10px] font-black tracking-[0.22em] text-[#071426]/45">{String(index + 1).padStart(2, '0')} / 10</span>
-          <span className="ol-sport-name">{sport.name}</span>
+          <span className="ol-sport-name">{sport.name || 'Sport'}</span>
           <span className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#155EEF]">Explore <span className="text-lg transition-transform duration-300 group-hover:translate-x-1">↗</span></span>
           <span aria-hidden className="absolute inset-0 -z-10 origin-left scale-x-0 bg-[#155EEF] transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:scale-x-100" />
         </Link>
@@ -85,7 +91,7 @@ const SportCard: React.FC<SportCardProps> = ({ sport, index, isDay }) => {
 
   return (
     <motion.div
-      key={sport.id}
+      key={sport.id || index}
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, margin: '-50px' }}
@@ -94,7 +100,7 @@ const SportCard: React.FC<SportCardProps> = ({ sport, index, isDay }) => {
       whileTap="tap"
       className="group relative"
     >
-      <Link to={`/sports/${sport.slug}`} className="block h-full">
+      <Link to={`/sports/${sportSlug}`} className="block h-full">
         <div 
           className="relative overflow-hidden rounded-2xl p-6 h-full flex flex-col transition-all duration-500"
           style={cardStyle as React.CSSProperties}
@@ -140,11 +146,13 @@ const SportCard: React.FC<SportCardProps> = ({ sport, index, isDay }) => {
           {/* Sport info */}
           <div className="relative z-10 flex-1 flex flex-col items-center text-center">
             <h3 className="text-xl font-black uppercase tracking-wider mb-2 text-white group-hover:text-white">
-              {sport.name}
+              {sport.name || 'Sport'}
             </h3>
-            <p className="text-sm text-white/50 mb-4 max-w-xs leading-relaxed">
-              {sport.description}
-            </p>
+            {sport.description && (
+              <p className="text-sm text-white/50 mb-4 max-w-xs leading-relaxed">
+                {sport.description}
+              </p>
+            )}
             
             {/* Status badge */}
             <div className="flex items-center justify-center gap-2 mb-4">
@@ -159,7 +167,7 @@ const SportCard: React.FC<SportCardProps> = ({ sport, index, isDay }) => {
             
             {/* Scoring type */}
             <div className="text-xs text-white/40 uppercase tracking-wider font-medium">
-              {sport.scoringType.replace(/_/g, ' ')} · {sport.teamBased ? 'Team' : 'Individual'}
+              {scoringTypeLabel} · {teamTypeLabel}
             </div>
           </div>
 

@@ -335,17 +335,17 @@ console.log(`\n🏆 Processed ${teamsList.length} unique teams and ${playersList
 //  5.  Sports, Venues, Tournaments & Matches
 // ────────────────────────────────────────────────────────────
 const SPORTS = [
-  { id: 'football', name: 'Football', category: 'outdoor', icon: '⚽', active: true },
-  { id: 'cricket', name: 'Cricket', category: 'outdoor', icon: '🏏', active: true },
-  { id: 'volleyball', name: 'Volleyball', category: 'outdoor', icon: '🏐', active: true },
-  { id: 'hand-tennis', name: 'Hand Tennis', category: 'outdoor', icon: '🎾', active: true },
-  { id: 'lan-games', name: 'LAN Games', category: 'esports', icon: '🎮', active: true },
-  { id: 'badminton', name: 'Badminton', category: 'indoor', icon: '🏸', active: true },
-  { id: 'table-tennis', name: 'Table Tennis', category: 'indoor', icon: '🏓', active: true },
-  { id: 'chess', name: 'Chess', category: 'indoor', icon: '♟️', active: true },
-  { id: 'carrom', name: 'Carrom', category: 'indoor', icon: '🎯', active: true },
-  { id: 'counter-strike', name: 'Counter-Strike', category: 'esports', icon: '🔫', active: true },
-  { id: 'smash-karts', name: 'Smash Karts', category: 'esports', icon: '🏎️', active: true },
+  { id: 'football', name: 'Football', slug: 'football', category: 'outdoor', icon: '⚽', description: 'The beautiful game. 11v11 on the pitch.', active: true, scoringType: 'goals', teamBased: true, maxPlayersPerTeam: 18, minPlayersPerTeam: 11 },
+  { id: 'cricket', name: 'Cricket', slug: 'cricket', category: 'outdoor', icon: '🏏', description: 'Bat meets ball. Strategic team sport.', active: true, scoringType: 'runs', teamBased: true, maxPlayersPerTeam: 15, minPlayersPerTeam: 11 },
+  { id: 'volleyball', name: 'Volleyball', slug: 'volleyball', category: 'outdoor', icon: '🏐', description: 'Spike, set, and serve to victory.', active: true, scoringType: 'sets_points', teamBased: true, maxPlayersPerTeam: 12, minPlayersPerTeam: 6 },
+  { id: 'hand-tennis', name: 'Hand Tennis', slug: 'hand-tennis', category: 'outdoor', icon: '✋', description: 'Fast-paced hand tennis action.', active: true, scoringType: 'configurable', teamBased: true, maxPlayersPerTeam: 6, minPlayersPerTeam: 2 },
+  { id: 'lan-games', name: 'LAN Games', slug: 'lan-games', category: 'esports', icon: '🎮', description: 'Esports showdown and digital battles.', active: true, scoringType: 'rounds', teamBased: true, maxPlayersPerTeam: 5, minPlayersPerTeam: 1 },
+  { id: 'badminton', name: 'Badminton', slug: 'badminton', category: 'indoor', icon: '🏸', description: 'Speed and precision on the court.', active: true, scoringType: 'games_points', teamBased: false, maxPlayersPerTeam: 2, minPlayersPerTeam: 1 },
+  { id: 'table-tennis', name: 'Table Tennis', slug: 'table-tennis', category: 'indoor', icon: '🏓', description: 'Lightning reflexes on the table.', active: true, scoringType: 'games_points', teamBased: false, maxPlayersPerTeam: 2, minPlayersPerTeam: 1 },
+  { id: 'chess', name: 'Chess', slug: 'chess', category: 'indoor', icon: '♚', description: 'The ultimate battle of minds.', active: true, scoringType: 'result', teamBased: false, maxPlayersPerTeam: 1, minPlayersPerTeam: 1 },
+  { id: 'carrom', name: 'Carrom', slug: 'carrom', category: 'indoor', icon: '🎯', description: 'Precision flicking and strategy.', active: true, scoringType: 'configurable', teamBased: false, maxPlayersPerTeam: 2, minPlayersPerTeam: 1 },
+  { id: 'counter-strike', name: 'Counter-Strike', slug: 'counter-strike', category: 'esports', icon: '🎮', description: 'Tactical FPS esports action.', active: true, scoringType: 'rounds', teamBased: true, maxPlayersPerTeam: 5, minPlayersPerTeam: 5 },
+  { id: 'smash-karts', name: 'Smash Karts', slug: 'smash-karts', category: 'esports', icon: '🏎️', description: 'High-octane kart racing chaos.', active: true, scoringType: 'race', teamBased: true, maxPlayersPerTeam: 4, minPlayersPerTeam: 1 },
 ];
 
 const VENUES = [

@@ -6,6 +6,7 @@ import { MobileMenu } from './MobileMenu';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
+import { Magnetic } from '@/components/motion';
 
 const NAV_ITEMS = [
   { label: 'ARENA', href: '/' },
@@ -155,27 +156,29 @@ export const Navbar: React.FC = () => {
             
             {/* Admin button - desktop */}
             {!authLoading && (
-              <Link 
-                to={isAdmin ? '/admin' : '/admin/login'} 
-                className="px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all duration-300 flex items-center gap-2 group relative overflow-hidden"
-                style={{ 
-                  background: isAdmin ? 'linear-gradient(135deg, #1264FF, #1747B8)' : 'linear-gradient(135deg, #D9A441, #FFD21F)',
-                  color: isAdmin ? '#071426' : '#071426',
-                  boxShadow: isAdmin ? '0 4px 20px #1264FF40' : '0 4px 20px #D9A44140'
-                }}
-              >
-                <motion.span
-                  initial={false}
-                  whileHover={{ scale: 1.1 }}
-                  className="flex items-center gap-1"
+              <Magnetic strength={0.3} radius={80}>
+                <Link 
+                  to={isAdmin ? '/admin' : '/admin/login'} 
+                  className="px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all duration-300 flex items-center gap-2 group relative overflow-hidden"
+                  style={{ 
+                    background: isAdmin ? 'linear-gradient(135deg, #1264FF, #1747B8)' : 'linear-gradient(135deg, #D9A441, #FFD21F)',
+                    color: isAdmin ? '#071426' : '#071426',
+                    boxShadow: isAdmin ? '0 4px 20px #1264FF40' : '0 4px 20px #D9A44140'
+                  }}
                 >
-                  {isAdmin ? '⚙️' : '🔐'}
-                  {isAdmin ? 'Dashboard' : 'Admin Login'}
-                </motion.span>
-                <motion.span
-                  className="absolute inset-0 bg-white/20 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"
-                />
-              </Link>
+                  <motion.span
+                    initial={false}
+                    whileHover={{ scale: 1.05 }}
+                    className="flex items-center gap-1"
+                  >
+                    {isAdmin ? '⚙️' : '🔐'}
+                    {isAdmin ? 'Dashboard' : 'Admin Login'}
+                  </motion.span>
+                  <motion.span
+                    className="absolute inset-0 bg-white/20 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"
+                  />
+                </Link>
+              </Magnetic>
             )}
           </div>
         </div>
