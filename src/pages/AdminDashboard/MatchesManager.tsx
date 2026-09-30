@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useCollection } from '@/hooks/useCollection';
+import { useCollection, useDoc } from '@/hooks/useCollection';
 import {
   ActionIcon,
   AdminHeader,
@@ -20,11 +20,12 @@ import {
   deleteMatch,
   updateMatch,
 } from '@/services/matches/matchService';
-import type { Match, MatchStatus, Sport, Team, Tournament, Venue } from '@/types';
+import { saveSettings } from '@/services/settings/settingsService';
+import { DEFAULT_SETTINGS, type Match, type MatchStatus, type Sport, type SystemSettings, type Team, type Tournament, type Venue } from '@/types';
 import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { FiEdit2, FiPlay, FiCopy, FiSlash, FiEye, FiTrash2 } from 'react-icons/fi';
+import { FiEdit2, FiPlay, FiCopy, FiSlash, FiEye, FiEyeOff, FiExternalLink, FiGlobe, FiTrash2 } from 'react-icons/fi';
 
 const PAGE_SIZE = 40;
 
@@ -67,6 +68,8 @@ const MatchesManager: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [featuredFilter, setFeaturedFilter] = useState('');
+  const [visibilityFilter, setVisibilityFilter] = useState('');
+  const settingsDoc = useDoc<SystemSettings>('settings', 'default');
   const [showArchived, setShowArchived] = useState(false);
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [busy, setBusy] = useState(false);
@@ -100,6 +103,8 @@ const MatchesManager: React.FC = () => {
       if (statusFilter && match.status !== statusFilter) return false;
       if (featuredFilter === 'featured' && !match.featured) return false;
       if (featuredFilter === 'not' && match.featured) return false;
+      if (visibilityFilter === 'visible' && match.isHidden) return false;
+      if (visibilityFilter === 'hidden' && !match.isHidden) return false;
       if (dateFilter) {
         const date = toDate(match.scheduledAt);
         if (!date) return false;
@@ -129,10 +134,61 @@ const MatchesManager: React.FC = () => {
     tournamentFilter,
     statusFilter,
     featuredFilter,
+    visibilityFilter,
     dateFilter,
     showArchived,
     lookups,
   ]);
+
+  const handleToggleVisibility = async (match: Match) => {
+    const next = !match.isHidden;
+    try {
+      await updateMatch(match.id, { isHidden: next });
+      await log('MATCH_UPDATED', 'match', match.id, {
+        label: `${label(match)} marked as ${next ? 'hidden' : 'visible'}`,
+      });
+      toast.success(next ? 'Match hidden from public' : 'Match visible to public');
+    } catch (err) {
+      toast.error('Failed to change match visibility');
+    }
+  };
+
+  const handleToggleMasterVisibility = async () => {
+    const current = settingsDoc.data?.publicMatchesVisible !== false;
+    const next = !current;
+    try {
+      await saveSettings({
+        ...(settingsDoc.data || DEFAULT_SETTINGS),
+        publicMatchesVisible: next,
+      });
+      await log('SETTINGS_UPDATED', 'settings', 'default', {
+        label: `Public matches visibility changed to ${next ? 'visible' : 'hidden'}`,
+      });
+      toast.success(next ? 'Public matches enabled for normal users' : 'All public matches hidden from normal users');
+    } catch (err) {
+      toast.error('Failed to update system settings');
+    }
+  };
+
+  const handleBulkSetVisibility = async (hide: boolean) => {
+    if (rows.length === 0) return;
+    const targets = rows.filter((m) => Boolean(m.isHidden) !== hide);
+    if (targets.length === 0) {
+      toast.success(hide ? 'All filtered matches are already hidden' : 'All filtered matches are already visible');
+      return;
+    }
+    setBusy(true);
+    try {
+      await Promise.all(
+        targets.map((m) => updateMatch(m.id, { isHidden: hide }))
+      );
+      toast.success(`${targets.length} matches marked as ${hide ? 'hidden' : 'visible'}`);
+    } catch (err) {
+      toast.error('Failed to update matches');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const duplicate = async (match: Match) => {
     setBusy(true);
@@ -198,6 +254,12 @@ const MatchesManager: React.FC = () => {
     { value: 'cancelled', label: 'Cancelled' },
   ];
 
+  const visibilityOptions = [
+    { value: '', label: 'All visibility' },
+    { value: 'visible', label: 'Visible only' },
+    { value: 'hidden', label: 'Hidden only' },
+  ];
+
   const shown = rows.slice(0, visible);
 
   return (
@@ -207,6 +269,27 @@ const MatchesManager: React.FC = () => {
         subtitle="Every scheduled, live and completed match. Filters apply instantly to the live Firestore stream."
         actions={
           <div className="flex items-center gap-2.5">
+            <Btn
+              variant={settingsDoc.data?.publicMatchesVisible !== false ? 'secondary' : 'primary'}
+              onClick={handleToggleMasterVisibility}
+              className={cn(
+                'flex items-center gap-1.5',
+                settingsDoc.data?.publicMatchesVisible === false && 'bg-amber-600 text-white hover:bg-amber-700'
+              )}
+              title="Toggle global public visibility of all matches for normal users"
+            >
+              {settingsDoc.data?.publicMatchesVisible !== false ? (
+                <>
+                  <FiGlobe className="h-3.5 w-3.5 text-emerald-500" />
+                  <span>Public: Visible</span>
+                </>
+              ) : (
+                <>
+                  <FiEyeOff className="h-3.5 w-3.5 text-amber-200" />
+                  <span>Public: All Hidden</span>
+                </>
+              )}
+            </Btn>
             <Btn to="/admin/live" variant="secondary">Live control room</Btn>
             <Btn to="/admin/matches/create" variant="primary">+ Create match</Btn>
           </div>
@@ -229,6 +312,11 @@ const MatchesManager: React.FC = () => {
             { value: 'not', label: 'Non-featured' },
           ]}
         />
+        <FilterSelect
+          value={visibilityFilter}
+          onChange={setVisibilityFilter}
+          options={visibilityOptions}
+        />
         <input
           type="date"
           value={dateFilter}
@@ -241,6 +329,16 @@ const MatchesManager: React.FC = () => {
           )}
           aria-label="Filter by date"
         />
+        <div className="flex items-center gap-1">
+          <Btn size="xs" variant="ghost" onClick={() => handleBulkSetVisibility(true)} title="Hide all currently filtered matches from normal users">
+            <FiEyeOff className="h-3 w-3 text-amber-500" />
+            <span className="hidden xl:inline">Hide Filtered</span>
+          </Btn>
+          <Btn size="xs" variant="ghost" onClick={() => handleBulkSetVisibility(false)} title="Make all currently filtered matches visible to normal users">
+            <FiEye className="h-3 w-3 text-emerald-500" />
+            <span className="hidden xl:inline">Show Filtered</span>
+          </Btn>
+        </div>
         <Btn
           variant={showArchived ? 'primary' : 'ghost'}
           size="xs"
@@ -338,7 +436,14 @@ const MatchesManager: React.FC = () => {
                         {lookups.venue(match.venueId)}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3.5">
-                        <StatusPill value={match.status} />
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <StatusPill value={match.status} />
+                          {match.isHidden && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                              <FiEyeOff className="h-3 w-3" /> Hidden
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3.5">
                         {match.featured ? (
@@ -359,8 +464,18 @@ const MatchesManager: React.FC = () => {
                       </td>
                       <td className="whitespace-nowrap px-4 py-3.5">
                         <div className="flex items-center justify-end gap-1.5">
+                          <ActionIcon
+                            label={match.isHidden ? 'Hidden from public. Click to make visible.' : 'Visible to public. Click to hide.'}
+                            onClick={() => handleToggleVisibility(match)}
+                          >
+                            {match.isHidden ? (
+                              <FiEyeOff className="h-3.5 w-3.5 text-amber-500" />
+                            ) : (
+                              <FiEye className="h-3.5 w-3.5 text-emerald-500" />
+                            )}
+                          </ActionIcon>
                           <ActionIcon label="View" onClick={() => navigate(`/admin/matches/${match.id}`)}>
-                            <FiEye className="h-3.5 w-3.5" />
+                            <FiExternalLink className="h-3.5 w-3.5" />
                           </ActionIcon>
                           <ActionIcon label="Edit" onClick={() => navigate(`/admin/matches/${match.id}/edit`)}>
                             <FiEdit2 className="h-3.5 w-3.5" />

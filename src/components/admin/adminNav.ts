@@ -50,6 +50,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       { label: 'Matches', path: '/admin/matches', icon: HiOutlineCalendar },
       { label: 'Fixtures', path: '/admin/fixtures', icon: HiOutlineClock },
       { label: 'Sports', path: '/admin/sports', icon: HiOutlineLightningBolt },
+      { label: 'Leaderboard', path: '/admin/leaderboard', icon: HiOutlineTrophy },
     ],
   },
   {

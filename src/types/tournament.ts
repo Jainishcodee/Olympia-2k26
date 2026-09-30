@@ -28,6 +28,7 @@ export interface Tournament {
 export interface Fixture {
   id: string;
   tournamentId: string;
+  sportId?: string;
   round: string;
   matchId: string;
   order: number;

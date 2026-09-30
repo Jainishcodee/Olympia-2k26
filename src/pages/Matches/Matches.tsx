@@ -3,9 +3,9 @@ import { Container } from '@/components/ui/Container';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { MatchCard } from '@/components/matches/MatchCard';
 import { Footer } from '@/components/arena/Footer';
-import { useCollection } from '@/hooks/useCollection';
+import { useCollection, useDoc } from '@/hooks/useCollection';
 import { useTheme } from '@/contexts/ThemeContext';
-import type { Match, Team } from '@/types';
+import type { Fixture, Match, Sport, SystemSettings, Team, Tournament } from '@/types';
 import { FiInbox } from 'react-icons/fi';
 import { cn } from '@/utils/cn';
 
@@ -17,20 +17,96 @@ export const Matches: React.FC = () => {
   const isDay = theme === 'day';
   const [activeTab, setActiveTab] = useState<TabType>('ALL');
   const matches = useCollection<Match>('matches', { sortBy: 'scheduledAt', direction: 'desc' });
+  const fixtures = useCollection<Fixture>('fixtures');
+  const sports = useCollection<Sport>('sports');
+  const tournaments = useCollection<Tournament>('tournaments');
   const teams = useCollection<Team>('teams');
+  const settingsDoc = useDoc<SystemSettings>('settings', 'default');
 
   const teamById = useMemo(
     () => new Map(teams.data.map((t) => [t.id, t])),
     [teams.data]
   );
+  const sportById = useMemo(
+    () => new Map(sports.data.map((s) => [s.id, s])),
+    [sports.data]
+  );
+  const tourneyById = useMemo(
+    () => new Map(tournaments.data.map((t) => [t.id, t])),
+    [tournaments.data]
+  );
+
+  const matchIdSet = useMemo(() => new Set(matches.data.map((m) => m.id)), [matches.data]);
+
+  // Convert standalone fixtures without linked matches into match-like cards
+  const standaloneFixtures = useMemo(() => {
+    if (settingsDoc.data?.publicFixturesVisible === false) return [];
+    return fixtures.data
+      .filter((f) => !f.isHidden)
+      .filter((f) => !f.matchId || !matchIdSet.has(f.matchId))
+      .map((f) => {
+        const teamA = teamById.get(f.teamAId);
+        const teamB = teamById.get(f.teamBId);
+        const tourney = tourneyById.get(f.tournamentId);
+        const sportId = f.sportId || tourney?.sportId || teamA?.sportId || 'cricket';
+        return {
+          id: f.id,
+          sportId,
+          tournamentId: f.tournamentId,
+          matchNumber: 0,
+          teamAId: f.teamAId,
+          teamBId: f.teamBId,
+          participantA: {
+            id: f.teamAId,
+            name: teamA?.name || f.teamAId || 'Team A',
+            logo: teamA?.logo || '',
+            type: 'team' as const,
+          },
+          participantB: {
+            id: f.teamBId,
+            name: teamB?.name || f.teamBId || 'Team B',
+            logo: teamB?.logo || '',
+            type: 'team' as const,
+          },
+          venueId: f.venueId,
+          scheduledAt: f.scheduledAt,
+          startedAt: null,
+          pausedAt: null,
+          endedAt: null,
+          status: (f.status as any) || 'scheduled',
+          score: { teamA: 0, teamB: 0, details: {} },
+          liveState: {},
+          displayMode: 'dual_portrait' as const,
+          featured: false,
+          featuredPriority: 0,
+          allowReactions: false,
+          allowVoting: false,
+          allowRatings: false,
+          allowReviews: false,
+          archived: false,
+          createdBy: 'fixture',
+          createdAt: f.createdAt,
+          updatedAt: f.createdAt,
+        } as Match;
+      });
+  }, [fixtures.data, matchIdSet, teamById, tourneyById, settingsDoc.data?.publicFixturesVisible]);
+
+  const visibleMatches = useMemo(() => {
+    if (settingsDoc.data?.publicMatchesVisible === false) return [];
+    return matches.data.filter((m) => !m.isHidden);
+  }, [matches.data, settingsDoc.data?.publicMatchesVisible]);
+
+  const allItems = useMemo(() => {
+    return [...visibleMatches, ...standaloneFixtures];
+  }, [visibleMatches, standaloneFixtures]);
 
   const filteredMatches = useMemo(() => {
-    if (activeTab === 'ALL') return matches.data;
-    if (activeTab === 'LIVE') return matches.data.filter((m) => m.status === 'live');
-    if (activeTab === 'UPCOMING') return matches.data.filter((m) => m.status === 'upcoming' || m.status === 'scheduled');
-    if (activeTab === 'COMPLETED') return matches.data.filter((m) => m.status === 'completed');
-    return matches.data;
-  }, [matches.data, activeTab]);
+    if (activeTab === 'ALL') return allItems;
+    if (activeTab === 'LIVE') return allItems.filter((m) => m.status === 'live');
+    if (activeTab === 'UPCOMING') return allItems.filter((m) => m.status === 'upcoming' || m.status === 'scheduled');
+    if (activeTab === 'COMPLETED') return allItems.filter((m) => m.status === 'completed');
+    return allItems;
+  }, [allItems, activeTab]);
 
   const getTeamName = (id?: string, participantName?: string) => {
     if (participantName) return participantName;
@@ -122,7 +198,7 @@ export const Matches: React.FC = () => {
                 <MatchCard 
                   key={match.id}
                   id={match.id} 
-                  sport={match.sportId} 
+                  sport={sportById.get(match.sportId)?.name || match.sportId} 
                   teamA={getTeamName(match.teamAId, match.participantA?.name)} 
                   teamB={getTeamName(match.teamBId, match.participantB?.name)} 
                   scoreA={scoreA} 

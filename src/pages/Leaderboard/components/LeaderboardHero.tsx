@@ -3,25 +3,31 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
 import { SplitText } from '@/components/motion';
 
-export const LeaderboardHero: React.FC<{
-  mode: 'players' | 'teams';
-  onModeChange: (m: 'players' | 'teams') => void;
+export interface LeaderboardHeroProps {
+  sportName: string;
+  sportCategory: 'team' | 'individual';
   totalEntries: number;
-}> = ({ mode, onModeChange, totalEntries }) => {
+}
+
+export const LeaderboardHero: React.FC<LeaderboardHeroProps> = ({
+  sportName,
+  sportCategory,
+  totalEntries,
+}) => {
   const { theme } = useTheme();
   const isDay = theme === 'day';
   const { scrollY } = useScroll();
 
-  const textY = useTransform(scrollY, [0, 500], [0, 100]);
-  const textOpacity = useTransform(scrollY, [0, 400], [1, 0.2]);
+  const textY = useTransform(scrollY, [0, 500], [0, 80]);
+  const textOpacity = useTransform(scrollY, [0, 400], [1, 0.15]);
 
   return (
-    <section className="relative pt-12 pb-16 overflow-hidden">
-      {/* Background outline watermark */}
+    <section className="relative pt-8 pb-12 sm:pb-16 overflow-hidden">
+      {/* Background outline watermark based on current sport */}
       <motion.div
         style={{ y: textY, opacity: textOpacity }}
         aria-hidden
-        className="pointer-events-none absolute right-0 top-0 select-none text-[clamp(6rem,22vw,22rem)] font-black leading-none tracking-tighter"
+        className="pointer-events-none absolute right-0 top-0 select-none text-[clamp(4.5rem,18vw,16rem)] font-black leading-none tracking-tighter"
       >
         <span
           className={
@@ -31,7 +37,7 @@ export const LeaderboardHero: React.FC<{
           }
           style={{ WebkitTextStroke: isDay ? '1px rgba(7,20,38,0.06)' : '1px rgba(255,255,255,0.06)' }}
         >
-          {mode === 'players' ? 'ATHLETES' : 'TEAMS'}
+          {sportName.toUpperCase()}
         </span>
       </motion.div>
 
@@ -45,16 +51,16 @@ export const LeaderboardHero: React.FC<{
                 isDay ? 'text-[#155EEF]' : 'text-[#D9A441]'
               }`}
             >
-              OLYMPIA 2K26 · PERFORMANCE INDEX
+              OLYMPIA 2K26 · {sportCategory === 'team' ? 'CHAMPIONSHIP STANDINGS' : 'TOP 3 CHAMPIONSHIP LEADERS'}
             </span>
             <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-[9px] font-black uppercase tracking-widest shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-              RANKINGS LIVE
+              LIVE CHAMPIONSHIP RANKINGS
             </span>
           </div>
 
           <h1
-            className={`text-[clamp(2.4rem,8vw,7.5rem)] font-black leading-[0.88] tracking-[-0.04em] uppercase ${
+            className={`text-[clamp(2.4rem,7vw,6.5rem)] font-black leading-[0.9] tracking-[-0.04em] uppercase ${
               isDay ? 'text-[#071426]' : 'text-white'
             }`}
           >
@@ -65,8 +71,22 @@ export const LeaderboardHero: React.FC<{
             </span>
           </h1>
 
+          {/* Dynamic Sport Headline Bar */}
+          <div className="mt-4 flex items-center gap-3">
+            <span
+              className={`text-lg sm:text-2xl font-black uppercase tracking-wider ${
+                isDay ? 'text-[#071426]' : 'text-[#D9A441]'
+              }`}
+            >
+              {sportName}
+            </span>
+            <span className="text-sm font-bold opacity-50 uppercase tracking-widest">
+              / {sportCategory === 'team' ? 'TEAM STANDINGS' : 'CHAMPIONSHIP PODIUM'}
+            </span>
+          </div>
+
           {/* Kinetic Gold/Blue dual hairline */}
-          <div className="mt-6 flex items-center gap-2 max-w-md">
+          <div className="mt-4 flex items-center gap-2 max-w-md">
             <motion.div
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
@@ -82,50 +102,28 @@ export const LeaderboardHero: React.FC<{
           </div>
         </div>
 
-        {/* Right side controls: Mode Toggle & Stats */}
-        <div className="flex flex-col items-start sm:items-end gap-3 w-full sm:w-auto">
-          <span className={`text-[11px] font-bold uppercase tracking-widest ${isDay ? 'text-[#071426]/60' : 'text-white/60'}`}>
-            Tracking <span className="font-black text-[#D9A441]">{totalEntries}</span> Contenders
-          </span>
-
-          {/* Animated PLAYERS | TEAMS Toggle */}
+        {/* Right side telemetry info */}
+        <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
           <div
-            className={`relative p-1 rounded-2xl flex items-center border w-full sm:w-auto ${
-              isDay ? 'bg-white/90 border-[#071426]/10 shadow-sm' : 'bg-[#071426] border-white/10'
+            className={`px-4 py-2.5 rounded-2xl border flex items-center gap-3 ${
+              isDay
+                ? 'bg-white/90 border-[#071426]/10 shadow-sm'
+                : 'bg-[#071426]/90 border-white/10 shadow-md'
             }`}
           >
-            {(['players', 'teams'] as const).map((m) => {
-              const active = mode === m;
-              return (
-                <button
-                  key={m}
-                  onClick={() => onModeChange(m)}
-                  className={`relative z-10 flex-1 sm:flex-initial px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-center transition-colors duration-300 active:scale-95 ${
-                    active
-                      ? isDay
-                        ? 'text-white'
-                        : 'text-[#071426]'
-                      : isDay
-                        ? 'text-[#071426]/60 hover:text-[#071426]'
-                        : 'text-white/60 hover:text-white'
-                  }`}
-                >
-                  {m === 'players' ? 'Athletes' : 'Teams'}
-                  {active && (
-                    <motion.div
-                      layoutId="leaderboard-mode-pill"
-                      className={`absolute inset-0 rounded-xl -z-10 ${
-                        isDay
-                          ? 'bg-[#071426] shadow-md'
-                          : 'bg-gradient-to-r from-[#D9A441] to-[#FFD21F] shadow-[0_0_20px_rgba(217,164,65,0.4)]'
-                      }`}
-                      transition={{ type: 'spring', stiffness: 450, damping: 30 }}
-                    />
-                  )}
-                </button>
-              );
-            })}
+            <div className="text-right">
+              <span className={`block text-[10px] font-bold uppercase tracking-wider ${isDay ? 'text-[#071426]/60' : 'text-white/60'}`}>
+                Active Tracking
+              </span>
+              <span className="text-base font-black text-[#D9A441]">
+                {sportCategory === 'team' ? `${totalEntries} SQUADS` : 'TOP 3 PODIUM SEEDS'}
+              </span>
+            </div>
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
           </div>
+          <span className={`text-[10px] font-semibold tracking-wider uppercase ${isDay ? 'text-[#071426]/50' : 'text-white/40'}`}>
+            Realtime Firestore Sync Enabled
+          </span>
         </div>
       </div>
     </section>

@@ -15,11 +15,14 @@ import {
   Toolbar,
 } from '@/components/admin/kit';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
-import { useCollection } from '@/hooks/useCollection';
+import { useCollection, useDoc } from '@/hooks/useCollection';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useTheme } from '@/contexts/ThemeContext';
-import { deleteFixture, reorderFixtures } from '@/services/fixtures/fixtureService';
-import type { Fixture, Match, Team, Tournament, Venue } from '@/types';
+import { deleteFixture, reorderFixtures, updateFixture } from '@/services/fixtures/fixtureService';
+import { createMatch } from '@/services/matches/matchService';
+import { saveSettings } from '@/services/settings/settingsService';
+import { Timestamp } from 'firebase/firestore';
+import { DEFAULT_SETTINGS, type Fixture, type Match, type MatchStatus, type SystemSettings, type Team, type Tournament, type Venue } from '@/types';
 import { cn } from '@/utils/cn';
 import {
   FiArrowDown,
@@ -28,6 +31,10 @@ import {
   FiChevronRight,
   FiEdit2,
   FiEye,
+  FiEyeOff,
+  FiExternalLink,
+  FiGlobe,
+  FiPlay,
   FiTrash2,
 } from 'react-icons/fi';
 
@@ -104,6 +111,8 @@ const FixturesManager: React.FC = () => {
   const [roundFilter, setRoundFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [venueFilter, setVenueFilter] = useState('');
+  const [visibilityFilter, setVisibilityFilter] = useState('');
+  const settingsDoc = useDoc<SystemSettings>('settings', 'default');
   const [month, setMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -150,6 +159,8 @@ const FixturesManager: React.FC = () => {
         if (roundFilter && (fixture.round ?? '') !== roundFilter) return false;
         if (statusFilter && (fixture.status ?? 'scheduled') !== statusFilter) return false;
         if (venueFilter && fixture.venueId !== venueFilter) return false;
+        if (visibilityFilter === 'visible' && fixture.isHidden) return false;
+        if (visibilityFilter === 'hidden' && !fixture.isHidden) return false;
         if (term && !label(fixture).toLowerCase().includes(term)) return false;
         return true;
       })
@@ -247,6 +258,11 @@ const FixturesManager: React.FC = () => {
         { value: '', label: 'All venues' },
         ...venues.data.map((venue) => ({ value: venue.id, label: venue.name })),
       ],
+      visibility: [
+        { value: '', label: 'All visibility' },
+        { value: 'visible', label: 'Visible to public' },
+        { value: 'hidden', label: 'Hidden from public' },
+      ],
     };
   }, [fixtures.data, tournaments.data, venues.data]);
 
@@ -287,6 +303,56 @@ const FixturesManager: React.FC = () => {
     }
   };
 
+  const handleToggleVisibility = async (fixture: Fixture) => {
+    const next = !fixture.isHidden;
+    try {
+      await updateFixture(fixture.id, { isHidden: next });
+      await log('FIXTURE_UPDATED', 'fixture', fixture.id, {
+        label: `${label(fixture)} marked as ${next ? 'hidden' : 'visible'}`,
+      });
+      toast.success(next ? 'Fixture hidden from public' : 'Fixture visible to public');
+    } catch (err) {
+      toast.error('Failed to change visibility');
+    }
+  };
+
+  const handleToggleMasterVisibility = async () => {
+    const current = settingsDoc.data?.publicFixturesVisible !== false;
+    const next = !current;
+    try {
+      await saveSettings({
+        ...(settingsDoc.data || DEFAULT_SETTINGS),
+        publicFixturesVisible: next,
+      });
+      await log('SETTINGS_UPDATED', 'settings', 'default', {
+        label: `Public fixtures visibility changed to ${next ? 'visible' : 'hidden'}`,
+      });
+      toast.success(next ? 'Public fixtures enabled for normal users' : 'All public fixtures hidden from normal users');
+    } catch (err) {
+      toast.error('Failed to update system settings');
+    }
+  };
+
+  const handleBulkSetVisibility = async (hide: boolean) => {
+    if (rows.length === 0) return;
+    const targetFixtures = rows.filter((f) => Boolean(f.isHidden) !== hide);
+    if (targetFixtures.length === 0) {
+      toast.success(hide ? 'All filtered fixtures are already hidden' : 'All filtered fixtures are already visible');
+      return;
+    }
+    setBusy(true);
+    try {
+      await Promise.all(
+        targetFixtures.map((f) => updateFixture(f.id, { isHidden: hide }))
+      );
+      toast.success(`${targetFixtures.length} fixtures marked as ${hide ? 'hidden' : 'visible'}`);
+    } catch (err) {
+      toast.error('Failed to update fixtures');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const confirmDelete = async () => {
     if (!pending) return;
     setBusy(true);
@@ -297,6 +363,70 @@ const FixturesManager: React.FC = () => {
       setPending(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Delete failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleLaunchMatch = async (fixture: Fixture) => {
+    if (fixture.matchId) {
+      navigate(`/admin/scoring/${fixture.matchId}`);
+      return;
+    }
+    setBusy(true);
+    try {
+      const tourney = tournaments.data.find((t) => t.id === fixture.tournamentId);
+      const teamA = teams.data.find((t) => t.id === fixture.teamAId);
+      const teamB = teams.data.find((t) => t.id === fixture.teamBId);
+      const sportId = fixture.sportId || tourney?.sportId || teamA?.sportId || 'cricket';
+
+      const newMatchId = await createMatch({
+        sportId,
+        tournamentId: fixture.tournamentId || '',
+        matchNumber: matches.data.length + 1,
+        teamAId: fixture.teamAId || '',
+        teamBId: fixture.teamBId || '',
+        participantA: {
+          id: fixture.teamAId || 'teamA',
+          name: teamA?.name || 'Team A',
+          logo: teamA?.logo || '',
+          type: 'team',
+        },
+        participantB: {
+          id: fixture.teamBId || 'teamB',
+          name: teamB?.name || 'Team B',
+          logo: teamB?.logo || '',
+          type: 'team',
+        },
+        venueId: fixture.venueId || '',
+        scheduledAt: fixture.scheduledAt || Timestamp.now(),
+        startedAt: null,
+        pausedAt: null,
+        endedAt: null,
+        status: (fixture.status as MatchStatus) || 'scheduled',
+        score: { teamA: 0, teamB: 0, details: {} },
+        liveState: {},
+        displayMode: 'dual_portrait',
+        featured: false,
+        featuredPriority: 0,
+        allowReactions: true,
+        allowVoting: true,
+        allowRatings: true,
+        allowReviews: true,
+        archived: false,
+        createdBy: 'admin',
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      });
+
+      await updateFixture(fixture.id, { matchId: newMatchId });
+      await log('MATCH_CREATED', 'match', newMatchId, {
+        label: `Created from fixture: ${teamA?.name ?? 'Team A'} vs ${teamB?.name ?? 'Team B'}`,
+      });
+      toast.success('Live match created from fixture! Launching Scoring Console...');
+      navigate(`/admin/scoring/${newMatchId}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to launch match from fixture');
     } finally {
       setBusy(false);
     }
@@ -325,8 +455,24 @@ const FixturesManager: React.FC = () => {
             </ActionIcon>
           </>
         )}
+        <ActionIcon
+          label={fixture.isHidden ? 'Hidden from public. Click to make visible.' : 'Visible to public. Click to hide.'}
+          onClick={() => handleToggleVisibility(fixture)}
+        >
+          {fixture.isHidden ? (
+            <FiEyeOff className="h-3.5 w-3.5 text-amber-500" />
+          ) : (
+            <FiEye className="h-3.5 w-3.5 text-emerald-500" />
+          )}
+        </ActionIcon>
+        <ActionIcon
+          label={fixture.matchId ? 'Open Live Scoring Console' : 'Start Match & Open Scoring Console'}
+          onClick={() => handleLaunchMatch(fixture)}
+        >
+          <FiPlay className={cn('h-3.5 w-3.5', fixture.matchId ? 'text-amber-500' : 'text-emerald-500')} />
+        </ActionIcon>
         <ActionIcon label="View" onClick={() => navigate(`/admin/fixtures/${fixture.id}`)}>
-          <FiEye className="h-3.5 w-3.5" />
+          <FiExternalLink className="h-3.5 w-3.5" />
         </ActionIcon>
         <ActionIcon
           label="Edit"
@@ -374,7 +520,14 @@ const FixturesManager: React.FC = () => {
                     {lookups.venue(fixture.venueId)}
                   </span>
                 </span>
-                <StatusPill value={fixture.status ?? 'scheduled'} />
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <StatusPill value={fixture.status ?? 'scheduled'} />
+                  {fixture.isHidden && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                      <FiEyeOff className="h-3 w-3" /> Hidden
+                    </span>
+                  )}
+                </div>
                 {rowActions(fixture, false)}
               </li>
             ))}
@@ -527,7 +680,14 @@ const FixturesManager: React.FC = () => {
                 {lookups.venue(fixture.venueId)}
               </td>
               <td className="whitespace-nowrap px-3 py-2.5">
-                <StatusPill value={fixture.status ?? 'scheduled'} />
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <StatusPill value={fixture.status ?? 'scheduled'} />
+                  {fixture.isHidden && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                      <FiEyeOff className="h-3 w-3" /> Hidden
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="whitespace-nowrap px-3 py-2.5">{rowActions(fixture, true)}</td>
             </tr>
@@ -546,6 +706,27 @@ const FixturesManager: React.FC = () => {
         subtitle="The full competition schedule. Switch views, filter down to a round, and reorder with the arrows — every change is written back to Firestore."
         actions={
           <>
+            <Btn
+              variant={settingsDoc.data?.publicFixturesVisible !== false ? 'secondary' : 'primary'}
+              onClick={handleToggleMasterVisibility}
+              className={cn(
+                'flex items-center gap-1.5',
+                settingsDoc.data?.publicFixturesVisible === false && 'bg-amber-600 text-white hover:bg-amber-700'
+              )}
+              title="Toggle global public visibility of all fixtures for normal users"
+            >
+              {settingsDoc.data?.publicFixturesVisible !== false ? (
+                <>
+                  <FiGlobe className="h-3.5 w-3.5 text-emerald-500" />
+                  <span>Public: Visible</span>
+                </>
+              ) : (
+                <>
+                  <FiEyeOff className="h-3.5 w-3.5 text-amber-200" />
+                  <span>Public: All Hidden</span>
+                </>
+              )}
+            </Btn>
             <Btn to="/admin/matches" variant="secondary">
               Matches
             </Btn>
@@ -573,6 +754,17 @@ const FixturesManager: React.FC = () => {
         <FilterSelect value={roundFilter} onChange={setRoundFilter} options={options.round} />
         <FilterSelect value={statusFilter} onChange={setStatusFilter} options={options.status} />
         <FilterSelect value={venueFilter} onChange={setVenueFilter} options={options.venue} />
+        <FilterSelect value={visibilityFilter} onChange={setVisibilityFilter} options={options.visibility} />
+        <div className="flex items-center gap-1">
+          <Btn size="xs" variant="ghost" onClick={() => handleBulkSetVisibility(true)} title="Hide all currently filtered fixtures from normal users">
+            <FiEyeOff className="h-3 w-3 text-amber-500" />
+            <span className="hidden xl:inline">Hide Filtered</span>
+          </Btn>
+          <Btn size="xs" variant="ghost" onClick={() => handleBulkSetVisibility(false)} title="Make all currently filtered fixtures visible to normal users">
+            <FiEye className="h-3 w-3 text-emerald-500" />
+            <span className="hidden xl:inline">Show Filtered</span>
+          </Btn>
+        </div>
         <span className={cn('ml-auto text-[12px] tabular-nums', isDay ? 'text-slate-500' : 'text-slate-400')}>
           {rows.length} of {fixtures.data.length}
         </span>

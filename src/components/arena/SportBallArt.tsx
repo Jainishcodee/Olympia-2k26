@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { SPORTS_ART } from './BrandAssets';
+import { getTeamLogo } from '@/utils/teamLogos';
 
 interface SportBallArtProps {
   sportSlug: string;
@@ -18,11 +19,24 @@ export function getSportArtUrl(sportSlug: string): string | null {
   if (slug === 'volleyball') return SPORTS_ART.volleyball;
   if (slug === 'carrom') return SPORTS_ART.carrom;
   if (slug.includes('kart') || slug.includes('smash')) return SPORTS_ART.smashKarts;
-  if (slug.includes('counter') || slug.includes('cs') || slug.includes('lan') || slug.includes('sniper')) return SPORTS_ART.counterStrike;
+  if (
+    slug.includes('counter') ||
+    slug.includes('cs') ||
+    slug.includes('lan') ||
+    slug.includes('sniper') ||
+    slug.includes('k-strike') ||
+    slug.includes('kstrike')
+  ) {
+    return SPORTS_ART.counterStrike;
+  }
   if (slug === 'badminton') return SPORTS_ART.badminton;
   if (slug === 'tennis' || slug === 'hand-tennis') return SPORTS_ART.tennis;
   if (slug === 'table-tennis' || slug === 'ping-pong') return SPORTS_ART.tableTennis;
   if (slug === 'chess') return SPORTS_ART.chess;
+
+  // Check if sportSlug matches any registered team logo (e.g. K-Strike)
+  const teamLogo = getTeamLogo(sportSlug);
+  if (teamLogo) return teamLogo;
   
   return null;
 }
@@ -212,6 +226,11 @@ export const SportBallArt: React.FC<SportBallArtProps> = ({
 
     case 'counter-strike':
     case 'counterstrike':
+    case 'k-strike':
+    case 'kstrike':
+    case 'strike':
+    case 'lan-games':
+    case 'lan':
       return (
         <svg viewBox="0 0 100 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>

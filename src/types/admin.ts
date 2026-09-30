@@ -58,6 +58,8 @@ export type AuditAction =
   | 'VOTING_CLOSED'
   | 'REACTIONS_DISABLED'
   | 'REACTIONS_ENABLED'
+  | 'LEADERBOARD_PUBLISHED'
+  | 'LEADERBOARD_DELETED'
   | 'ADMIN_CREATED'
   | 'ADMIN_DISABLED'
   | 'ADMIN_REACTIVATED'
@@ -132,6 +134,11 @@ export interface SystemSettings {
   /** Minimum role allowed to open the scoring console */
   scoringAccessRole: 'super_admin' | 'admin' | 'score_operator';
 
+  /* --- Public visibility master switches -------------------------------- */
+  publicFixturesVisible: boolean;
+  publicMatchesVisible: boolean;
+  publicLeaderboardVisible: boolean;
+
   /* --- Meta ------------------------------------------------------------- */
   updatedBy?: string;
   updatedAt?: Timestamp | Date | null;
@@ -173,6 +180,10 @@ export const DEFAULT_SETTINGS: SystemSettings = {
   requireConfirmOnDelete: true,
   auditRetentionDays: 90,
   scoringAccessRole: 'score_operator',
+
+  publicFixturesVisible: true,
+  publicMatchesVisible: true,
+  publicLeaderboardVisible: true,
 
   updatedBy: undefined,
   updatedAt: null,

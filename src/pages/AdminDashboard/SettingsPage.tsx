@@ -23,6 +23,7 @@ import { FiSave, FiArrowRight } from 'react-icons/fi';
 
 const SECTIONS = [
   { id: 'general', label: 'General' },
+  { id: 'visibility', label: 'Public visibility' },
   { id: 'branding', label: 'Branding' },
   { id: 'scoring', label: 'Live scoring' },
   { id: 'interaction', label: 'Public interaction' },
@@ -183,6 +184,43 @@ const SettingsPage: React.FC = () => {
                 value={form.locale}
                 onChange={(e) => set('locale', e.target.value)}
                 helpText="BCP-47 tag, e.g. en-IN."
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ------------------------------------------- public visibility */}
+        {section === 'visibility' && (
+          <div className="px-5 py-5 space-y-6">
+            <div>
+              <h3 className={cn('mb-1 text-sm font-bold', isDay ? 'text-slate-900' : 'text-white')}>
+                Master Public Visibility
+              </h3>
+              <p className={cn('text-[12px]', isDay ? 'text-slate-400' : 'text-white/50')}>
+                Control what normal users and public spectators are permitted to see across the Olympia 2K26 web application.
+              </p>
+            </div>
+
+            <div className="space-y-4 max-w-2xl">
+              <Toggle
+                label="Public Fixtures & Schedules"
+                hint="When enabled, scheduled tournament fixtures appear on public sport details (/sports/:sportSlug) and the matches schedule board (/matches)."
+                checked={form.publicFixturesVisible !== false}
+                onChange={(checked) => set('publicFixturesVisible', checked)}
+              />
+
+              <Toggle
+                label="Public Matches & Scores"
+                hint="When enabled, scheduled, live, and completed matches appear on the public matches feed (/matches) and sport portals (/sports/:sportSlug)."
+                checked={form.publicMatchesVisible !== false}
+                onChange={(checked) => set('publicMatchesVisible', checked)}
+              />
+
+              <Toggle
+                label="Public Championship Leaderboards"
+                hint="When enabled, the public leaderboard wall (/leaderboard) shows live standings. When disabled, users see an official 'Standings under review' notice."
+                checked={form.publicLeaderboardVisible !== false}
+                onChange={(checked) => set('publicLeaderboardVisible', checked)}
               />
             </div>
           </div>

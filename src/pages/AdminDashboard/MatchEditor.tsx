@@ -49,6 +49,7 @@ interface MatchForm {
   allowVoting: boolean;
   featured: boolean;
   featuredPriority: string;
+  isHidden: boolean;
 }
 
 const EMPTY: MatchForm = {
@@ -68,6 +69,7 @@ const EMPTY: MatchForm = {
   allowVoting: true,
   featured: false,
   featuredPriority: '1',
+  isHidden: false,
 };
 
 const toInputDate = (value: unknown): { date: string; time: string } => {
@@ -129,6 +131,7 @@ const MatchEditor: React.FC = () => {
       allowVoting: match.allowVoting ?? true,
       featured: match.featured ?? false,
       featuredPriority: String(match.featuredPriority ?? 1),
+      isHidden: match.isHidden ?? false,
     });
   }, [existing.data]);
 
@@ -232,6 +235,7 @@ const MatchEditor: React.FC = () => {
         allowVoting: form.allowVoting,
         allowRatings: form.allowRatings,
         allowReviews: form.allowReviews,
+        isHidden: Boolean(form.isHidden),
         createdBy: user?.uid ?? 'unknown',
       };
 
@@ -504,6 +508,14 @@ const MatchEditor: React.FC = () => {
               <Toggle checked={form.allowRatings} onChange={(v) => set('allowRatings', v)} label="Enable ratings" hint="Spectators rate players after the match." />
               <Toggle checked={form.allowReviews} onChange={(v) => set('allowReviews', v)} label="Enable reviews" hint="Written reviews, moderated from /admin/reviews." />
               <Toggle checked={form.allowVoting} onChange={(v) => set('allowVoting', v)} label="Enable voting" hint="Man-of-the-match / who-wins polls." />
+              <div className="sm:col-span-2 pt-3 mt-3 border-t border-slate-200/60 dark:border-white/10">
+                <Toggle
+                  checked={form.isHidden}
+                  onChange={(v) => set('isHidden', v)}
+                  label="Hide match from public website"
+                  hint="Keep this match private in the admin console. Hidden from normal users on public pages."
+                />
+              </div>
             </div>
           </FormSection>
         )}
@@ -559,6 +571,7 @@ const MatchEditor: React.FC = () => {
                     .join(', ') || 'None',
                 ],
                 ['Featured', form.featured ? `Yes (priority ${form.featuredPriority})` : 'No'],
+                ['Public Visibility', form.isHidden ? 'Hidden (Private)' : 'Visible to public'],
               ].map(([term, detail]) => (
                 <div key={term} className={cn('flex items-baseline justify-between gap-4 border-b py-2.5', isDay ? 'border-slate-100' : 'border-white/5')}>
                   <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{term}</dt>

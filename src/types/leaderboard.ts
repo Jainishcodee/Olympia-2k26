@@ -15,7 +15,10 @@ export interface LeaderboardEntry {
 }
 
 export interface Leaderboard {
+  id: string;
   sportId: string;
+  sportName?: string;
+  category?: 'team' | 'individual';
   entries: LeaderboardEntry[];
   lastUpdated: Timestamp;
 }

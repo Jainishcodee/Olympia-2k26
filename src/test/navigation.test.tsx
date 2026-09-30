@@ -14,6 +14,16 @@ vi.mock('../hooks/useCollection', () => ({
     isLoading: false,
     error: null,
   }),
+  useDoc: () => ({
+    data: {
+      publicFixturesVisible: true,
+      publicMatchesVisible: true,
+      publicLeaderboardVisible: true,
+    },
+    isLoading: false,
+    error: null,
+    isReady: true,
+  }),
 }));
 
 vi.mock('../contexts/FirebaseContext', () => ({

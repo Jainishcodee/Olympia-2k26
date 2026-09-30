@@ -369,31 +369,32 @@ const ScoringConsole: React.FC = () => {
 
   const addCricketRuns = (runs: number, type: string) => {
     const illegal = type === 'wide' || type === 'no_ball';
-    const isBoundary = runs === 6 || runs === 4;
+    const isBoundary = runs === 6 || runs === 4 || runs === 10;
     setCricketState((prev) => {
       const withRuns = { ...prev, runs: prev.runs + runs };
       return { ...advanceBall(illegal)(withRuns) };
     });
 
     const side = match.teamA;
+    const isTen = runs === 10;
     const isSix = runs === 6;
-    const kind: FXKind = isSix ? 'six' : runs === 4 ? 'four' : 'point';
-    const title = isSix ? '6' : runs === 4 ? 'FOUR' : runs === 0 ? 'DOT' : `+${runs}`;
-    const kicker = isSix ? 'SIX' : runs === 4 ? 'FOUR' : undefined;
+    const kind: FXKind = isTen || isSix ? 'six' : runs === 4 ? 'four' : 'point';
+    const title = isTen ? '10' : isSix ? '6' : runs === 4 ? 'FOUR' : runs === 0 ? 'DOT' : `+${runs}`;
+    const kicker = isTen ? '10 RUNS (BONUS)' : isSix ? 'SIX' : runs === 4 ? 'FOUR' : undefined;
 
     fire({
       kind,
       title,
       kicker,
-      bugLabel: isSix ? 'SIX' : runs === 4 ? 'FOUR' : runs === 0 ? 'DOT BALL' : `+${runs}`,
+      bugLabel: isTen ? '10 RUNS' : isSix ? 'SIX' : runs === 4 ? 'FOUR' : runs === 0 ? 'DOT BALL' : `+${runs}`,
       sub: `${type.replace(/_/g, ' ').toUpperCase()} · ${side.shortName}`,
       score: `${cricketState.runs + runs}/${cricketState.wickets}`,
       team: 'teamA',
-      accent: isSix ? '#FFD21F' : runs === 4 ? '#1264FF' : undefined,
+      accent: isTen ? '#FFD21F' : isSix ? '#FFD21F' : runs === 4 ? '#1264FF' : undefined,
     });
 
-    addEvent(title, side.name, isBoundary ? `🏏 ${title}!` : `🏏 +${runs}`, {
-      tone: runs === 6 ? 'six' : runs === 4 ? 'four' : 'point',
+    addEvent(title, side.name, isTen ? `🏏 +10 RUNS (Bonus Ball)!` : isBoundary ? `🏏 ${title}!` : `🏏 +${runs}`, {
+      tone: isTen || runs === 6 ? 'six' : runs === 4 ? 'four' : 'point',
       revert: () =>
         setCricketState((prev) => {
           const stepped = rewindBall(prev);
@@ -601,13 +602,14 @@ const ScoringConsole: React.FC = () => {
     <div className="space-y-5">
       <div>
         <PanelLabel hint="delivery by delivery">Runs</PanelLabel>
-        <div className="grid grid-cols-6 gap-2">
+        <div className="grid grid-cols-7 gap-2">
           <Pad size="md" onClick={() => addCricketRuns(0, 'dot')}>Dot</Pad>
           <Pad tone="blue" size="md" onClick={() => addCricketRuns(1, 'single')}>+1</Pad>
           <Pad tone="blue" size="md" onClick={() => addCricketRuns(2, 'double')}>+2</Pad>
           <Pad tone="blue" size="md" onClick={() => addCricketRuns(3, 'triple')}>+3</Pad>
           <Pad tone="green" size="md" onClick={() => addCricketRuns(4, 'four')}>Four</Pad>
           <Pad tone="violet" size="md" onClick={() => addCricketRuns(6, 'six')}>Six</Pad>
+          <Pad tone="gold" size="md" sub="BONUS" onClick={() => addCricketRuns(10, 'ten')}>+10</Pad>
         </div>
       </div>
 

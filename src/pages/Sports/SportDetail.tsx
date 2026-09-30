@@ -4,9 +4,9 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Trophy, Calendar, CheckCircle, Users } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useCollection } from '@/hooks/useCollection';
+import { useCollection, useDoc } from '@/hooks/useCollection';
 import { MatchCard } from '@/components/matches/MatchCard';
-import { Match, Sport, Team } from '@/types';
+import { Fixture, Match, Sport, SystemSettings, Team, Tournament, Venue } from '@/types';
 
 const defaultSports: Record<string, { name: string; icon: string; description: string }> = {
   football: { name: 'Football', icon: '⚽', description: 'High-intensity 11v11 field supremacy and championship matches.' },
@@ -17,6 +17,31 @@ const defaultSports: Record<string, { name: string; icon: string; description: s
   badminton: { name: 'Badminton', icon: '🏸', description: 'Rapid shuttlecock rallies, smashes, and intense court agility.' },
 };
 
+const parseDate = (val: unknown): Date | null => {
+  if (!val) return null;
+  if (val instanceof Date) return val;
+  const stamp = val as { toDate?: () => Date; seconds?: number };
+  if (typeof stamp.toDate === 'function') return stamp.toDate();
+  if (typeof stamp.seconds === 'number') return new Date(stamp.seconds * 1000);
+  if (typeof val === 'number') return new Date(val);
+  if (typeof val === 'string') {
+    const d = new Date(val);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+};
+
+const formatScheduleTime = (val: unknown): string => {
+  const d = parseDate(val);
+  if (!d) return 'Scheduled';
+  return d.toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
 export const SportDetail: React.FC = () => {
   const { sportSlug } = useParams<{ sportSlug: string }>();
   const { theme } = useTheme();
@@ -24,7 +49,11 @@ export const SportDetail: React.FC = () => {
 
   const { data: firestoreSports, isLoading: sportsLoading } = useCollection<Sport>('sports');
   const { data: firestoreMatches } = useCollection<Match>('matches');
+  const { data: firestoreFixtures } = useCollection<Fixture>('fixtures');
+  const { data: firestoreTournaments } = useCollection<Tournament>('tournaments');
+  const { data: firestoreVenues } = useCollection<Venue>('venues');
   const { data: firestoreTeams } = useCollection<Team>('teams');
+  const { data: systemSettings } = useDoc<SystemSettings>('settings', 'default');
 
   const slug = (sportSlug || '').toLowerCase();
   const matchedSport = firestoreSports?.find(s => s.name.toLowerCase() === slug || s.id === slug);
@@ -33,10 +62,101 @@ export const SportDetail: React.FC = () => {
   const sportIcon = matchedSport?.icon || defaultSports[slug]?.icon || '🏆';
   const sportDescription = matchedSport?.description || defaultSports[slug]?.description || 'Official Olympia 2K26 championship tournament bracket.';
 
-  const sportMatches = firestoreMatches?.filter(m => m.sportId === matchedSport?.id || m.sportId === slug) || [];
+  const sportMatches = React.useMemo(() => {
+    if (systemSettings?.publicMatchesVisible === false) return [];
+    return (firestoreMatches || [])
+      .filter((m) => !m.isHidden)
+      .filter((m) => m.sportId === matchedSport?.id || m.sportId === slug);
+  }, [firestoreMatches, matchedSport?.id, slug, systemSettings?.publicMatchesVisible]);
+
   const liveMatches = sportMatches.filter(m => m.status === 'live');
-  const upcomingMatches = sportMatches.filter(m => m.status === 'upcoming' || m.status === 'scheduled');
   const completedMatches = sportMatches.filter(m => m.status === 'completed');
+
+  const tournamentMap = React.useMemo(
+    () => new Map(firestoreTournaments?.map((t) => [t.id, t])),
+    [firestoreTournaments]
+  );
+  const teamMap = React.useMemo(
+    () => new Map(firestoreTeams?.map((t) => [t.id, t])),
+    [firestoreTeams]
+  );
+  const venueMap = React.useMemo(
+    () => new Map(firestoreVenues?.map((v) => [v.id, v])),
+    [firestoreVenues]
+  );
+  const matchIdSet = React.useMemo(() => new Set(sportMatches.map((m) => m.id)), [sportMatches]);
+
+  // Find all fixtures belonging to this sport (by sportId, tournament, team, or linked match)
+  const sportFixtures = React.useMemo(() => {
+    if (!firestoreFixtures) return [];
+    if (systemSettings?.publicFixturesVisible === false) return [];
+    return firestoreFixtures
+      .filter((f) => !f.isHidden)
+      .filter((f) => {
+        if (f.sportId && (f.sportId === matchedSport?.id || f.sportId === slug)) return true;
+        const tourney = tournamentMap.get(f.tournamentId);
+        if (tourney?.sportId && (tourney.sportId === matchedSport?.id || tourney.sportId === slug)) return true;
+        const teamA = teamMap.get(f.teamAId);
+        const teamB = teamMap.get(f.teamBId);
+        if (teamA?.sportId && (teamA.sportId === matchedSport?.id || teamA.sportId === slug)) return true;
+        if (teamB?.sportId && (teamB.sportId === matchedSport?.id || teamB.sportId === slug)) return true;
+        if (f.matchId && matchIdSet.has(f.matchId)) return true;
+        return false;
+      });
+  }, [firestoreFixtures, matchedSport, slug, tournamentMap, teamMap, matchIdSet, systemSettings?.publicFixturesVisible]);
+
+  // Unified upcoming schedule combining scheduled matches and tournament fixtures
+  const upcomingSchedule = React.useMemo(() => {
+    // 1. Scheduled / upcoming matches from matches collection
+    const fromMatches = sportMatches
+      .filter((m) => m.status === 'upcoming' || m.status === 'scheduled')
+      .map((m) => {
+        const teamA = m.participantA?.name || teamMap.get(m.teamAId)?.name || m.teamAId || 'Team A';
+        const teamB = m.participantB?.name || teamMap.get(m.teamBId)?.name || m.teamBId || 'Team B';
+        const tourney = tournamentMap.get(m.tournamentId);
+        const venue = venueMap.get(m.venueId);
+        const formatted = formatScheduleTime(m.scheduledAt);
+        return {
+          id: m.id,
+          teamA,
+          teamB,
+          status: 'upcoming' as const,
+          time: formatted,
+          rawDate: parseDate(m.scheduledAt),
+          badge: tourney?.name || 'Championship Match',
+          venue: venue?.name,
+        };
+      });
+
+    // 2. Tournament fixtures from fixtures collection (not already covered as a match)
+    const fromFixtures = sportFixtures
+      .filter((f) => !f.matchId || !matchIdSet.has(f.matchId))
+      .filter((f) => f.status !== 'completed' && f.status !== 'cancelled')
+      .map((f) => {
+        const teamA = teamMap.get(f.teamAId)?.name || f.teamAId || 'Team A';
+        const teamB = teamMap.get(f.teamBId)?.name || f.teamBId || 'Team B';
+        const tourney = tournamentMap.get(f.tournamentId);
+        const venue = venueMap.get(f.venueId);
+        const formatted = formatScheduleTime(f.scheduledAt);
+        const timeLabel = formatted !== 'Scheduled' ? formatted : (f.round || 'Scheduled');
+        return {
+          id: f.id,
+          teamA,
+          teamB,
+          status: 'upcoming' as const,
+          time: timeLabel,
+          rawDate: parseDate(f.scheduledAt),
+          badge: f.round ? `${f.round}${tourney ? ` · ${tourney.name}` : ''}` : (tourney?.name || 'Tournament Fixture'),
+          venue: venue?.name,
+        };
+      });
+
+    return [...fromMatches, ...fromFixtures].sort((a, b) => {
+      const timeA = a.rawDate?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      const timeB = b.rawDate?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      return timeA - timeB;
+    });
+  }, [sportMatches, sportFixtures, teamMap, tournamentMap, venueMap, matchIdSet]);
 
   const teams = firestoreTeams?.filter(t => t.sportId === matchedSport?.id || t.sportId === slug) || [];
 
@@ -128,20 +248,32 @@ export const SportDetail: React.FC = () => {
         <section>
           <div className="flex items-center gap-3 mb-6">
             <Calendar className="text-[#155EEF]" size={22} />
-            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wider">Upcoming Schedule</h2>
+            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wider">Upcoming Schedule & Fixtures</h2>
+            {upcomingSchedule.length > 0 && (
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                {upcomingSchedule.length} Fixtures
+              </span>
+            )}
           </div>
-          {upcomingMatches.length > 0 ? (
+          {upcomingSchedule.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {upcomingMatches.map(m => (
-                <MatchCard
-                  key={m.id}
-                  id={m.id}
-                  sport={sportName}
-                  teamA={m.participantA?.name || m.teamAId || 'Team A'}
-                  teamB={m.participantB?.name || m.teamBId || 'Team B'}
-                  status="upcoming"
-                  time="Scheduled"
-                />
+              {upcomingSchedule.map((item) => (
+                <div key={item.id} className="flex flex-col">
+                  <MatchCard
+                    id={item.id}
+                    sport={sportName}
+                    teamA={item.teamA}
+                    teamB={item.teamB}
+                    status="upcoming"
+                    time={item.time}
+                  />
+                  {(item.badge || item.venue) && (
+                    <div className="mt-1.5 flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 px-2">
+                      <span className="truncate max-w-[65%]">{item.badge}</span>
+                      {item.venue && <span className="truncate max-w-[32%] text-right">{item.venue}</span>}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           ) : (
@@ -151,7 +283,7 @@ export const SportDetail: React.FC = () => {
                 isDay ? "bg-white/60 border-[#071426]/10 text-[#071426]/50" : "bg-white/5 border-white/10 text-white/50"
               )}
             >
-              No upcoming matches scheduled for {sportName}. Check back soon!
+              No upcoming fixtures or matches scheduled for {sportName}. Check back soon!
             </div>
           )}
         </section>

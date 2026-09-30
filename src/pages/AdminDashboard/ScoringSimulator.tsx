@@ -27,7 +27,56 @@ export const ScoringSimulator: React.FC = () => {
     lossPoints: 0,
     allOutFullQuota: true,
     oversQuota: 20,
+    allowTenRunBall: true,
   });
+
+  // Simulator helper: Advance legal overs on ball simulation
+  const [autoAdvanceBall, setAutoAdvanceBall] = useState(true);
+
+  // Advance overs by 1 legal ball (e.g. 18.4 -> 18.5, 18.5 -> 19.0)
+  const advanceCricketOvers = (overs: number, maxQuota: number): number => {
+    if (overs >= maxQuota) return maxQuota;
+    const whole = Math.floor(overs);
+    const balls = Math.round((overs - whole) * 10);
+    if (balls >= 5) {
+      return Math.min(maxQuota, whole + 1);
+    }
+    return Number((whole + (balls + 1) / 10).toFixed(1));
+  };
+
+  const simulateCricketBall = (target: 'team' | 'opponent', runs: number) => {
+    setCricketInput(prev => {
+      const isTeam = target === 'team';
+      const currentRuns = isTeam ? prev.teamRuns : prev.opponentRuns;
+      const currentOvers = isTeam ? prev.teamOvers : prev.opponentOvers;
+      const newRuns = currentRuns + runs;
+      const newOvers = autoAdvanceBall ? advanceCricketOvers(currentOvers, prev.maxOversQuota) : currentOvers;
+      return isTeam
+        ? { ...prev, teamRuns: newRuns, teamOvers: newOvers }
+        : { ...prev, opponentRuns: newRuns, opponentOvers: newOvers };
+    });
+
+    if (runs === 10) {
+      toast.success(
+        `⚡ Simulated +10 Runs Bonus Ball for ${target === 'team' ? 'Team A' : 'Team B'}!`,
+        { icon: '🏏', duration: 2500 }
+      );
+    }
+  };
+
+  const simulateCricketWicket = (target: 'team' | 'opponent') => {
+    setCricketInput(prev => {
+      const isTeam = target === 'team';
+      const currentWickets = isTeam ? prev.teamWickets : prev.opponentWickets;
+      const currentOvers = isTeam ? prev.teamOvers : prev.opponentOvers;
+      const newWickets = Math.min(10, currentWickets + 1);
+      const isAllOut = newWickets >= 10;
+      const newOvers = autoAdvanceBall ? advanceCricketOvers(currentOvers, prev.maxOversQuota) : currentOvers;
+      return isTeam
+        ? { ...prev, teamWickets: newWickets, isTeamAllOut: isAllOut, teamOvers: newOvers }
+        : { ...prev, opponentWickets: newWickets, isOpponentAllOut: isAllOut, opponentOvers: newOvers };
+    });
+  };
 
   const [footballConfig, setFootballConfig] = useState({
     winPoints: 3,
@@ -106,7 +155,7 @@ export const ScoringSimulator: React.FC = () => {
   };
 
   // Preset match scenarios to verify logic
-  const loadCricketPreset = (type: 'high_nrr' | 'close_chase' | 'all_out') => {
+  const loadCricketPreset = (type: 'high_nrr' | 'close_chase' | 'all_out' | 'ten_run_jackpot') => {
     if (type === 'high_nrr') {
       setCricketInput({
         teamRuns: 215,
@@ -133,6 +182,19 @@ export const ScoringSimulator: React.FC = () => {
         isOpponentAllOut: false,
       });
       toast.success('Loaded "1-Run Thriller (+0.05 NRR)" preset');
+    } else if (type === 'ten_run_jackpot') {
+      setCricketInput({
+        teamRuns: 172,
+        teamOvers: 19.5,
+        teamWickets: 5,
+        isTeamAllOut: false,
+        maxOversQuota: 20,
+        opponentRuns: 170,
+        opponentOvers: 20.0,
+        opponentWickets: 7,
+        isOpponentAllOut: false,
+      });
+      toast.success('Loaded "⚡ 10-Run Bonus Ball Simulation" preset. Click [+10 Runs] on Team A to simulate final-ball jackpot!');
     } else {
       setCricketInput({
         teamRuns: 140,
@@ -335,12 +397,40 @@ export const ScoringSimulator: React.FC = () => {
               </p>
             </div>
 
+            <div className={cn('p-3 rounded-xl border', isDay ? 'bg-amber-50/50 border-amber-200/60' : 'bg-amber-950/20 border-amber-800/30')}>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={cricketConfig.allowTenRunBall}
+                  onChange={e => setCricketConfig(c => ({ ...c, allowTenRunBall: e.target.checked }))}
+                  className="w-4 h-4 text-amber-500 rounded"
+                />
+                <span className={cn('text-xs font-semibold flex items-center gap-1.5', isDay ? 'text-amber-950' : 'text-amber-300')}>
+                  <span>⚡ 10-Run Special Delivery Rule</span>
+                  <span className="text-[10px] bg-amber-400 text-slate-950 px-1 rounded font-black uppercase">Active</span>
+                </span>
+              </label>
+              <p className={cn('text-[11px] mt-1 pl-6', isDay ? 'text-amber-800/80' : 'text-amber-300/70')}>
+                Permits simulating 10-run special/bonus deliveries contributing directly to team total, Run Rate (RPO), and tournament NRR.
+              </p>
+            </div>
+
             {/* Presets */}
             <div>
               <div className={cn('text-xs font-semibold uppercase mb-2', isDay ? 'text-slate-500' : 'text-slate-400')}>
                 Test Presets
               </div>
               <div className="flex flex-col gap-1.5">
+                <button
+                  onClick={() => loadCricketPreset('ten_run_jackpot')}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-xs font-medium text-left transition-colors flex items-center justify-between',
+                    isDay ? 'bg-amber-100/70 hover:bg-amber-100 text-amber-950 border border-amber-300' : 'bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-600/40'
+                  )}
+                >
+                  <span className="font-bold">⚡ 10-Run Bonus Ball Simulation</span>
+                  <span className="font-mono text-[10px] bg-amber-400/20 px-1.5 py-0.5 rounded text-amber-400 font-bold">+10 Ball</span>
+                </button>
                 <button
                   onClick={() => loadCricketPreset('high_nrr')}
                   className={cn(
@@ -457,44 +547,89 @@ export const ScoringSimulator: React.FC = () => {
                 </div>
 
                 {/* Quick Increment Buttons to test live event response */}
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <span className={cn('text-xs self-center', isDay ? 'text-slate-400' : 'text-slate-500')}>Simulate Ball:</span>
-                  <button
-                    onClick={() => setCricketInput(i => ({ ...i, teamRuns: i.teamRuns + 1 }))}
-                    className={cn(
-                      'px-2 py-1 border font-bold rounded text-xs transition-colors',
-                      isDay ? 'bg-white hover:bg-blue-100 text-blue-700 border-blue-200' : 'bg-slate-900 hover:bg-blue-900/40 text-blue-300 border-blue-500/40'
-                    )}
-                  >
-                    +1 Run
-                  </button>
-                  <button
-                    onClick={() => setCricketInput(i => ({ ...i, teamRuns: i.teamRuns + 4 }))}
-                    className={cn(
-                      'px-2 py-1 border font-bold rounded text-xs transition-colors',
-                      isDay ? 'bg-white hover:bg-green-100 text-green-700 border-green-200' : 'bg-slate-900 hover:bg-green-900/40 text-green-300 border-green-500/40'
-                    )}
-                  >
-                    +4 Four
-                  </button>
-                  <button
-                    onClick={() => setCricketInput(i => ({ ...i, teamRuns: i.teamRuns + 6 }))}
-                    className={cn(
-                      'px-2 py-1 border font-bold rounded text-xs transition-colors',
-                      isDay ? 'bg-white hover:bg-purple-100 text-purple-700 border-purple-200' : 'bg-slate-900 hover:bg-purple-900/40 text-purple-300 border-purple-500/40'
-                    )}
-                  >
-                    +6 Six
-                  </button>
-                  <button
-                    onClick={() => setCricketInput(i => ({ ...i, teamWickets: Math.min(10, i.teamWickets + 1) }))}
-                    className={cn(
-                      'px-2 py-1 border font-bold rounded text-xs transition-colors',
-                      isDay ? 'bg-white hover:bg-red-100 text-red-700 border-red-200' : 'bg-slate-900 hover:bg-red-900/40 text-red-300 border-red-500/40'
-                    )}
-                  >
-                    +1 Wicket
-                  </button>
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-dashed border-slate-300 dark:border-white/10">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className={cn('text-xs font-semibold self-center mr-1', isDay ? 'text-slate-600' : 'text-slate-300')}>
+                      Simulate Delivery:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => simulateCricketBall('team', 0)}
+                      title="Dot delivery (+0 runs, advances ball)"
+                      className={cn(
+                        'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
+                        isDay ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300' : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-white/10'
+                      )}
+                    >
+                      Dot
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => simulateCricketBall('team', 1)}
+                      className={cn(
+                        'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
+                        isDay ? 'bg-white hover:bg-blue-100 text-blue-700 border-blue-200' : 'bg-slate-900 hover:bg-blue-900/40 text-blue-300 border-blue-500/40'
+                      )}
+                    >
+                      +1 Run
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => simulateCricketBall('team', 4)}
+                      className={cn(
+                        'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
+                        isDay ? 'bg-white hover:bg-green-100 text-green-700 border-green-200' : 'bg-slate-900 hover:bg-green-900/40 text-green-300 border-green-500/40'
+                      )}
+                    >
+                      +4 Four
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => simulateCricketBall('team', 6)}
+                      className={cn(
+                        'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
+                        isDay ? 'bg-white hover:bg-purple-100 text-purple-700 border-purple-200' : 'bg-slate-900 hover:bg-purple-900/40 text-purple-300 border-purple-500/40'
+                      )}
+                    >
+                      +6 Six
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => simulateCricketBall('team', 10)}
+                      title="Simulate 10-Run Bonus / Jackpot delivery"
+                      className={cn(
+                        'px-3 py-1 font-black rounded text-xs transition-all active:scale-95 shadow-md flex items-center gap-1.5',
+                        isDay
+                          ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 border border-amber-600 shadow-amber-500/25 ring-1 ring-amber-400'
+                          : 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 border border-amber-300 shadow-amber-400/25'
+                      )}
+                    >
+                      <span>⚡ +10 Runs</span>
+                      <span className="text-[10px] uppercase font-black px-1 rounded bg-black/25 text-slate-950">Bonus</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => simulateCricketWicket('team')}
+                      className={cn(
+                        'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
+                        isDay ? 'bg-white hover:bg-red-100 text-red-700 border-red-200' : 'bg-slate-900 hover:bg-red-900/40 text-red-300 border-red-500/40'
+                      )}
+                    >
+                      +1 Wkt
+                    </button>
+                  </div>
+
+                  <label className="flex items-center gap-1.5 cursor-pointer text-xs select-none">
+                    <input
+                      type="checkbox"
+                      checked={autoAdvanceBall}
+                      onChange={e => setAutoAdvanceBall(e.target.checked)}
+                      className="w-3.5 h-3.5 text-amber-500 rounded"
+                    />
+                    <span className={isDay ? 'text-slate-500' : 'text-slate-400'}>
+                      Advance ball (+0.1 ov)
+                    </span>
+                  </label>
                 </div>
               </div>
 
@@ -563,6 +698,80 @@ export const ScoringSimulator: React.FC = () => {
                     </label>
                   </div>
                 </div>
+
+                {/* Quick Increment Buttons for Team B to test chase & formula response */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-dashed border-slate-300 dark:border-white/10">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className={cn('text-xs font-semibold self-center mr-1', isDay ? 'text-slate-600' : 'text-slate-300')}>
+                      Simulate Delivery:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => simulateCricketBall('opponent', 0)}
+                      title="Dot delivery (+0 runs, advances ball)"
+                      className={cn(
+                        'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
+                        isDay ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300' : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-white/10'
+                      )}
+                    >
+                      Dot
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => simulateCricketBall('opponent', 1)}
+                      className={cn(
+                        'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
+                        isDay ? 'bg-white hover:bg-blue-100 text-blue-700 border-blue-200' : 'bg-slate-900 hover:bg-blue-900/40 text-blue-300 border-blue-500/40'
+                      )}
+                    >
+                      +1 Run
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => simulateCricketBall('opponent', 4)}
+                      className={cn(
+                        'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
+                        isDay ? 'bg-white hover:bg-green-100 text-green-700 border-green-200' : 'bg-slate-900 hover:bg-green-900/40 text-green-300 border-green-500/40'
+                      )}
+                    >
+                      +4 Four
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => simulateCricketBall('opponent', 6)}
+                      className={cn(
+                        'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
+                        isDay ? 'bg-white hover:bg-purple-100 text-purple-700 border-purple-200' : 'bg-slate-900 hover:bg-purple-900/40 text-purple-300 border-purple-500/40'
+                      )}
+                    >
+                      +6 Six
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => simulateCricketBall('opponent', 10)}
+                      title="Simulate 10-Run Bonus / Jackpot delivery"
+                      className={cn(
+                        'px-3 py-1 font-black rounded text-xs transition-all active:scale-95 shadow-md flex items-center gap-1.5',
+                        isDay
+                          ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 border border-amber-600 shadow-amber-500/25 ring-1 ring-amber-400'
+                          : 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 border border-amber-300 shadow-amber-400/25'
+                      )}
+                    >
+                      <span>⚡ +10 Runs</span>
+                      <span className="text-[10px] uppercase font-black px-1 rounded bg-black/25 text-slate-950">Bonus</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => simulateCricketWicket('opponent')}
+                      className={cn(
+                        'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
+                        isDay ? 'bg-white hover:bg-red-100 text-red-700 border-red-200' : 'bg-slate-900 hover:bg-red-900/40 text-red-300 border-red-500/40'
+                      )}
+                    >
+                      +1 Wkt
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -611,7 +820,7 @@ export const ScoringSimulator: React.FC = () => {
               <div className="pt-2 flex items-center justify-between text-xs text-emerald-400">
                 <span className="flex items-center gap-1.5">
                   <HiOutlineCheckCircle className="w-4 h-4" />
-                  Formula Verified: Matches ICC Standard Cricket Tournament Regulations
+                  Formula Verified: Matches ICC Standard Cricket Regulations + 10-Run Bonus Ball Simulation
                 </span>
                 <span className="font-mono text-slate-500">Precision: 3 decimal places</span>
               </div>

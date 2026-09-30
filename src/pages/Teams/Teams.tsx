@@ -159,10 +159,20 @@ export const Teams: React.FC = () => {
                                 : 'bg-gradient-to-br from-gray-800 to-gray-900 border-white/20 text-white',
                             )}
                           >
-                            {(team.logo || getTeamLogo(team.name) || getTeamLogo(team.id)) ? (
+                            {(getTeamLogo(team.name) || getTeamLogo(team.id) || team.logo) ? (
                               <img
-                                src={team.logo || getTeamLogo(team.name) || getTeamLogo(team.id)}
+                                src={getTeamLogo(team.name) || getTeamLogo(team.id) || team.logo}
                                 alt={team.name}
+                                onError={(e) => {
+                                  const el = e.currentTarget;
+                                  if (!el.dataset.fallbackTried) {
+                                    el.dataset.fallbackTried = 'true';
+                                    const fallback = getTeamLogo(team.name) || '/logos/K-Strike.png';
+                                    if (el.src !== fallback) {
+                                      el.src = fallback;
+                                    }
+                                  }
+                                }}
                                 className="w-full h-full object-cover rounded-2xl"
                               />
                             ) : (

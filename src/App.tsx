@@ -65,6 +65,7 @@ const AdminEditor = lazy(() => import('./pages/AdminDashboard/AdminEditor'));
 const SettingsPage = lazy(() => import('./pages/AdminDashboard/SettingsPage'));
 const AuditLogPage = lazy(() => import('./pages/AdminDashboard/AuditLogPage'));
 const ScoringSimulator = lazy(() => import('./pages/AdminDashboard/ScoringSimulator'));
+const LeaderboardsManager = lazy(() => import('./pages/AdminDashboard/LeaderboardsManager'));
 
 // Layout components
 import AdminLayout from './components/admin/AdminLayout';
@@ -290,6 +291,7 @@ const App: React.FC = () => {
 
                         <Route path="sports" element={adminPage(SportsManager)} />
                         <Route path="sports/:sportId" element={adminPage(AdminSportDetail)} />
+                        <Route path="leaderboard" element={adminPage(LeaderboardsManager)} />
 
                         {/* ---- People --------------------------------- */}
                         <Route path="teams" element={adminPage(TeamsManager)} />

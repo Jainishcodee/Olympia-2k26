@@ -38,6 +38,7 @@ interface FixtureForm {
   venueId: string;
   status: string;
   order: string;
+  isHidden: boolean;
 }
 
 const EMPTY: FixtureForm = {
@@ -52,6 +53,7 @@ const EMPTY: FixtureForm = {
   venueId: '',
   status: 'scheduled',
   order: '1',
+  isHidden: false,
 };
 
 const toInputDate = (value: unknown): { date: string; time: string } => {
@@ -110,6 +112,7 @@ const FixtureEditor: React.FC = () => {
       venueId: fixture.venueId ?? '',
       status: fixture.status ?? 'scheduled',
       order: String(fixture.order ?? 1),
+      isHidden: fixture.isHidden ?? false,
     });
   }, [existing.data]);
 
@@ -150,8 +153,14 @@ const FixtureEditor: React.FC = () => {
     setSaving(true);
     try {
       const when = Timestamp.fromDate(new Date(`${form.date}T${form.time || '00:00'}`));
+      const tourney = tournaments.data.find((t) => t.id === form.tournamentId);
+      const teamA = teams.data.find((t) => t.id === form.teamAId);
+      const derivedSportId =
+        tourney?.sportId || teamA?.sportId || linkedMatch?.sportId || '';
+
       const shared = {
         tournamentId: form.tournamentId,
+        sportId: derivedSportId,
         round: form.round.trim(),
         matchId: form.mode === 'match' ? form.matchId : '',
         order: Number(form.order) || 0,
@@ -160,6 +169,7 @@ const FixtureEditor: React.FC = () => {
         scheduledAt: when,
         venueId: form.venueId,
         status: form.status || 'scheduled',
+        isHidden: Boolean(form.isHidden),
       };
       const summary = `${shared.round || 'Fixture'} · ${new Date(
         `${form.date}T${form.time || '00:00'}`,
@@ -387,6 +397,15 @@ const FixtureEditor: React.FC = () => {
               helpText="Sort position inside its round."
             />
           </FormGrid>
+
+          <div className="mt-4 pt-4 border-t border-slate-200/60 dark:border-white/10">
+            <Toggle
+              label="Hide fixture from public website"
+              description="When enabled, this fixture is saved as draft/private and will NOT be shown on public sports schedule and matches pages."
+              checked={form.isHidden}
+              onChange={(checked) => set('isHidden', checked)}
+            />
+          </div>
 
           {submitted && Object.keys(errors).length > 0 && (
             <ErrorNotice message={Object.values(errors)[0] ?? 'Fix the highlighted fields.'} />

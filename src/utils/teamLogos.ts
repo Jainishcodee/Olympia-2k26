@@ -40,7 +40,18 @@ export const TEAM_REGISTRY: TeamLogoDefinition[] = [
     sportId: 'lan-games',
     filename: 'K-Strike.png',
     slug: 'k-strike',
-    aliases: ['k-strike', 'k strike', 'kstrike', 'team-lan-games-k-strike'],
+    aliases: [
+      'k-strike',
+      'k strike',
+      'kstrike',
+      'k_strike',
+      'k-strike.png',
+      'kstrike.png',
+      'k_strike.png',
+      'team-lan-games-k-strike',
+      'team-lan-games-kstrike',
+      'team-lan-games-k_strike',
+    ],
   },
   {
     name: "Lagga's Legends",
@@ -215,7 +226,12 @@ const logoCache = new Map<string, string>();
 for (const item of TEAM_REGISTRY) {
   // Resolve bundled asset from glob
   const assetKey = `../assets/Logos/${item.filename}`;
-  const bundledUrl = logoModules[assetKey] || `/logos/${encodeURIComponent(item.filename)}`;
+  const bundledUrl =
+    logoModules[assetKey] ||
+    logoModules[`../assets/Logos/${item.filename.toLowerCase()}`] ||
+    logoModules[`../assets/Logos/${item.slug}.png`] ||
+    logoModules[`../assets/Logos/${item.slug}.jpg`] ||
+    `/logos/${encodeURIComponent(item.filename)}`;
 
   // Store by exact name
   logoCache.set(item.name.toLowerCase(), bundledUrl);
@@ -225,10 +241,18 @@ for (const item of TEAM_REGISTRY) {
   logoCache.set(item.slug, bundledUrl);
   logoCache.set(normalizeKey(item.slug), bundledUrl);
 
+  // Store by static URL paths
+  logoCache.set(`/logos/${item.filename}`, bundledUrl);
+  logoCache.set(`/logos/${item.filename.toLowerCase()}`, bundledUrl);
+  logoCache.set(`/logos/${item.slug}.png`, bundledUrl);
+  logoCache.set(`/logos/${item.slug}.jpg`, bundledUrl);
+  logoCache.set(`/logos/${item.slug}`, bundledUrl);
+
   // Store by aliases
   for (const alias of item.aliases) {
     logoCache.set(alias.toLowerCase(), bundledUrl);
     logoCache.set(normalizeKey(alias), bundledUrl);
+    logoCache.set(`/logos/${alias.toLowerCase()}`, bundledUrl);
   }
 }
 
