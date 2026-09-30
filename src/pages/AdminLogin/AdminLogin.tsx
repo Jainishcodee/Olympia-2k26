@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/utils/cn';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/config/firebase';
-import { FiLock, FiMail, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
+import { FiLock, FiMail, FiEye, FiEyeOff, FiAlertCircle, FiArrowLeft, FiShield } from 'react-icons/fi';
 import olympiaLogo from '@/assets/olympia.png';
 
 const AdminLogin: React.FC = () => {
@@ -15,13 +13,20 @@ const AdminLogin: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({});
-  
-  const { isAdmin } = useAuth();
+
+  const { signIn, isAdmin, user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
+  // If already authenticated with active admin privileges, redirect immediately
+  useEffect(() => {
+    if (!authLoading && user && !user.isAnonymous && isAdmin) {
+      navigate('/admin', { replace: true });
+    }
+  }, [user, isAdmin, authLoading, navigate]);
+
   const validateEmail = (value: string) => {
-    if (!value) return 'Email is required';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Enter a valid email address';
+    if (!value.trim()) return 'Administrator email is required';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return 'Enter a valid email address';
     return '';
   };
 
@@ -33,37 +38,42 @@ const AdminLogin: React.FC = () => {
 
   const handleBlur = (field: 'email' | 'password', value: string) => {
     const validator = field === 'email' ? validateEmail : validatePassword;
-    setFormErrors(prev => ({ ...prev, [field]: validator(value) }));
+    setFormErrors((prev) => ({ ...prev, [field]: validator(value) }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const emailError = validateEmail(email);
     const passwordError = validatePassword(password);
-    
+
     if (emailError || passwordError) {
       setFormErrors({ email: emailError, password: passwordError });
-      return;
-    }
-    
-    if (!auth) {
-      setError('Firebase auth not configured. Check your .env file.');
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate('/admin');
+      await signIn(email.trim(), password);
+      // Upon successful authentication & admin verification, navigate with replace to prevent back-button loops
+      navigate('/admin', { replace: true });
     } catch (err: any) {
-      let message = 'Failed to login';
-      if (err.code === 'auth/user-not-found') message = 'No account found with this email';
-      else if (err.code === 'auth/wrong-password') message = 'Incorrect password';
-      else if (err.code === 'auth/invalid-email') message = 'Invalid email format';
-      else if (err.code === 'auth/too-many-requests') message = 'Too many attempts. Please try again later';
-      else if (err.message) message = err.message;
+      let message = 'Failed to authenticate.';
+      const code = err.code || '';
+      if (
+        code === 'auth/user-not-found' ||
+        code === 'auth/wrong-password' ||
+        code === 'auth/invalid-credential'
+      ) {
+        message = 'Invalid administrator credentials. Please check your email and password.';
+      } else if (code === 'auth/invalid-email') {
+        message = 'Invalid email address format.';
+      } else if (code === 'auth/too-many-requests') {
+        message = 'Too many failed attempts. Access is temporarily suspended for security.';
+      } else if (err.message) {
+        message = err.message;
+      }
       setError(message);
     } finally {
       setLoading(false);
@@ -73,267 +83,240 @@ const AdminLogin: React.FC = () => {
   const inputVariants = {
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-    error: { x: [-5, 5, -5, 5, 0], transition: { duration: 0.3 } },
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ background: '#071426' }}>
-      {/* Animated background */}
-      <div className="absolute inset-0" aria-hidden="true">
-        <motion.div
-          className="absolute -top-1/2 -right-1/2 w-[600px] h-[600px] rounded-full blur-[150px]"
-          style={{ background: 'radial-gradient(circle, #1264FF40 0%, transparent 70%)' }}
-          animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#F8FAFC] via-[#EEF4FA] to-[#E5EDF6] text-slate-800 flex flex-col justify-between selection:bg-[#D9A441] selection:text-[#071426]">
+      {/* --- Light Mode Ambient Atmosphere & Radiance --- */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        {/* Soft Electric Blue upper aura */}
+        <div
+          className="absolute -top-[20%] -right-[15%] w-[650px] h-[650px] rounded-full blur-[140px]"
+          style={{ background: 'radial-gradient(circle, rgba(18, 100, 255, 0.12) 0%, transparent 70%)' }}
         />
-        <motion.div
-          className="absolute -bottom-1/2 -left-1/2 w-[500px] h-[500px] rounded-full blur-[150px]"
-          style={{ background: 'radial-gradient(circle, #D9A44140 0%, transparent 70%)' }}
-          animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+        {/* Soft Olympia Gold lower-left aura */}
+        <div
+          className="absolute -bottom-[20%] -left-[15%] w-[600px] h-[600px] rounded-full blur-[140px]"
+          style={{ background: 'radial-gradient(circle, rgba(217, 164, 65, 0.14) 0%, transparent 70%)' }}
         />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%23ffffff%22 fill-opacity=%220.02%22%3E%3Cpath d=%22M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2v-4h4v-2h-4z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]" />
+        {/* Digital arena light grid pattern */}
+        <div className="absolute inset-0 opacity-[0.035] bg-[radial-gradient(#071426_1px,transparent_1px)] [background-size:24px_24px]" />
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative z-10"
-      >
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          {/* Logo */}
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.1, type: 'spring', stiffness: 100, damping: 15 }}
-            className="flex justify-center"
-          >
-            <div className="relative flex items-center justify-center p-3 rounded-2xl bg-gradient-to-br from-white/10 to-transparent border border-white/15 backdrop-blur-xl shadow-[0_0_35px_rgba(217,164,65,0.25)]">
-              <img
-                src={olympiaLogo}
-                alt="Olympia 2K26"
-                className="h-16 w-auto object-contain drop-shadow-[0_0_20px_rgba(217,164,65,0.6)]"
-              />
-            </div>
-          </motion.div>
+      {/* --- Top Navigation Bar with Return to Public Arena --- */}
+      <header className="relative z-20 w-full px-6 py-6 sm:px-10 flex items-center justify-between">
+        <Link
+          to="/"
+          className="group inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-[#071426]/70 hover:text-[#1264FF] transition-colors"
+        >
+          <FiArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+          <span>Return to Public Arena</span>
+        </Link>
 
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="mt-6 text-center"
-          >
-            <h1 className="text-3xl font-black tracking-tight text-white">
+        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
+          <FiShield className="h-3.5 w-3.5 text-[#1264FF]" />
+          <span className="hidden sm:inline">Secure 256-Bit Link</span>
+        </div>
+      </header>
+
+      {/* --- Main Card Stage --- */}
+      <main className="relative z-10 flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-8 py-8">
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          className="sm:mx-auto sm:w-full sm:max-w-md"
+        >
+          {/* Brand Logo & Titles */}
+          <div className="text-center mb-8">
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.1, type: 'spring', stiffness: 120 }}
+              className="flex justify-center mb-5"
+            >
+              <div className="relative p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-[0_8px_30px_rgba(217,164,65,0.2)]">
+                <img
+                  src={olympiaLogo}
+                  alt="Olympia 2K26"
+                  className="h-14 w-auto object-contain drop-shadow-[0_2px_12px_rgba(217,164,65,0.45)]"
+                />
+              </div>
+            </motion.div>
+
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#071426]">
               OLYMPIA <span className="text-[#D9A441]">2K26</span>
             </h1>
-            <p className="mt-1.5 text-xs font-black uppercase tracking-[0.24em] text-[#1264FF]">
-              COMMAND CENTER PORTAL
+            <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1264FF]/10 border border-[#1264FF]/20 text-[11px] font-black uppercase tracking-[0.22em] text-[#1264FF]">
+              <span>SPORTS SECRETARY & ADMIN</span>
+            </div>
+            <p className="mt-2 text-xs font-medium text-slate-500">
+              Authorized personnel and festival officials access only
             </p>
-            <p className="mt-1 text-xs text-slate-400">Secure access to real-time operations</p>
-          </motion.div>
-        </div>
+          </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-8 sm:mx-auto sm:w-full sm:max-w-md"
-        >
-          <div className="relative rounded-2xl overflow-hidden" style={{ 
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05) inset'
-          }}>
-            {/* Top accent bar */}
-            <div className="absolute top-0 left-0 right-0 h-1" style={{ 
-              background: 'linear-gradient(90deg, #1264FF 0%, #D9A441 50%, #1264FF 100%)' 
-            }} />
-            
-            <div className="p-8 sm:p-10">
-              <form className="space-y-6" onSubmit={handleSubmit} noValidate>
-                {/* Error alert */}
+          {/* Frosted Light Mode Login Card */}
+          <div className="relative rounded-3xl overflow-hidden bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-[0_25px_60px_-15px_rgba(7,20,38,0.08),0_1px_3px_rgba(0,0,0,0.04)]">
+            {/* Top gold & blue racing stripe */}
+            <div className="h-1.5 w-full bg-gradient-to-r from-[#1264FF] via-[#D9A441] to-[#FFD21F]" />
+
+            <div className="p-7 sm:p-9">
+              <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+                {/* Error Banner */}
                 <AnimatePresence>
                   {error && (
                     <motion.div
-                      initial={{ opacity: 0, y: -10 }}
+                      initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="flex items-start gap-3 p-4 rounded-xl"
-                      style={{ 
-                        background: 'rgba(239, 68, 68, 0.15)',
-                        border: '1px solid rgba(239, 68, 68, 0.3)',
-                        color: '#fecaca'
-                      }}
+                      exit={{ opacity: 0, y: -8 }}
+                      className="flex items-start gap-3 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 shadow-xs"
                     >
-                      <FiAlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
-                      <p className="text-sm leading-relaxed">{error}</p>
+                      <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+                      <p className="text-xs sm:text-sm font-semibold leading-relaxed">{error}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                  {/* Email field */}
-                  <motion.div variants={inputVariants}>
-                    <label htmlFor="email" className="block text-sm font-semibold text-white mb-2">
-                      Email Address
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <FiMail className="h-5 w-5 text-slate-500" />
-                      </div>
-                      <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        autoComplete="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        onBlur={() => handleBlur('email', email)}
-                        disabled={loading}
-                        className={cn(
-                          'w-full pl-12 pr-4 py-3.5 rounded-xl text-white placeholder-slate-500 transition-all duration-200',
-                          'bg-white/5 border border-white/10',
-                          'focus:outline-none focus:ring-2 focus:ring-[#1264FF]/20 focus:border-[#1264FF]',
-                          'disabled:opacity-50 disabled:cursor-not-allowed',
-                          formErrors.email && 'border-red-400/50 focus:border-red-400 focus:ring-red-400/20'
-                        )}
-                        placeholder="admin@olympia.com"
-                      />
+                {/* Email Field */}
+                <motion.div variants={inputVariants}>
+                  <label htmlFor="email" className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-2">
+                    Official Email Address
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <FiMail className="h-4 w-4 text-slate-400" />
                     </div>
-                    <AnimatePresence>
-                      {formErrors.email && (
-                        <motion.p
-                          initial={{ opacity: 0, y: -5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -5 }}
-                          className="mt-2 text-sm text-red-400 flex items-center gap-1"
-                        >
-                          <FiAlertCircle className="h-3.5 w-3.5" />
-                          {formErrors.email}
-                        </motion.p>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      onBlur={() => handleBlur('email', email)}
+                      disabled={loading}
+                      placeholder="secretary@olympia.com"
+                      className={cn(
+                        'w-full pl-10 pr-4 py-3 rounded-xl text-sm font-medium transition-all duration-200',
+                        'bg-slate-50/80 border border-slate-200 text-slate-900 placeholder-slate-400',
+                        'focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1264FF]/15 focus:border-[#1264FF]',
+                        'disabled:opacity-50 disabled:cursor-not-allowed',
+                        formErrors.email && 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/15'
                       )}
-                    </AnimatePresence>
-                  </motion.div>
-
-                  {/* Password field */}
-                  <motion.div variants={inputVariants}>
-                    <label htmlFor="password" className="block text-sm font-semibold text-white mb-2">
-                      Password
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <FiLock className="h-5 w-5 text-slate-500" />
-                      </div>
-                      <input
-                        id="password"
-                        name="password"
-                        type={showPassword ? 'text' : 'password'}
-                        autoComplete="current-password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        onBlur={() => handleBlur('password', password)}
-                        disabled={loading}
-                        className={cn(
-                          'w-full pl-12 pr-12 py-3.5 rounded-xl text-white placeholder-slate-500 transition-all duration-200',
-                          'bg-white/5 border border-white/10',
-                          'focus:outline-none focus:ring-2 focus:ring-[#1264FF]/20 focus:border-[#1264FF]',
-                          'disabled:opacity-50 disabled:cursor-not-allowed',
-                          formErrors.password && 'border-red-400/50 focus:border-red-400 focus:ring-red-400/20'
-                        )}
-                        placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        disabled={loading}
-                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-white transition-colors"
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    />
+                  </div>
+                  <AnimatePresence>
+                    {formErrors.email && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        className="mt-1.5 text-xs text-rose-600 font-semibold flex items-center gap-1"
                       >
-                        {showPassword ? <FiEyeOff className="h-5 w-5" /> : <FiEye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                    <AnimatePresence>
-                      {formErrors.password && (
-                        <motion.p
-                          initial={{ opacity: 0, y: -5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -5 }}
-                          className="mt-2 text-sm text-red-400 flex items-center gap-1"
-                        >
-                          <FiAlertCircle className="h-3.5 w-3.5" />
-                          {formErrors.password}
-                        </motion.p>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
+                        <FiAlertCircle className="h-3.5 w-3.5 shrink-0" />
+                        {formErrors.email}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
 
-                  {/* Submit button */}
+                {/* Password Field */}
+                <motion.div variants={inputVariants}>
+                  <div className="flex items-center justify-between mb-2">
+                    <label htmlFor="password" className="block text-xs font-black uppercase tracking-wider text-slate-700">
+                      Security Password
+                    </label>
+                  </div>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <FiLock className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <input
+                      id="password"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onBlur={() => handleBlur('password', password)}
+                      disabled={loading}
+                      placeholder="••••••••••••"
+                      className={cn(
+                        'w-full pl-10 pr-11 py-3 rounded-xl text-sm font-medium transition-all duration-200',
+                        'bg-slate-50/80 border border-slate-200 text-slate-900 placeholder-slate-400',
+                        'focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1264FF]/15 focus:border-[#1264FF]',
+                        'disabled:opacity-50 disabled:cursor-not-allowed',
+                        formErrors.password && 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/15'
+                      )}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={loading}
+                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-700 transition-colors focus:outline-none"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <FiEyeOff className="h-4 w-4" /> : <FiEye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <AnimatePresence>
+                    {formErrors.password && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        className="mt-1.5 text-xs text-rose-600 font-semibold flex items-center gap-1"
+                      >
+                        <FiAlertCircle className="h-3.5 w-3.5 shrink-0" />
+                        {formErrors.password}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+
+                {/* Submit Action Button */}
+                <div className="pt-2">
                   <motion.button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3.5 px-6 rounded-xl font-semibold text-base text-[#071426] transition-all duration-200 relative overflow-hidden group"
-                    style={{ 
-                      background: 'linear-gradient(135deg, #D9A441 0%, #FFD21F 100%)',
-                      boxShadow: '0 4px 20px rgba(217, 164, 65, 0.3)'
-                    }}
-                    whileHover={{ scale: 1.01, boxShadow: '0 8px 30px rgba(217, 164, 65, 0.4)' }}
+                    whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
+                    className={cn(
+                      'w-full py-3.5 px-6 rounded-xl font-black text-xs sm:text-sm tracking-[0.16em] uppercase text-[#071426] transition-all duration-200 shadow-[0_8px_25px_rgba(217,164,65,0.35)] hover:shadow-[0_12px_32px_rgba(217,164,65,0.5)] cursor-pointer',
+                      'bg-gradient-to-r from-[#D9A441] via-[#FFE27A] to-[#D9A441]',
+                      'disabled:opacity-60 disabled:cursor-not-allowed'
+                    )}
                   >
-                    <span className="relative flex items-center justify-center gap-2">
+                    <span className="flex items-center justify-center gap-2">
                       {loading ? (
                         <>
-                          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                          <svg className="animate-spin h-4 w-4 text-[#071426]" viewBox="0 0 24 24" fill="none">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                             <path className="opacity-75" d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
                           </svg>
-                          <span>Signing in...</span>
+                          <span>Verifying Credentials...</span>
                         </>
                       ) : (
                         <>
-                          <span>Sign in to Dashboard</span>
-                          <motion.div
-                            layoutId="arrow"
-                            className="w-5 h-5 rounded-full flex items-center justify-center"
-                            style={{ background: 'rgba(7, 20, 38, 0.2)' }}
-                            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                            </svg>
-                          </motion.div>
+                          <span>Sign In to Admin Console</span>
+                          <span className="text-base leading-none">→</span>
                         </>
                       )}
-                      </span>
-                    </motion.button>
-
-                    <p className="text-center text-xs text-slate-500">
-                      By signing in, you agree to the <a href="#" className="text-[#1264FF] hover:underline">Terms of Service</a> and <a href="#" className="text-[#1264FF] hover:underline">Privacy Policy</a>
-                    </p>
-                </form>
-              </div>
-
-              {/* Footer links */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                className="mt-8 text-center"
-              >
-                <p className="text-xs text-slate-500">
-                  Forgot password?{' '}
-                  <a href="#" className="text-[#1264FF] hover:text-[#D9A441] font-medium transition-colors">
-                    Reset it
-                  </a>
-                </p>
-                <p className="mt-2 text-xs text-slate-600">
-                  Need help? <a href="#" className="text-[#1264FF] hover:text-[#D9A441] font-medium transition-colors">Contact support</a>
-                </p>
-              </motion.div>
+                    </span>
+                  </motion.button>
+                </div>
+              </form>
             </div>
-          </motion.div>
-      </motion.div>
+          </div>
+        </motion.div>
+      </main>
+
+      {/* --- Footer Note --- */}
+      <footer className="relative z-10 py-5 text-center text-[11px] font-semibold text-slate-400">
+        <p>Olympia 2K26 Digital Arena Operations • Protected by Firebase Security Rules</p>
+      </footer>
     </div>
   );
 };

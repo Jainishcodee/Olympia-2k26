@@ -45,13 +45,17 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
   }, [progress]);
 
   const enter = () => {
-    if (!isReady || leaving) return;
+    if (leaving) return;
     setLeaving(true);
     onComplete();
+    navigate('/');
   };
 
-  const goToAdmin = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const goToAdmin = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (leaving) return;
+    setLeaving(true);
+    onComplete();
     navigate('/admin/login');
   };
 
@@ -156,14 +160,16 @@ export const LoadingScreen: React.FC<{ onComplete: () => void }> = ({ onComplete
           <span className="w-6 h-px bg-[#D9A441]" />
           OLYMPIA 2K26
         </motion.div>
-        <motion.div
+        <motion.button
+          type="button"
+          onClick={goToAdmin}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.45, duration: 0.8 }}
-          className="absolute right-8 top-8 text-[10px] font-black uppercase tracking-[0.3em] text-[#071426]/60"
+          className="absolute right-8 top-8 text-[10px] font-black uppercase tracking-[0.3em] text-[#071426]/60 hover:text-[#1264FF] transition-colors pointer-events-auto cursor-pointer"
         >
-          SYSTEM / ARENA LINK
-        </motion.div>
+          SPORTS SECRETARY ↗
+        </motion.button>
         <motion.div
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}

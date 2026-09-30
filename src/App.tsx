@@ -178,7 +178,15 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 };
 
 const App: React.FC = () => {
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path.startsWith('/admin')) {
+        return true; // Direct access to admin routes skips loading screen
+      }
+    }
+    return false;
+  });
 
   return (
     <ErrorBoundary>

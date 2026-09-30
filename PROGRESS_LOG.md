@@ -651,3 +651,38 @@ App runs at `http://localhost:5173`.
 
 ### 19b. Build Verification
 - Verified with `tsc -b && vite build` — **0 errors**, production build passed cleanly in 1.52s.
+
+---
+
+## 🔒 Phase 20: Landing Screen Direct Navigation, Light Mode Admin Login & Strict Auth Security
+
+> **Completed on September 30, 2026**
+
+### 20a. Landing Screen Direct Action Flow (`LoadingScreen.tsx`, `App.tsx`)
+- **Direct Arena & Sports Secretary Entry:**
+  - When **"Sports Secretary"** is clicked, the loading curtain immediately marks as complete, dismisses cleanly, and opens `/admin/login` directly. Also made the top-right header link (`SPORTS SECRETARY ↗`) clickable for instant access.
+  - When **"Enter the Arena"** is clicked, it immediately dismisses the curtain and navigates to the public Arena home page (`/`).
+  - Updated `App.tsx` so that direct browser navigation to `/admin/*` routes automatically initializes `isLoaded` to `true`, preventing admin users from being blocked by the arena loading screen.
+
+### 20b. Light Mode Admin Login UI (`AdminLogin.tsx`)
+- **Light Theme CSS Implementation:** Redesigned the Admin Login interface into a clean, modern Light mode aesthetic:
+  - Base background: Soft, daylight radiant twilight gradient (`#F8FAFC` → `#EEF4FA` → `#E5EDF6`) with subtle blue/gold atmosphere.
+  - Frosted glass white card: `bg-white/95 border border-slate-200/90 shadow-[0_25px_60px_-15px_rgba(7,20,38,0.08)]` with gold/blue top racing stripe.
+  - Typography: Deep navy `#071426` title with `#D9A441` gold year highlight and `#1264FF` badge.
+  - Input fields: Crisp slate-50/80 background with slate-200 borders, dark slate text, and electric blue focus rings.
+  - CTA Button: Olympia gold gradient with dark navy text and responsive hover lift.
+  - Return to Arena: Added `← Return to Public Arena` navigation link in the top bar.
+
+### 20c. Strict Real-Time Authentication & Anti-Bypass Security (`AuthContext.tsx`, `ProtectedRoute.tsx`, `AdminSidebar.tsx`)
+- **Synchronous State Reset on Sign Out:**
+  - In `AuthContext.tsx`, `signOut()` immediately sets `isAdmin = false`, `admin = null`, `user = null` before and after calling Firebase sign-out.
+  - Wipes out any chance of stale in-memory authorization states persisting.
+- **Strict `ProtectedRoute` Enforcement:**
+  - Route protection explicitly blocks anonymous users (`!user.isAnonymous`), unverified claims (`isAdmin === true`), and inactive admin profiles (`admin.active !== false`).
+  - Uses `replace: true` on redirection to prevent browser history back-button re-entry into protected routes.
+- **Atomic Credential Validation in `signIn`:**
+  - `signIn(email, password)` now forces token refresh (`getIdTokenResult(cred.user, true)`), checks Firestore admin documents, and immediately terminates session if the user lacks admin privileges or is marked inactive.
+  - In `AdminSidebar.tsx`, `handleLogout` uses `navigate('/admin/login', { replace: true })` so pressing browser Back after logout cannot access the admin panel.
+
+### 20d. Build Verification
+- Verified with `tsc -b && vite build` — **0 errors**, production build passed cleanly in 1.08s.

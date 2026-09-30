@@ -27,7 +27,7 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, setIsOpen, collapsed, setCollap
     try {
       await signOut();
     } finally {
-      navigate('/admin/login');
+      navigate('/admin/login', { replace: true });
     }
   };
 
