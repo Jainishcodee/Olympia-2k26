@@ -17,14 +17,15 @@ import {
 import FormField from '@/components/admin/FormField';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { createFixture, updateFixture } from '@/services/fixtures/fixtureService';
-import type { Fixture, Match, Team, Tournament, Venue } from '@/types';
+import { createMatch, updateMatch } from '@/services/matches/matchService';
+import type { Fixture, Match, MatchStatus, Player, Sport, Team, Tournament, Venue } from '@/types';
 import toast from 'react-hot-toast';
 import { cn } from '@/utils/cn';
 
 /* ============================================================================
- *  Fixture editor — one screen, two modes: link the fixture to an existing
- *  match, or pick the two participants directly. Nothing is written until the
- *  form validates.
+ *  Fixture editor — creates or updates a fixture and automatically provisions
+ *  the synchronized live Match instance in Firestore with interactive fan
+ *  settings (voting, reactions, player ratings, reviews, featured banner).
  * ==========================================================================*/
 
 interface FixtureForm {
@@ -40,6 +41,13 @@ interface FixtureForm {
   status: string;
   order: string;
   isHidden: boolean;
+  // Match Synchronization & Public Interaction Settings
+  autoCreateMatch: boolean;
+  featured: boolean;
+  allowVoting: boolean;
+  allowReactions: boolean;
+  allowRatings: boolean;
+  allowReviews: boolean;
 }
 
 const EMPTY: FixtureForm = {
@@ -55,6 +63,12 @@ const EMPTY: FixtureForm = {
   status: 'scheduled',
   order: '1',
   isHidden: false,
+  autoCreateMatch: true,
+  featured: false,
+  allowVoting: true,
+  allowReactions: true,
+  allowRatings: true,
+  allowReviews: true,
 };
 
 const toInputDate = (value: unknown): { date: string; time: string } => {
@@ -85,7 +99,9 @@ const FixtureEditor: React.FC = () => {
   const { log } = useAuditLog();
 
   const tournaments = useCollection<Tournament>('tournaments', { sortBy: 'name' });
+  const sports = useCollection<Sport>('sports', { sortBy: 'name' });
   const teams = useCollection<Team>('teams', { sortBy: 'name' });
+  const players = useCollection<Player>('players', { sortBy: 'name' });
   const venues = useCollection<Venue>('venues', { sortBy: 'name' });
   const matches = useCollection<Match>('matches', { sortBy: 'matchNumber' });
   const existing = useDoc<Fixture>('fixtures', fixtureId);
@@ -101,7 +117,9 @@ const FixtureEditor: React.FC = () => {
     if (!existing.data) return;
     const fixture = existing.data;
     const when = toInputDate(fixture.scheduledAt);
-    setForm({
+    const existingMatch = matches.data.find((m) => m.id === fixture.matchId);
+    setForm((prev) => ({
+      ...prev,
       tournamentId: fixture.tournamentId ?? '',
       round: fixture.round ?? '',
       mode: fixture.matchId ? 'match' : 'teams',
@@ -114,8 +132,14 @@ const FixtureEditor: React.FC = () => {
       status: fixture.status ?? 'scheduled',
       order: String(fixture.order ?? 1),
       isHidden: fixture.isHidden ?? false,
-    });
-  }, [existing.data]);
+      autoCreateMatch: true,
+      featured: existingMatch?.featured ?? prev.featured ?? false,
+      allowVoting: existingMatch?.allowVoting ?? prev.allowVoting ?? true,
+      allowReactions: existingMatch?.allowReactions ?? prev.allowReactions ?? true,
+      allowRatings: existingMatch?.allowRatings ?? prev.allowRatings ?? true,
+      allowReviews: existingMatch?.allowReviews ?? prev.allowReviews ?? true,
+    }));
+  }, [existing.data, matches.data]);
 
   const set = <K extends keyof FixtureForm>(key: K, value: FixtureForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -125,13 +149,57 @@ const FixtureEditor: React.FC = () => {
     [matches.data, form.matchId],
   );
 
+  const selectedTournament = useMemo(
+    () => tournaments.data.find((t) => t.id === form.tournamentId),
+    [tournaments.data, form.tournamentId]
+  );
+
+  const selectedSport = useMemo(() => {
+    if (!selectedTournament?.sportId) return undefined;
+    const tSport = selectedTournament.sportId.toLowerCase();
+    return sports.data.find(
+      (s) =>
+        s.id.toLowerCase() === tSport ||
+        s.slug?.toLowerCase() === tSport ||
+        s.name.toLowerCase() === tSport
+    );
+  }, [sports.data, selectedTournament]);
+
+  const isTeamBased = selectedSport ? selectedSport.teamBased !== false : true;
+
+  const filteredTeams = useMemo(() => {
+    if (!selectedTournament?.sportId && !selectedSport?.id) return teams.data;
+    const targetIds = new Set(
+      [
+        selectedTournament?.sportId?.toLowerCase(),
+        selectedSport?.id?.toLowerCase(),
+        selectedSport?.slug?.toLowerCase(),
+      ].filter(Boolean)
+    );
+    const list = teams.data.filter((t) => targetIds.has(t.sportId?.toLowerCase()));
+    return list.length > 0 ? list : teams.data;
+  }, [teams.data, selectedTournament, selectedSport]);
+
+  const filteredPlayers = useMemo(() => {
+    if (!selectedTournament?.sportId && !selectedSport?.id) return players.data;
+    const targetIds = new Set(
+      [
+        selectedTournament?.sportId?.toLowerCase(),
+        selectedSport?.id?.toLowerCase(),
+        selectedSport?.slug?.toLowerCase(),
+      ].filter(Boolean)
+    );
+    const list = players.data.filter((p) => targetIds.has(p.sportId?.toLowerCase()));
+    return list.length > 0 ? list : players.data;
+  }, [players.data, selectedTournament, selectedSport]);
+
   const errors = useMemo(() => {
     const found: Record<string, string> = {};
     if (!form.tournamentId) found.tournamentId = 'Select a tournament.';
     if (form.mode === 'match') {
       if (!form.matchId) found.participants = 'Select the linked match.';
     } else if (!form.teamAId || !form.teamBId) {
-      found.participants = 'Select both participants.';
+      found.participants = isTeamBased ? 'Select both teams.' : 'Select both participants.';
     } else if (form.teamAId === form.teamBId) {
       found.participants = 'Both participants must be different.';
     }
@@ -142,7 +210,7 @@ const FixtureEditor: React.FC = () => {
       if (Number.isNaN(parsed.getTime())) found.date = 'That date is not valid.';
     }
     return found;
-  }, [form]);
+  }, [form, isTeamBased]);
 
   const save = async () => {
     setSubmitted(true);
@@ -156,14 +224,108 @@ const FixtureEditor: React.FC = () => {
       const when = Timestamp.fromDate(new Date(`${form.date}T${form.time || '00:00'}`));
       const tourney = tournaments.data.find((t) => t.id === form.tournamentId);
       const teamA = teams.data.find((t) => t.id === form.teamAId);
+      const teamB = teams.data.find((t) => t.id === form.teamBId);
+      const playerA = players.data.find((p) => p.id === form.teamAId);
+      const playerB = players.data.find((p) => p.id === form.teamBId);
+
       const derivedSportId =
-        tourney?.sportId || teamA?.sportId || linkedMatch?.sportId || '';
+        tourney?.sportId ||
+        selectedSport?.id ||
+        (isTeamBased ? teamA?.sportId : playerA?.sportId) ||
+        linkedMatch?.sportId ||
+        'cricket';
+
+      let finalMatchId = form.mode === 'match' ? form.matchId : '';
+
+      // Auto-create or synchronize Match instance if mode is 'teams' and autoCreateMatch is enabled
+      if (form.mode === 'teams' && form.autoCreateMatch) {
+        const participantA = {
+          id: form.teamAId,
+          name: (isTeamBased ? teamA?.name : playerA?.name) || 'Participant A',
+          logo: (isTeamBased ? teamA?.logo : playerA?.photo) || '',
+          type: (isTeamBased ? 'team' : 'player') as 'team' | 'player',
+        };
+        const participantB = {
+          id: form.teamBId,
+          name: (isTeamBased ? teamB?.name : playerB?.name) || 'Participant B',
+          logo: (isTeamBased ? teamB?.logo : playerB?.photo) || '',
+          type: (isTeamBased ? 'team' : 'player') as 'team' | 'player',
+        };
+
+        if (isEdit && form.matchId) {
+          finalMatchId = form.matchId;
+          await updateMatch(form.matchId, {
+            sportId: derivedSportId,
+            tournamentId: form.tournamentId,
+            round: form.round.trim(),
+            teamAId: form.teamAId,
+            teamBId: form.teamBId,
+            participantA,
+            participantB,
+            venueId: form.venueId,
+            scheduledAt: when,
+            status: (form.status as MatchStatus) || 'scheduled',
+            featured: Boolean(form.featured),
+            allowReactions: Boolean(form.allowReactions),
+            allowVoting: Boolean(form.allowVoting),
+            allowRatings: Boolean(form.allowRatings),
+            allowReviews: Boolean(form.allowReviews),
+            isHidden: Boolean(form.isHidden),
+          });
+        } else {
+          finalMatchId = await createMatch({
+            sportId: derivedSportId,
+            tournamentId: form.tournamentId,
+            matchNumber: matches.data.length + 1,
+            round: form.round.trim(),
+            teamAId: form.teamAId,
+            teamBId: form.teamBId,
+            participantA,
+            participantB,
+            venueId: form.venueId,
+            scheduledAt: when,
+            startedAt: null,
+            pausedAt: null,
+            endedAt: null,
+            status: (form.status as MatchStatus) || 'scheduled',
+            score: { teamA: 0, teamB: 0, details: {} },
+            liveState: {},
+            displayMode: 'dual_portrait',
+            featured: Boolean(form.featured),
+            featuredPriority: 0,
+            allowReactions: Boolean(form.allowReactions),
+            allowVoting: Boolean(form.allowVoting),
+            allowRatings: Boolean(form.allowRatings),
+            allowReviews: Boolean(form.allowReviews),
+            isHidden: Boolean(form.isHidden),
+            archived: false,
+            createdBy: 'fixture_auto',
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+          });
+          await log('MATCH_CREATED', 'match', finalMatchId, {
+            label: `Auto-created from fixture: ${participantA.name} vs ${participantB.name}`,
+          });
+        }
+      } else if (form.mode === 'match' && form.matchId) {
+        await updateMatch(form.matchId, {
+          scheduledAt: when,
+          venueId: form.venueId,
+          round: form.round.trim(),
+          featured: Boolean(form.featured),
+          allowReactions: Boolean(form.allowReactions),
+          allowVoting: Boolean(form.allowVoting),
+          allowRatings: Boolean(form.allowRatings),
+          allowReviews: Boolean(form.allowReviews),
+          isHidden: Boolean(form.isHidden),
+        });
+      }
 
       const shared = {
         tournamentId: form.tournamentId,
         sportId: derivedSportId,
         round: form.round.trim(),
-        matchId: form.mode === 'match' ? form.matchId : '',
+        matchId: finalMatchId,
         order: Number(form.order) || 0,
         teamAId: linkedMatch?.teamAId || form.teamAId,
         teamBId: linkedMatch?.teamBId || form.teamBId,
@@ -179,12 +341,12 @@ const FixtureEditor: React.FC = () => {
       if (isEdit && fixtureId) {
         await updateFixture(fixtureId, shared);
         await log('FIXTURE_UPDATED', 'fixture', fixtureId, { label: summary });
-        toast.success('Fixture updated');
+        toast.success(finalMatchId ? 'Fixture & live match updated' : 'Fixture updated');
         navigate('/admin/fixtures');
       } else {
         const newId = await createFixture({ ...shared, createdAt: Timestamp.now() });
         await log('FIXTURE_CREATED', 'fixture', newId, { label: summary });
-        toast.success('Fixture created');
+        toast.success(finalMatchId ? 'Fixture & live match created successfully!' : 'Fixture created');
         navigate('/admin/fixtures');
       }
     } catch (error) {
@@ -227,8 +389,8 @@ const FixtureEditor: React.FC = () => {
         title={isEdit ? 'Edit fixture' : 'Create fixture'}
         subtitle={
           isEdit
-            ? 'Change the round, participants, schedule or venue. Order can be nudged from the fixtures board.'
-            : 'Place a match in the public schedule. A fixture can be linked to a real match or to two teams directly.'
+            ? 'Change schedule, participants, fan interactivity, or visibility. Linked matches are updated automatically.'
+            : 'Schedule a championship fixture. A corresponding live match instance is automatically generated and synchronized.'
         }
         breadcrumbs={[{ label: 'Fixtures', to: '/admin/fixtures' }, { label: isEdit ? 'Edit' : 'Create' }]}
         actions={<Btn to="/admin/fixtures">Cancel</Btn>}
@@ -266,7 +428,7 @@ const FixtureEditor: React.FC = () => {
         <FormSection
           step="2"
           title="Participants"
-          description="Link the fixture to a match, or pick the two sides yourself."
+          description="Pick the two sides or link to an existing match directly."
         >
           <div className={cn(
             'mb-4 inline-flex rounded-md border p-0.5',
@@ -274,8 +436,8 @@ const FixtureEditor: React.FC = () => {
           )}>
             {(
               [
-                { id: 'match', label: 'Linked match' },
-                { id: 'teams', label: 'Two teams' },
+                { id: 'teams', label: isTeamBased ? 'Two Teams' : 'Two Players' },
+                { id: 'match', label: 'Linked Match' },
               ] as const
             ).map((option) => (
               <button
@@ -303,7 +465,7 @@ const FixtureEditor: React.FC = () => {
                 value={form.matchId}
                 onChange={(e) => set('matchId', e.target.value)}
                 error={submitted ? errors.participants : undefined}
-                helpText="The match supplies both participants, the venue and the kick-off time."
+                helpText="The match supplies both participants, the venue, and the kick-off time."
                 options={[
                   { value: '', label: 'Select a match' },
                   ...matches.data.map((match) => ({
@@ -319,25 +481,29 @@ const FixtureEditor: React.FC = () => {
             <FormGrid cols={2}>
               <FormField
                 as="select"
-                label="Team A"
+                label={isTeamBased ? 'Team A' : 'Participant A (Player)'}
                 required
                 value={form.teamAId}
                 onChange={(e) => set('teamAId', e.target.value)}
                 error={submitted ? errors.participants : undefined}
                 options={[
-                  { value: '', label: 'Select a team' },
-                  ...teams.data.map((team) => ({ value: team.id, label: team.name })),
+                  { value: '', label: isTeamBased ? 'Select a team' : 'Select a player' },
+                  ...(isTeamBased
+                    ? filteredTeams.map((team) => ({ value: team.id, label: team.name }))
+                    : filteredPlayers.map((player) => ({ value: player.id, label: player.name }))),
                 ]}
               />
               <FormField
                 as="select"
-                label="Team B"
+                label={isTeamBased ? 'Team B' : 'Participant B (Player)'}
                 required
                 value={form.teamBId}
                 onChange={(e) => set('teamBId', e.target.value)}
                 options={[
-                  { value: '', label: 'Select a team' },
-                  ...teams.data.map((team) => ({ value: team.id, label: team.name })),
+                  { value: '', label: isTeamBased ? 'Select a team' : 'Select a player' },
+                  ...(isTeamBased
+                    ? filteredTeams.map((team) => ({ value: team.id, label: team.name }))
+                    : filteredPlayers.map((player) => ({ value: player.id, label: player.name }))),
                 ]}
               />
             </FormGrid>
@@ -378,7 +544,7 @@ const FixtureEditor: React.FC = () => {
         </FormSection>
 
         <FormSection step="4" title="Status & order" description="Board presentation.">
-          <FormGrid cols={3}>
+          <FormGrid cols={2}>
             <FormField
               as="select"
               label="Status"
@@ -398,18 +564,95 @@ const FixtureEditor: React.FC = () => {
               helpText="Sort position inside its round."
             />
           </FormGrid>
+        </FormSection>
 
-          <div className="mt-4 pt-4 border-t border-slate-200/60 dark:border-white/10">
-            <Toggle
-              label="Hide fixture from public website"
-              hint="When enabled, this fixture is saved as draft/private and will NOT be shown on public sports schedule and matches pages."
-              checked={form.isHidden}
-              onChange={(checked) => set('isHidden', checked)}
-            />
+        <FormSection
+          step="5"
+          title="Live match & public engagement"
+          description="Automatic scoring integration, fan interactivity, and public visibility."
+        >
+          {isEdit && form.matchId && (
+            <div className={cn(
+              'mb-4 p-3 rounded-lg border text-xs flex items-center justify-between',
+              isDay ? 'border-amber-200 bg-amber-50/80 text-amber-900' : 'border-amber-500/20 bg-amber-500/10 text-amber-300'
+            )}>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">🔗 Synchronized Match:</span>
+                <code className="px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 font-mono text-[11px]">{form.matchId}</code>
+              </div>
+              <span className="text-[11px] opacity-80">Linked with scoring engine</span>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {form.mode === 'teams' && (
+              <Toggle
+                label="Auto-create live match instance"
+                hint="Automatically creates and links a live Match record in the database so you can immediately open the Scoring Console without re-entering details."
+                checked={form.autoCreateMatch}
+                onChange={(checked) => set('autoCreateMatch', checked)}
+              />
+            )}
+
+            {(form.autoCreateMatch || form.mode === 'match') && (
+              <div className={cn(
+                'rounded-lg border p-4 space-y-4 transition-colors',
+                isDay ? 'border-slate-200/80 bg-slate-50/50' : 'border-white/10 bg-white/[0.02]'
+              )}>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Spectator & Homepage Settings
+                </div>
+
+                <Toggle
+                  label="Featured on homepage carousel"
+                  hint="Promote this match into the hero spotlight and top banner carousel on the public website."
+                  checked={form.featured}
+                  onChange={(checked) => set('featured', checked)}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-200/60 dark:border-white/10">
+                  <Toggle
+                    label="Enable fan voting"
+                    hint="Spectators can predict the winner and vote on match outcomes."
+                    checked={form.allowVoting}
+                    onChange={(checked) => set('allowVoting', checked)}
+                  />
+                  <Toggle
+                    label="Enable live reactions"
+                    hint="Spectators can send cheer emojis, fire, and live reactions."
+                    checked={form.allowReactions}
+                    onChange={(checked) => set('allowReactions', checked)}
+                  />
+                  <Toggle
+                    label="Enable player ratings"
+                    hint="Spectators can rate participant performance out of 10."
+                    checked={form.allowRatings}
+                    onChange={(checked) => set('allowRatings', checked)}
+                  />
+                  <Toggle
+                    label="Enable fan reviews & comments"
+                    hint="Spectators can post comments, analysis, and reviews."
+                    checked={form.allowReviews}
+                    onChange={(checked) => set('allowReviews', checked)}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="pt-2 border-t border-slate-200/60 dark:border-white/10">
+              <Toggle
+                label="Hide fixture & match from public website"
+                hint="When enabled, this fixture and its linked match are saved as draft/private and will NOT appear on public schedules, sport brackets, or match list pages."
+                checked={form.isHidden}
+                onChange={(checked) => set('isHidden', checked)}
+              />
+            </div>
           </div>
 
           {submitted && Object.keys(errors).length > 0 && (
-            <ErrorNotice message={Object.values(errors)[0] ?? 'Fix the highlighted fields.'} />
+            <div className="mt-4">
+              <ErrorNotice message={Object.values(errors)[0] ?? 'Fix the highlighted fields.'} />
+            </div>
           )}
         </FormSection>
       </Card>

@@ -56,18 +56,37 @@ export const SportDetail: React.FC = () => {
   const { data: systemSettings } = useDoc<SystemSettings>('settings', 'default');
 
   const slug = (sportSlug || '').toLowerCase();
-  const matchedSport = firestoreSports?.find(s => s.name.toLowerCase() === slug || s.id === slug);
+  const matchedSport = firestoreSports?.find(
+    (s) =>
+      s.slug?.toLowerCase() === slug ||
+      s.name.toLowerCase() === slug ||
+      s.id.toLowerCase() === slug
+  );
 
   const sportName = matchedSport?.name || defaultSports[slug]?.name || (sportSlug ? sportSlug.charAt(0).toUpperCase() + sportSlug.slice(1) : 'Sport');
   const sportIcon = matchedSport?.icon || defaultSports[slug]?.icon || '🏆';
   const sportDescription = matchedSport?.description || defaultSports[slug]?.description || 'Official Olympia 2K26 championship tournament bracket.';
 
+  const sportKeys = React.useMemo(() => {
+    return new Set(
+      [
+        slug,
+        matchedSport?.id?.toLowerCase(),
+        matchedSport?.slug?.toLowerCase(),
+        matchedSport?.name?.toLowerCase(),
+      ].filter(Boolean) as string[]
+    );
+  }, [slug, matchedSport]);
+
   const sportMatches = React.useMemo(() => {
     if (systemSettings?.publicMatchesVisible === false) return [];
     return (firestoreMatches || [])
       .filter((m) => !m.isHidden)
-      .filter((m) => m.sportId === matchedSport?.id || m.sportId === slug);
-  }, [firestoreMatches, matchedSport?.id, slug, systemSettings?.publicMatchesVisible]);
+      .filter((m) => {
+        const mSport = (m.sportId || '').toLowerCase();
+        return sportKeys.has(mSport) || (matchedSport?.id && m.sportId === matchedSport.id);
+      });
+  }, [firestoreMatches, matchedSport?.id, sportKeys, systemSettings?.publicMatchesVisible]);
 
   const liveMatches = sportMatches.filter(m => m.status === 'live');
   const completedMatches = sportMatches.filter(m => m.status === 'completed');
@@ -93,17 +112,21 @@ export const SportDetail: React.FC = () => {
     return firestoreFixtures
       .filter((f) => !f.isHidden)
       .filter((f) => {
-        if (f.sportId && (f.sportId === matchedSport?.id || f.sportId === slug)) return true;
+        const fSport = (f.sportId || '').toLowerCase();
+        if (fSport && sportKeys.has(fSport)) return true;
         const tourney = tournamentMap.get(f.tournamentId);
-        if (tourney?.sportId && (tourney.sportId === matchedSport?.id || tourney.sportId === slug)) return true;
+        const tSport = (tourney?.sportId || '').toLowerCase();
+        if (tSport && sportKeys.has(tSport)) return true;
         const teamA = teamMap.get(f.teamAId);
         const teamB = teamMap.get(f.teamBId);
-        if (teamA?.sportId && (teamA.sportId === matchedSport?.id || teamA.sportId === slug)) return true;
-        if (teamB?.sportId && (teamB.sportId === matchedSport?.id || teamB.sportId === slug)) return true;
+        const aSport = (teamA?.sportId || '').toLowerCase();
+        const bSport = (teamB?.sportId || '').toLowerCase();
+        if (aSport && sportKeys.has(aSport)) return true;
+        if (bSport && sportKeys.has(bSport)) return true;
         if (f.matchId && matchIdSet.has(f.matchId)) return true;
         return false;
       });
-  }, [firestoreFixtures, matchedSport, slug, tournamentMap, teamMap, matchIdSet, systemSettings?.publicFixturesVisible]);
+  }, [firestoreFixtures, sportKeys, tournamentMap, teamMap, matchIdSet, systemSettings?.publicFixturesVisible]);
 
   // Unified upcoming schedule combining scheduled matches and tournament fixtures
   const upcomingSchedule = React.useMemo(() => {

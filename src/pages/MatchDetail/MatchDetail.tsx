@@ -19,20 +19,23 @@ export const MatchDetail: React.FC = () => {
   const isDay = theme === 'day';
   const { match: liveMatch, events: liveEvents } = useMatch(matchId || '');
 
-  const teamAName = liveMatch?.participantA?.name || liveMatch?.teamAId || 'Thunderbolts';
-  const teamBName = liveMatch?.participantB?.name || liveMatch?.teamBId || 'Iron Titans';
-  const sportName = 'Basketball';
-  const venueName = 'Olympia Grand Coliseum';
-  const status = liveMatch?.status || 'live';
-  const timeStr = liveMatch?.liveState?.clock || '3rd Quarter';
-  const scoreA = liveMatch?.score?.teamA ?? 64;
-  const scoreB = liveMatch?.score?.teamB ?? 58;
+  const teamAName = liveMatch?.participantA?.name || liveMatch?.teamAId || 'Team A';
+  const teamBName = liveMatch?.participantB?.name || liveMatch?.teamBId || 'Team B';
+  const sportName = liveMatch?.sportId ? (liveMatch.sportId.charAt(0).toUpperCase() + liveMatch.sportId.slice(1)) : 'Sport';
+  const venueName = liveMatch?.venueId || 'Olympia Arena';
+  const status = liveMatch?.status || 'scheduled';
+  const timeStr = liveMatch?.liveState?.clock || 'Live';
+  const scoreA = Number(liveMatch?.score?.teamA ?? 0);
+  const scoreB = Number(liveMatch?.score?.teamB ?? 0);
 
-  const mappedEvents = liveEvents.length > 0 ? liveEvents.map(e => ({
+  const mappedEvents = liveEvents.length > 0 ? liveEvents.filter(e => !e.undone).map(e => ({
     id: e.id,
-    time: e.period ? `P${e.period}` : 'LIVE',
-    description: (e as any).description || (e as any).detail || 'Match play update',
-    type: 'info' as const,
+    sequence: e.sequence,
+    time: e.positioningText || e.matchTime || (e.period ? `P${e.period}` : 'LIVE'),
+    description: e.description || (e as any).detail || 'Match play update',
+    team: e.team === 'teamA' ? 'A' as const : e.team === 'teamB' ? 'B' as const : undefined,
+    type: (e.type === 'goal' ? 'goal' : e.type.includes('card') ? 'card' : 'info') as any,
+    isCorrection: e.isCorrection,
   })) : undefined;
 
   return (

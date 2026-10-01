@@ -22,10 +22,13 @@ export interface LiveState {
   clock?: string;
   half?: number;
   set?: number;
+  rally?: number;
   game?: number;
   innings?: number;
   over?: number;
   ball?: number;
+  wickets?: number;
+  extras?: number;
   map?: number;
   round?: number;
 }
@@ -55,6 +58,8 @@ export interface Match {
   allowRatings: boolean;
   allowReviews: boolean;
   archived: boolean;
+  round?: string;
+  lastSequence?: number;
   isHidden?: boolean;
   createdBy: string;
   createdAt: Timestamp;

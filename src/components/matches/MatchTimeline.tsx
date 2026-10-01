@@ -5,10 +5,12 @@ import { cn } from '@/utils/cn';
 
 interface TimelineEvent {
   id: string;
+  sequence?: number;
   time: string;
   description: string;
   team?: 'A' | 'B';
-  type: 'goal' | 'card' | 'sub' | 'info';
+  type: 'goal' | 'card' | 'sub' | 'info' | string;
+  isCorrection?: boolean;
 }
 
 const mockEvents: TimelineEvent[] = [
@@ -88,10 +90,20 @@ export const MatchTimeline: React.FC<{ events?: TimelineEvent[]; className?: str
                   event.team === 'A' ? 'text-left' : event.team === 'B' ? 'text-right' : 'text-center w-full'
                 )}
               >
+                {event.sequence !== undefined && (
+                  <span className="font-mono text-[10px] text-[#FFD21F] bg-black/40 px-1.5 py-0.5 rounded mr-1.5 font-bold">
+                    #{event.sequence}
+                  </span>
+                )}
                 <span className="text-[#D9A441] font-black text-xs mr-2">{event.time}</span>
                 <span className={cn("text-xs sm:text-sm font-semibold", isDay ? "text-[#071426]" : "text-white")}>
                   {event.description}
                 </span>
+                {event.isCorrection && (
+                  <span className="ml-2 text-[9px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.5 rounded">
+                    Audit Correction
+                  </span>
+                )}
               </div>
             </motion.div>
           ))

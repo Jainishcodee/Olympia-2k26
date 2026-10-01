@@ -12,7 +12,6 @@
     "seed": "node scripts/seed.mjs",
     "seed:csv": "tsx scripts/seedFromCSV.ts",
     "seed:leaderboards": "node scripts/seed-leaderboards.mjs",
-    "import:rosters": "node scripts/importTeamRosters.mjs",
     "set:admin": "tsx scripts/setAdminClaim.ts"
   },
   "dependencies": {

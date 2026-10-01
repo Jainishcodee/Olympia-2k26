@@ -333,6 +333,7 @@ const App: React.FC = () => {
                         {/* ---- Legacy paths (pre-restructure) --------- */}
                         <Route path="live-control" element={<Navigate to="/admin/live" replace />} />
                         <Route path="live-control/:matchId" element={<LegacyScoringRedirect />} />
+                        <Route path="scoring/:matchId" element={<LegacyScoringRedirect />} />
                         <Route path="administrators" element={<Navigate to="/admin/admins" replace />} />
                         <Route path="administrators/create" element={<Navigate to="/admin/admins/create" replace />} />
                         <Route path="matches/new" element={<Navigate to="/admin/matches/create" replace />} />

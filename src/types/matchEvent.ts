@@ -1,17 +1,94 @@
 import { Timestamp } from 'firebase/firestore';
 
-export type EventType = 'goal' | 'assist' | 'yellow_card' | 'red_card' | 'substitution' | 'corner' | 'shot' | 'foul' | 'penalty' | 'run' | 'wicket' | 'four' | 'six' | 'wide' | 'no_ball' | 'dot' | 'point' | 'set_won' | 'game_won' | 'round_won' | 'map_won' | 'timeout' | 'period_start' | 'period_end' | 'match_start' | 'match_end' | 'substitution_in' | 'substitution_out';
+export type EventType =
+  | 'goal'
+  | 'goal_removed'
+  | 'assist'
+  | 'yellow_card'
+  | 'red_card'
+  | 'substitution'
+  | 'corner'
+  | 'shot'
+  | 'foul'
+  | 'penalty'
+  | 'run'
+  | 'dot'
+  | 'single'
+  | 'double'
+  | 'triple'
+  | 'four'
+  | 'six'
+  | 'ten'
+  | 'wicket'
+  | 'wide'
+  | 'no_ball'
+  | 'bye'
+  | 'leg_bye'
+  | 'point'
+  | 'point_removed'
+  | 'set_won'
+  | 'game_won'
+  | 'round_won'
+  | 'map_won'
+  | 'timeout'
+  | 'period_start'
+  | 'period_end'
+  | 'match_start'
+  | 'match_pause'
+  | 'match_resume'
+  | 'match_end'
+  | 'substitution_in'
+  | 'substitution_out'
+  | 'correction'
+  | string;
+
+export interface SportPositioning {
+  /** Cricket positioning */
+  innings?: number;
+  over?: number;
+  ball?: number;
+  /** Football / timed match positioning */
+  period?: number;
+  matchSecond?: number;
+  /** Volleyball / Tennis / Hand tennis */
+  set?: number;
+  rally?: number;
+  /** Badminton / Table tennis */
+  game?: number;
+  /** Counter-strike / LAN */
+  map?: number;
+  round?: number;
+  /** Carrom / Racing */
+  lap?: number;
+}
 
 export interface MatchEvent {
   id: string;
+  sequence: number;
   matchId: string;
   sportId: string;
   type: EventType;
   timestamp: Timestamp;
-  period: number;
-  playerId: string;
-  teamId: string;
-  data: Record<string, unknown>;
-  createdBy: string;
+  matchTime?: string;
+  period?: number;
+  team?: 'teamA' | 'teamB' | '';
+  teamId?: string;
+  teamName?: string;
+  playerId?: string;
+  playerName?: string;
+  description: string;
+  positioning?: SportPositioning;
+  positioningText?: string;
+  data?: Record<string, unknown>;
+  snapshot?: {
+    score: Record<string, unknown>;
+    liveState: Record<string, unknown>;
+  };
   undone: boolean;
+  undoneAt?: Timestamp;
+  undoneBy?: string;
+  isCorrection?: boolean;
+  correctionNote?: string;
+  replacesSequence?: number;
+  createdBy: string;
 }

@@ -19,7 +19,7 @@ import { useCollection, useDoc } from '@/hooks/useCollection';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useTheme } from '@/contexts/ThemeContext';
 import { deleteFixture, reorderFixtures, updateFixture } from '@/services/fixtures/fixtureService';
-import { createMatch } from '@/services/matches/matchService';
+import { createMatch, updateMatch } from '@/services/matches/matchService';
 import { saveSettings } from '@/services/settings/settingsService';
 import { Timestamp } from 'firebase/firestore';
 import { DEFAULT_SETTINGS, type Fixture, type Match, type MatchStatus, type SystemSettings, type Team, type Tournament, type Venue } from '@/types';
@@ -307,10 +307,13 @@ const FixturesManager: React.FC = () => {
     const next = !fixture.isHidden;
     try {
       await updateFixture(fixture.id, { isHidden: next });
+      if (fixture.matchId) {
+        await updateMatch(fixture.matchId, { isHidden: next });
+      }
       await log('FIXTURE_UPDATED', 'fixture', fixture.id, {
         label: `${label(fixture)} marked as ${next ? 'hidden' : 'visible'}`,
       });
-      toast.success(next ? 'Fixture hidden from public' : 'Fixture visible to public');
+      toast.success(next ? 'Fixture & linked match hidden from public' : 'Fixture & linked match visible to public');
     } catch (err) {
       toast.error('Failed to change visibility');
     }
@@ -343,9 +346,14 @@ const FixturesManager: React.FC = () => {
     setBusy(true);
     try {
       await Promise.all(
-        targetFixtures.map((f) => updateFixture(f.id, { isHidden: hide }))
+        targetFixtures.map(async (f) => {
+          await updateFixture(f.id, { isHidden: hide });
+          if (f.matchId) {
+            await updateMatch(f.matchId, { isHidden: hide });
+          }
+        })
       );
-      toast.success(`${targetFixtures.length} fixtures marked as ${hide ? 'hidden' : 'visible'}`);
+      toast.success(`${targetFixtures.length} fixtures & matches marked as ${hide ? 'hidden' : 'visible'}`);
     } catch (err) {
       toast.error('Failed to update fixtures');
     } finally {
