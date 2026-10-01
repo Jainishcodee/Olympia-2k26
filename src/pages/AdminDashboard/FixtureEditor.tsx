@@ -165,7 +165,15 @@ const FixtureEditor: React.FC = () => {
     );
   }, [sports.data, selectedTournament]);
 
-  const isTeamBased = selectedSport ? selectedSport.teamBased !== false : true;
+  const isIndividualSport = useMemo(() => {
+    const sId = (selectedSport?.id || selectedTournament?.sportId || '').toLowerCase();
+    const individualIds = ['chess', 'carrom', 'table-tennis', 'table_tennis', 'badminton'];
+    if (individualIds.includes(sId)) return true;
+    if (selectedSport && selectedSport.teamBased === false) return true;
+    return false;
+  }, [selectedSport, selectedTournament]);
+
+  const isTeamBased = !isIndividualSport;
 
   const filteredTeams = useMemo(() => {
     if (!selectedTournament?.sportId && !selectedSport?.id) return teams.data;
@@ -189,8 +197,14 @@ const FixtureEditor: React.FC = () => {
         selectedSport?.slug?.toLowerCase(),
       ].filter(Boolean)
     );
-    const list = players.data.filter((p) => targetIds.has(p.sportId?.toLowerCase()));
-    return list.length > 0 ? list : players.data;
+    // Sort matching sport players first, but include ALL players so any player can be chosen
+    return [...players.data].sort((a, b) => {
+      const aMatch = targetIds.has(a.sportId?.toLowerCase());
+      const bMatch = targetIds.has(b.sportId?.toLowerCase());
+      if (aMatch && !bMatch) return -1;
+      if (!aMatch && bMatch) return 1;
+      return a.name.localeCompare(b.name);
+    });
   }, [players.data, selectedTournament, selectedSport]);
 
   const errors = useMemo(() => {

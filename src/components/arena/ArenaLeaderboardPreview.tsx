@@ -57,7 +57,7 @@ export const ArenaLeaderboardPreview: React.FC = () => {
 
   // Find if any match is currently live to automatically highlight that sport
   const liveSportId = useMemo(() => {
-    const liveMatch = matches.data.find((m) => m.status === 'live');
+    const liveMatch = matches.data.find((m) => m.status === 'live' || m.status === 'paused');
     return liveMatch?.sportId || 'football';
   }, [matches.data]);
 
@@ -80,7 +80,7 @@ export const ArenaLeaderboardPreview: React.FC = () => {
 
     return sportsList.map((s) => {
       const isLiveMatch = matches.data.some(
-        (m) => m.sportId === s.sportId && m.status === 'live',
+        (m) => m.sportId === s.sportId && (m.status === 'live' || m.status === 'paused'),
       );
 
       const sportTeams = teams.data.filter((t) => t.sportId === s.sportId);

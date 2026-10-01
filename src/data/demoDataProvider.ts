@@ -9,5 +9,5 @@ export const getDemoMatch = (id: string) => SEED_MATCHES.find(m => m.id === id);
 export const getDemoTournaments = () => SEED_TOURNAMENTS;
 export const getDemoAnnouncements = () => SEED_ANNOUNCEMENTS;
 export const getDemoVenues = () => SEED_VENUES;
-export const getDemoLiveMatches = () => SEED_MATCHES.filter(m => m.status === 'live');
+export const getDemoLiveMatches = () => SEED_MATCHES.filter(m => (m.status as string) === 'live' || (m.status as string) === 'paused');
 export const getDemoFeaturedMatches = () => SEED_MATCHES.filter(m => m.featured);

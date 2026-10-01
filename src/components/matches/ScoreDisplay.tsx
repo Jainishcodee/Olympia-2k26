@@ -107,12 +107,12 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
           </div>
         )}
 
-        <div className="flex items-center justify-between w-full max-w-4xl">
+        <div className="flex items-center justify-between w-full max-w-4xl px-1 sm:px-4">
           {/* Team A */}
-          <div className="flex-1 flex flex-col items-center text-center min-w-0 px-2">
+          <div className="flex-1 flex flex-col items-center text-center min-w-0 px-1 sm:px-2">
             <div
               className={cn(
-                "w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-3xl mb-3 sm:mb-5 flex items-center justify-center text-2xl sm:text-4xl font-black border shadow-lg transition-transform hover:scale-105 overflow-hidden",
+                "w-14 h-14 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-2xl sm:rounded-3xl mb-2 sm:mb-4 flex items-center justify-center text-xl sm:text-3xl md:text-4xl font-black border shadow-lg transition-transform hover:scale-105 overflow-hidden shrink-0",
                 isDay
                   ? "bg-white border-[#071426]/10 text-[#155EEF] shadow-sm"
                   : "bg-white/5 border-white/10 text-[#FFD21F] shadow-2xl"
@@ -126,53 +126,54 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             </div>
             <h2
               className={cn(
-                "text-lg sm:text-2xl md:text-4xl font-black uppercase tracking-tight truncate max-w-full",
+                "text-xs sm:text-xl md:text-3xl font-black uppercase tracking-tight truncate max-w-[105px] sm:max-w-none w-full",
                 isDay ? "text-[#071426]" : "text-white"
               )}
+              title={teamA}
             >
               {teamA}
             </h2>
             {isCricket && (
-              <div className="mt-2 text-center">
+              <div className="mt-1.5 sm:mt-2 text-center">
                 {liveState?.firstInnings?.team === 'teamA' ? (
-                  <div className="text-sm sm:text-base font-black text-amber-400">
-                    {liveState.firstInnings.runs}/{liveState.firstInnings.wickets} <span className="text-xs font-semibold opacity-75">({liveState.firstInnings.overs}.{liveState.firstInnings.balls} ov)</span>
+                  <div className="text-xs sm:text-base font-black text-amber-400">
+                    {liveState.firstInnings.runs}/{liveState.firstInnings.wickets} <span className="text-[10px] sm:text-xs font-semibold opacity-75">({liveState.firstInnings.overs}.{liveState.firstInnings.balls} ov)</span>
                   </div>
                 ) : liveState?.battingTeam === 'teamA' ? (
-                  <div className="text-sm sm:text-base font-black text-emerald-400">
-                    {scoreA}/{liveState?.wickets ?? 0} <span className="text-xs font-semibold opacity-75">({liveState?.overs ?? 0}.{liveState?.ball ?? 0}{liveState?.maxOvers ? ` / ${liveState.maxOvers}` : ''} ov)</span>
+                  <div className="text-xs sm:text-base font-black text-emerald-400">
+                    {scoreA}/{liveState?.wickets ?? 0} <span className="text-[10px] sm:text-xs font-semibold opacity-75">({liveState?.overs ?? 0}.{liveState?.ball ?? 0}{liveState?.maxOvers ? ` / ${liveState.maxOvers}` : ''} ov)</span>
                   </div>
                 ) : (
-                  <div className="text-xs sm:text-sm font-semibold opacity-60">
+                  <div className="text-[11px] sm:text-sm font-semibold opacity-60">
                     {liveState?.innings === 1 ? 'Yet to bat' : `${scoreA} runs`}
                   </div>
                 )}
               </div>
             )}
             {isVolleyball && (
-              <div className="mt-2 text-center">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#155EEF]/15 border border-[#155EEF]/30 text-[#4B90FF]">
-                  Sets Won: {live.setsWon?.teamA ?? 0}
+              <div className="mt-1.5 sm:mt-2 text-center">
+                <span className="inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-[#155EEF]/15 border border-[#155EEF]/30 text-[#4B90FF]">
+                  Sets: {live.setsWon?.teamA ?? 0}
                 </span>
               </div>
             )}
             {isRacquet && (
-              <div className="mt-2 text-center">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#155EEF]/15 border border-[#155EEF]/30 text-[#4B90FF]">
-                  Games Won: {live.gamesWon?.teamA ?? live.setsWon?.teamA ?? 0}
+              <div className="mt-1.5 sm:mt-2 text-center">
+                <span className="inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-[#155EEF]/15 border border-[#155EEF]/30 text-[#4B90FF]">
+                  Games: {live.gamesWon?.teamA ?? live.setsWon?.teamA ?? 0}
                 </span>
               </div>
             )}
             {isCounterStrike && (
-              <div className="mt-2 text-center">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-blue-500/15 border border-blue-500/30 text-blue-400">
-                  CT Side · {scoreA} Rds
+              <div className="mt-1.5 sm:mt-2 text-center">
+                <span className="inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-blue-500/15 border border-blue-500/30 text-blue-400">
+                  CT · {scoreA} Rds
                 </span>
               </div>
             )}
             {isSmashKarts && (
-              <div className="mt-2 text-center">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-cyan-500/15 border border-cyan-500/30 text-cyan-400">
+              <div className="mt-1.5 sm:mt-2 text-center">
+                <span className="inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-cyan-500/15 border border-cyan-500/30 text-cyan-400">
                   {scoreA} Elims
                 </span>
               </div>
@@ -180,18 +181,18 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
           </div>
 
           {/* Central Score */}
-          <div className="flex flex-col items-center justify-center px-2 sm:px-6 md:px-10 shrink-0">
+          <div className="flex flex-col items-center justify-center px-1 sm:px-6 md:px-10 shrink-0">
             <div
               className={cn(
-                "font-black tracking-tighter flex items-center p-3 sm:p-6 md:p-8 rounded-2xl border shadow-2xl tabular-nums",
-                isCricket ? "text-3xl sm:text-5xl md:text-6xl" : "text-4xl sm:text-6xl md:text-8xl",
+                "font-black tracking-tighter flex items-center p-2 sm:p-5 md:p-8 rounded-xl sm:rounded-2xl border shadow-2xl tabular-nums select-none",
+                isCricket ? "text-2xl sm:text-5xl md:text-6xl" : "text-3xl sm:text-6xl md:text-8xl",
                 isDay
-                  ? "bg-white/90 border-[#071426]/10 text-[#071426] shadow-[0_10px_30px_rgba(7,20,38,0.08)]"
+                  ? "bg-white/95 border-[#071426]/10 text-[#071426] shadow-[0_10px_30px_rgba(7,20,38,0.08)]"
                   : "bg-black/60 border-white/10 text-white shadow-[0_10px_40px_rgba(0,0,0,0.8)]"
               )}
             >
               {isCricket ? (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 sm:gap-3">
                   <span>{scoreA}</span>
                   <span className={cn("text-[0.6em] -translate-y-0.5", isDay ? "text-[#071426]/30" : "text-white/30")}>-</span>
                   <span>{scoreB}</span>
@@ -199,7 +200,7 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               ) : (
                 <>
                   <NumberColumn value={scoreA} />
-                  <span className={cn("mx-1 sm:mx-3 md:mx-4 -translate-y-1 sm:-translate-y-2", isDay ? "text-[#071426]/30" : "text-white/30")}>
+                  <span className={cn("mx-0.5 sm:mx-3 md:mx-4 -translate-y-0.5 sm:-translate-y-2", isDay ? "text-[#071426]/30" : "text-white/30")}>
                     -
                   </span>
                   <NumberColumn value={scoreB} />
@@ -207,49 +208,49 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               )}
             </div>
             {isCricket && (
-              <div className="mt-2 text-xs sm:text-sm font-black uppercase tracking-wider text-[#D9A441]">
+              <div className="mt-1.5 sm:mt-2 text-[11px] sm:text-sm font-black uppercase tracking-wider text-[#D9A441]">
                 {live.innings === 2 ? '2nd Innings' : '1st Innings'}
                 {live.overs !== undefined && ` · ${live.overs}.${live.ball || 0} ov`}
               </div>
             )}
             {isVolleyball && (
-              <div className="mt-2 text-xs sm:text-sm font-black uppercase tracking-wider text-[#D9A441] text-center">
+              <div className="mt-1.5 sm:mt-2 text-[11px] sm:text-sm font-black uppercase tracking-wider text-[#D9A441] text-center">
                 Set {String(live.currentSet ?? 1)} · Target {String(live.targetPoints ?? 25)} pts
                 {live.winByTwo !== false && ' (Win by 2)'}
               </div>
             )}
             {isRacquet && (
-              <div className="mt-2 text-xs sm:text-sm font-black uppercase tracking-wider text-[#D9A441] text-center">
+              <div className="mt-1.5 sm:mt-2 text-[11px] sm:text-sm font-black uppercase tracking-wider text-[#D9A441] text-center">
                 Game {String(live.currentSet ?? live.game ?? 1)} · Target {isBadminton ? 21 : 11} pts (Win by 2)
               </div>
             )}
             {isCounterStrike && (
-              <div className="mt-2 text-xs sm:text-sm font-black uppercase tracking-wider text-orange-400 text-center">
+              <div className="mt-1.5 sm:mt-2 text-[11px] sm:text-sm font-black uppercase tracking-wider text-orange-400 text-center">
                 Round {String(live.round ?? (scoreA + scoreB + 1))} / 24 · MR12 (Target: 13 Rds)
               </div>
             )}
             {isCarrom && (
-              <div className="mt-2 text-xs sm:text-sm font-black uppercase tracking-wider text-amber-400 text-center">
+              <div className="mt-1.5 sm:mt-2 text-[11px] sm:text-sm font-black uppercase tracking-wider text-amber-400 text-center">
                 Board {String(live.board ?? 1)} · Target: {String(live.targetPoints ?? 25)} pts
               </div>
             )}
             {isSmashKarts && (
-              <div className="mt-2 text-xs sm:text-sm font-black uppercase tracking-wider text-cyan-400 text-center">
+              <div className="mt-1.5 sm:mt-2 text-[11px] sm:text-sm font-black uppercase tracking-wider text-cyan-400 text-center">
                 Arena Battle · Target: {String(live.targetPoints ?? live.targetKills ?? 20)} Elims
               </div>
             )}
             {isChess && (
-              <div className="mt-2 text-xs sm:text-sm font-black uppercase tracking-wider text-yellow-400 text-center">
+              <div className="mt-1.5 sm:mt-2 text-[11px] sm:text-sm font-black uppercase tracking-wider text-yellow-400 text-center">
                 Move {String(live.move ?? 1)}{live.lastMove ? ` · Last: ${String(live.lastMove)}` : ''}
               </div>
             )}
           </div>
 
           {/* Team B */}
-          <div className="flex-1 flex flex-col items-center text-center min-w-0 px-2">
+          <div className="flex-1 flex flex-col items-center text-center min-w-0 px-1 sm:px-2">
             <div
               className={cn(
-                "w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-3xl mb-3 sm:mb-5 flex items-center justify-center text-2xl sm:text-4xl font-black border shadow-lg transition-transform hover:scale-105 overflow-hidden",
+                "w-14 h-14 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-2xl sm:rounded-3xl mb-2 sm:mb-4 flex items-center justify-center text-xl sm:text-3xl md:text-4xl font-black border shadow-lg transition-transform hover:scale-105 overflow-hidden shrink-0",
                 isDay
                   ? "bg-white border-[#071426]/10 text-[#FF4D3D] shadow-sm"
                   : "bg-white/5 border-white/10 text-[#FF4D3D] shadow-2xl"
@@ -263,53 +264,54 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             </div>
             <h2
               className={cn(
-                "text-lg sm:text-2xl md:text-4xl font-black uppercase tracking-tight truncate max-w-full",
+                "text-xs sm:text-xl md:text-3xl font-black uppercase tracking-tight truncate max-w-[105px] sm:max-w-none w-full",
                 isDay ? "text-[#071426]" : "text-white"
               )}
+              title={teamB}
             >
               {teamB}
             </h2>
             {isCricket && (
-              <div className="mt-2 text-center">
+              <div className="mt-1.5 sm:mt-2 text-center">
                 {liveState?.firstInnings?.team === 'teamB' ? (
-                  <div className="text-sm sm:text-base font-black text-amber-400">
-                    {liveState.firstInnings.runs}/{liveState.firstInnings.wickets} <span className="text-xs font-semibold opacity-75">({liveState.firstInnings.overs}.{liveState.firstInnings.balls} ov)</span>
+                  <div className="text-xs sm:text-base font-black text-amber-400">
+                    {liveState.firstInnings.runs}/{liveState.firstInnings.wickets} <span className="text-[10px] sm:text-xs font-semibold opacity-75">({liveState.firstInnings.overs}.{liveState.firstInnings.balls} ov)</span>
                   </div>
                 ) : liveState?.battingTeam === 'teamB' ? (
-                  <div className="text-sm sm:text-base font-black text-emerald-400">
-                    {scoreB}/{live.wickets ?? 0} <span className="text-xs font-semibold opacity-75">({live.overs ?? 0}.{live.ball ?? 0}{live.maxOvers ? ` / ${live.maxOvers}` : ''} ov)</span>
+                  <div className="text-xs sm:text-base font-black text-emerald-400">
+                    {scoreB}/{live.wickets ?? 0} <span className="text-[10px] sm:text-xs font-semibold opacity-75">({live.overs ?? 0}.{live.ball ?? 0}{live.maxOvers ? ` / ${live.maxOvers}` : ''} ov)</span>
                   </div>
                 ) : (
-                  <div className="text-xs sm:text-sm font-semibold opacity-60">
+                  <div className="text-[11px] sm:text-sm font-semibold opacity-60">
                     {live.innings === 1 ? 'Yet to bat' : `${scoreB} runs`}
                   </div>
                 )}
               </div>
             )}
             {isVolleyball && (
-              <div className="mt-2 text-center">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#FF4D3D]/15 border border-[#FF4D3D]/30 text-[#FF4D3D]">
-                  Sets Won: {live.setsWon?.teamB ?? 0}
+              <div className="mt-1.5 sm:mt-2 text-center">
+                <span className="inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-[#FF4D3D]/15 border border-[#FF4D3D]/30 text-[#FF4D3D]">
+                  Sets: {live.setsWon?.teamB ?? 0}
                 </span>
               </div>
             )}
             {isRacquet && (
-              <div className="mt-2 text-center">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#FF4D3D]/15 border border-[#FF4D3D]/30 text-[#FF4D3D]">
-                  Games Won: {live.gamesWon?.teamB ?? live.setsWon?.teamB ?? 0}
+              <div className="mt-1.5 sm:mt-2 text-center">
+                <span className="inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-[#FF4D3D]/15 border border-[#FF4D3D]/30 text-[#FF4D3D]">
+                  Games: {live.gamesWon?.teamB ?? live.setsWon?.teamB ?? 0}
                 </span>
               </div>
             )}
             {isCounterStrike && (
-              <div className="mt-2 text-center">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-400">
-                  T Side · {scoreB} Rds
+              <div className="mt-1.5 sm:mt-2 text-center">
+                <span className="inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                  T · {scoreB} Rds
                 </span>
               </div>
             )}
             {isSmashKarts && (
-              <div className="mt-2 text-center">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#FF4D3D]/15 border border-[#FF4D3D]/30 text-[#FF4D3D]">
+              <div className="mt-1.5 sm:mt-2 text-center">
+                <span className="inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-[#FF4D3D]/15 border border-[#FF4D3D]/30 text-[#FF4D3D]">
                   {scoreB} Elims
                 </span>
               </div>

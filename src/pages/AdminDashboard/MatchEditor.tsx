@@ -145,7 +145,17 @@ const MatchEditor: React.FC = () => {
     () => sports.data.find((s) => s.id === form.sportId),
     [sports.data, form.sportId],
   );
-  const teamBased = sport?.teamBased ?? true;
+
+  const isIndividualSport = useMemo(() => {
+    if (!form.sportId) return false;
+    const sId = form.sportId.toLowerCase();
+    const individualIds = ['chess', 'carrom', 'table-tennis', 'table_tennis', 'badminton'];
+    if (individualIds.includes(sId)) return true;
+    if (sport && sport.teamBased === false) return true;
+    return false;
+  }, [form.sportId, sport]);
+
+  const teamBased = !isIndividualSport;
 
   const teamOptions = useMemo(
     () => [
@@ -161,11 +171,21 @@ const MatchEditor: React.FC = () => {
     () => [
       { value: '', label: 'Select a player' },
       ...players.data
-        .filter((player) => !form.sportId || player.sportId === form.sportId)
-        .map((player) => ({
-          value: player.id,
-          label: `${player.name}${player.jerseyNumber ? ` · #${player.jerseyNumber}` : ''}`,
-        })),
+        .map((player) => {
+          const isMatching = form.sportId && player.sportId === form.sportId;
+          const sportLabel = player.sportId && !isMatching ? ` (${player.sportId})` : '';
+          return {
+            value: player.id,
+            label: `${player.name}${player.jerseyNumber ? ` · #${player.jerseyNumber}` : ''}${sportLabel}`,
+            isMatching: Boolean(isMatching),
+          };
+        })
+        .sort((a, b) => {
+          if (a.isMatching && !b.isMatching) return -1;
+          if (!a.isMatching && b.isMatching) return 1;
+          return a.label.localeCompare(b.label);
+        })
+        .map(({ value, label }) => ({ value, label })),
     ],
     [players.data, form.sportId],
   );

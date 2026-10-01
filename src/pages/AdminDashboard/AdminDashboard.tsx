@@ -112,7 +112,7 @@ const AdminDashboard: React.FC = () => {
   );
 
   const liveMatches = useMemo(
-    () => matches.data.filter((match) => match.status === 'live'),
+    () => matches.data.filter((match) => match.status === 'live' || match.status === 'paused'),
     [matches.data],
   );
 

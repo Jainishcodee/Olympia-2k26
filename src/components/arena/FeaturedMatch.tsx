@@ -21,7 +21,7 @@ export const FeaturedMatch: React.FC = () => {
   );
 
   const featured = React.useMemo(() => {
-    return matches.data.find((m) => m.featured) || matches.data.find((m) => m.status === 'live') || matches.data[0];
+    return matches.data.find((m) => m.featured) || matches.data.find((m) => m.status === 'live' || m.status === 'paused') || matches.data[0];
   }, [matches.data]);
 
   if (!matches.isLoading && !featured) {
@@ -34,7 +34,8 @@ export const FeaturedMatch: React.FC = () => {
   const teamB = featured.participantB?.name || teamById.get(featured.teamBId)?.name || 'Team B';
   const logoA = teamById.get(featured.teamAId)?.logo || getTeamLogo(teamA) || getTeamLogo(featured.teamAId);
   const logoB = teamById.get(featured.teamBId)?.logo || getTeamLogo(teamB) || getTeamLogo(featured.teamBId);
-  const isLive = featured.status === 'live';
+  const isPaused = featured.status === 'paused';
+  const isLive = featured.status === 'live' || isPaused;
   const scoreObj = featured.score as any;
   const scoreA = Number(scoreObj?.teamA ?? 0);
   const scoreB = Number(scoreObj?.teamB ?? 0);
@@ -92,10 +93,14 @@ export const FeaturedMatch: React.FC = () => {
                 {isLive ? (
                   <>
                     <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                        isPaused ? 'bg-amber-400' : 'bg-red-400'
+                      }`} />
+                      <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                        isPaused ? 'bg-amber-500' : 'bg-red-500'
+                      }`} />
                     </span>
-                    LIVE MAIN ARENA CLASH
+                    {isPaused ? 'LIVE SESSION BREAK' : 'LIVE MAIN ARENA CLASH'}
                   </>
                 ) : (
                   'FEATURED ARENA CLASH'
@@ -147,7 +152,15 @@ export const FeaturedMatch: React.FC = () => {
                   <span className={`text-[10px] md:text-xs font-bold uppercase tracking-widest ${
                     isDay ? 'text-[#071426]/60' : 'text-white/60'
                   }`}>
-                    {isLive ? (featured.liveState?.clock || 'LIVE BROADCAST') : formatSchedule(featured.scheduledAt)}
+                    {isLive ? (
+                      isPaused 
+                        ? (((featured.sportId || '').toLowerCase().includes('cricket') 
+                            ? 'INNINGS BREAK' 
+                            : Boolean((featured.liveState as Record<string, unknown>)?.isHalfTime) 
+                              ? 'HALF TIME' 
+                              : 'PAUSED'))
+                        : (featured.liveState?.clock || 'LIVE BROADCAST')
+                    ) : formatSchedule(featured.scheduledAt)}
                   </span>
                 </div>
                 

@@ -24,7 +24,7 @@ export const Live: React.FC = () => {
   );
 
   const liveMatches = React.useMemo(
-    () => matches.data.filter((m) => m.status === 'live'),
+    () => matches.data.filter((m) => m.status === 'live' || m.status === 'paused'),
     [matches.data]
   );
 
@@ -183,6 +183,13 @@ export const Live: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
             {liveMatches.map((match) => {
               const { scoreA, scoreB } = getScore(match);
+              const isPaused = match.status === 'paused';
+              const isHalfTime = Boolean((match.liveState as Record<string, unknown>)?.isHalfTime);
+              const isCricket = (match.sportId || '').toLowerCase().includes('cricket');
+              const timeLabel = isPaused 
+                ? (isCricket ? 'INNINGS BREAK' : isHalfTime ? 'HALF TIME' : 'PAUSED') 
+                : (match.liveState?.clock || 'LIVE');
+
               return (
                 <MatchCard 
                   key={match.id}
@@ -192,8 +199,8 @@ export const Live: React.FC = () => {
                   teamB={getTeamName(match.teamBId, match.participantB?.name)} 
                   scoreA={scoreA} 
                   scoreB={scoreB} 
-                  status="live" 
-                  time={match.liveState?.clock || 'LIVE'} 
+                  status={match.status as any} 
+                  time={timeLabel} 
                 />
               );
             })}

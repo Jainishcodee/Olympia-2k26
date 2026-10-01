@@ -11,12 +11,13 @@ import { ReviewSection } from '@/components/reviews/ReviewSection';
 import { PlayerRatingCard } from '@/components/ratings/PlayerRatingCard';
 import { Footer } from '@/components/arena/Footer';
 import { Badge } from '@/components/ui/Badge';
+import { useScoreFX, ScoreFXLayer, CountdownOverlay, FinalOverlay } from '@/components/scoring/ScoreFX';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMatch } from '@/hooks/useMatch';
 import { useMatchClock } from '@/hooks/useMatchClock';
 import { useCollection } from '@/hooks/useCollection';
 import type { Player } from '@/types/player';
-import { ArrowLeft, MapPin } from 'lucide-react';
+import { ArrowLeft, MapPin, Zap, Trophy, Sparkles, Radio } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 interface LiveMoment {
@@ -30,6 +31,10 @@ export const MatchDetail: React.FC = () => {
   const { theme } = useTheme();
   const isDay = theme === 'day';
   const { match: liveMatch, events: liveEvents } = useMatch(matchId || '');
+
+  const { fx, fire: fireFX } = useScoreFX();
+  const [showCountdown, setShowCountdown] = useState(false);
+  const [showFinalCelebration, setShowFinalCelebration] = useState(false);
 
   const [moment, setMoment] = useState<LiveMoment | null>(null);
   const seenSeqRef = useRef<number>(0);
@@ -83,7 +88,7 @@ export const MatchDetail: React.FC = () => {
     ];
   }, [allPlayers.data, liveMatch, teamAName, teamBName]);
 
-  // Spectator experience: Live moments triggered automatically by canonical events
+  // Spectator experience: Live broadcast ScoreFX + moments triggered automatically by canonical events
   useEffect(() => {
     if (!liveEvents || liveEvents.length === 0) return;
     const active = liveEvents.filter((e) => !e.undone);
@@ -93,50 +98,166 @@ export const MatchDetail: React.FC = () => {
       const isInitial = seenSeqRef.current === 0;
       seenSeqRef.current = latest.sequence;
       if (!isInitial) {
+        const sideName = latest.teamName || (latest.team === 'teamB' ? teamBName : teamAName);
+        const teamKey: 'teamA' | 'teamB' = latest.team === 'teamB' ? 'teamB' : 'teamA';
+        const scoreTxt = latest.snapshot?.score
+          ? `${latest.snapshot.score.teamA ?? scoreA} — ${latest.snapshot.score.teamB ?? scoreB}`
+          : `${scoreA} — ${scoreB}`;
+
         if (latest.type === 'goal') {
-          const sideName = latest.teamName || (latest.team === 'teamB' ? teamBName : teamAName);
+          fireFX({
+            kind: 'goal',
+            title: 'GOAL!',
+            sub: latest.description || `${sideName} scored!`,
+            score: scoreTxt,
+            team: teamKey,
+          });
           setMoment({
             icon: '⚽',
             title: 'GOAL!',
             subtitle: `${sideName} scored!`,
           });
+        } else if (latest.type === 'six' || (latest.type === 'run' && (latest.data as Record<string, unknown>)?.runs === 6)) {
+          fireFX({
+            kind: 'six',
+            title: 'SIX!',
+            sub: latest.description || `${sideName} hit a 6!`,
+            score: scoreTxt,
+            team: teamKey,
+          });
+          setMoment({
+            icon: '💥',
+            title: 'SIX!',
+            subtitle: `${sideName} maximum!`,
+          });
+        } else if (latest.type === 'four' || (latest.type === 'run' && (latest.data as Record<string, unknown>)?.runs === 4)) {
+          fireFX({
+            kind: 'four',
+            title: 'FOUR!',
+            sub: latest.description || `${sideName} hit a 4!`,
+            score: scoreTxt,
+            team: teamKey,
+          });
+          setMoment({
+            icon: '🏏',
+            title: 'FOUR!',
+            subtitle: `${sideName} boundary!`,
+          });
+        } else if (latest.type === 'run' && (latest.data as Record<string, unknown>)?.runs === 10) {
+          fireFX({
+            kind: 'six',
+            title: '10 RUNS!',
+            kicker: 'DECIDER',
+            sub: latest.description || `${sideName} 10 runs hit!`,
+            score: scoreTxt,
+            team: teamKey,
+          });
+          setMoment({
+            icon: '🔥',
+            title: '10 RUNS!',
+            subtitle: `${sideName} hit a 10!`,
+          });
+        } else if (latest.type === 'wicket' || latest.type === 'out') {
+          fireFX({
+            kind: 'wicket',
+            title: 'OUT!',
+            sub: latest.description || 'Wicket fell!',
+            score: scoreTxt,
+            team: teamKey,
+          });
+          setMoment({
+            icon: '☝️',
+            title: 'WICKET!',
+            subtitle: latest.description || `${sideName} wicket fallen`,
+          });
         } else if (latest.type === 'point' || latest.type === 'carrom_coin') {
-          const sideName = latest.teamName || (latest.team === 'teamB' ? teamBName : teamAName);
-          const scoreTxt = latest.snapshot?.score ? `${latest.snapshot.score.teamA ?? 0} — ${latest.snapshot.score.teamB ?? 0}` : '';
           const sEmoji = sId.includes('badminton') ? '🏸' : sId.includes('table-tennis') ? '🏓' : sId.includes('smash') ? '🏎️' : sId.includes('carrom') ? '⚪' : '🏐';
+          fireFX({
+            kind: 'point',
+            title: sId.includes('smash') ? 'ELIMINATION!' : 'POINT!',
+            sub: latest.description || `${sideName} scored!`,
+            score: scoreTxt,
+            team: teamKey,
+          });
           setMoment({
             icon: sEmoji,
             title: sId.includes('smash') ? 'ELIMINATION!' : 'POINT!',
             subtitle: `${sideName}${scoreTxt ? ` · ${scoreTxt}` : ''}`,
           });
         } else if (latest.type === 'queen_pocketed' || latest.type === 'queen') {
+          fireFX({
+            kind: 'set',
+            title: 'QUEEN!',
+            kicker: 'CARROM',
+            sub: latest.description || 'Queen Pocketed + Covered',
+            score: scoreTxt,
+            accent: '#FFD21F',
+          });
           setMoment({
             icon: '👑',
             title: 'QUEEN COVERED!',
             subtitle: latest.description,
           });
         } else if (latest.type === 'round_win' || latest.type === 'round_won') {
+          fireFX({
+            kind: 'round',
+            title: 'ROUND WON!',
+            sub: latest.description || `${sideName} secured round`,
+            score: scoreTxt,
+            team: teamKey,
+          });
           setMoment({
             icon: '🔫',
             title: 'ROUND WON!',
             subtitle: latest.description,
           });
         } else if (latest.type === 'set_completed' || latest.type === 'set_won' || latest.type === 'game_won') {
+          fireFX({
+            kind: 'set',
+            title: isRacquet ? 'GAME WON!' : 'SET WON!',
+            sub: latest.description || 'Set Concluded',
+            score: scoreTxt,
+            team: teamKey,
+          });
           setMoment({
             icon: '🏆',
             title: isRacquet ? 'GAME WON!' : 'SET COMPLETE',
             subtitle: latest.description,
           });
-        } else if (latest.type === 'chess_result' || latest.type === 'match_end' || liveMatch?.status === 'completed') {
+        } else if (latest.type === 'chess_result' || latest.type === 'checkmate') {
+          fireFX({
+            kind: 'set',
+            title: 'CHECKMATE!',
+            kicker: 'CHESS',
+            sub: latest.description || 'King Checkmated',
+            score: scoreTxt,
+            accent: '#FFD21F',
+          });
+          setMoment({
+            icon: '♔',
+            title: 'CHECKMATE!',
+            subtitle: (liveMatch?.liveState as Record<string, unknown>)?.resultText as string || `${teamAName} vs ${teamBName}`,
+          });
+        } else if (latest.type === 'red_card' || latest.type === 'yellow_card') {
+          fireFX({
+            kind: 'card',
+            title: latest.type === 'red_card' ? 'RED CARD' : 'YELLOW CARD',
+            sub: latest.description || 'Disciplinary card',
+            accent: latest.type === 'red_card' ? '#FF4D3D' : '#FFD21F',
+          });
+        } else if (latest.type === 'match_start') {
+          setShowCountdown(true);
+        } else if (latest.type === 'match_end' || liveMatch?.status === 'completed') {
+          setShowFinalCelebration(true);
           setMoment({
             icon: '🏆',
             title: 'MATCH COMPLETE',
-            subtitle: (liveMatch?.liveState as any)?.resultText || `${teamAName} vs ${teamBName}`,
+            subtitle: (liveMatch?.liveState as Record<string, unknown>)?.resultText as string || `${teamAName} vs ${teamBName}`,
           });
         }
       }
     }
-  }, [liveEvents, sId, isRacquet, teamAName, teamBName, liveMatch?.status, liveMatch?.liveState]);
+  }, [liveEvents, sId, isRacquet, teamAName, teamBName, scoreA, scoreB, liveMatch?.status, liveMatch?.liveState, fireFX]);
 
   useEffect(() => {
     if (moment) {
@@ -201,16 +322,98 @@ export const MatchDetail: React.FC = () => {
 
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b" style={{ borderColor: isDay ? 'rgba(7,20,38,0.08)' : 'rgba(255,255,255,0.1)' }}>
             <div>
-              <div className="flex flex-wrap items-center gap-3 mb-2">
+              <div className="flex flex-wrap items-center gap-2.5 mb-2">
                 <Badge sport>{sportName}</Badge>
                 <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest opacity-60">
                   <MapPin size={13} />
                   <span>{venueName}</span>
                 </div>
+                {(status === 'live' || status === 'paused') && (
+                  <div className={cn(
+                    "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border",
+                    status === 'paused'
+                      ? "bg-amber-500/15 border-amber-500/35 text-amber-500"
+                      : "bg-red-500/15 border-red-500/30 text-red-500 animate-pulse"
+                  )}>
+                    <Radio size={11} className={status === 'live' ? "animate-pulse" : ""} />
+                    <span>{status === 'paused' ? 'Live Break' : 'Live Sync'}</span>
+                  </div>
+                )}
               </div>
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-black uppercase tracking-tighter">
                 {teamAName} <span className="text-[#D9A441]">vs</span> {teamBName}
               </h1>
+
+              {/* Broadcast Action Controls for Spectators */}
+              <div className="flex flex-wrap items-center gap-2 mt-3.5">
+                <button
+                  type="button"
+                  onClick={() => setShowCountdown(true)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm active:scale-95",
+                    isDay
+                      ? "bg-[#D9A441]/15 border border-[#D9A441]/40 text-[#966C15] hover:bg-[#D9A441]/25"
+                      : "bg-[#D9A441]/20 border border-[#D9A441]/40 text-[#FFD21F] hover:bg-[#D9A441]/30"
+                  )}
+                  title="Experience the full-screen 3-2-1 match kickoff intro"
+                >
+                  <Zap size={13} className="text-[#D9A441]" />
+                  <span>3-2-1 Kickoff Intro</span>
+                </button>
+
+                {status === 'completed' && (
+                  <button
+                    type="button"
+                    onClick={() => setShowFinalCelebration(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25 transition-all shadow-sm active:scale-95"
+                    title="Replay the trophy confetti celebration and final result"
+                  >
+                    <Trophy size={13} />
+                    <span>Trophy Celebration</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isFootball) {
+                      fireFX({
+                        kind: 'goal',
+                        title: 'GOAL!',
+                        sub: `${teamAName} scored!`,
+                        score: `${scoreA + 1} - ${scoreB}`,
+                        team: 'teamA',
+                      });
+                    } else if (isCricket) {
+                      fireFX({
+                        kind: 'six',
+                        title: 'SIX!',
+                        sub: `${teamAName} maximum!`,
+                        score: `${scoreA + 6} - ${scoreB}`,
+                        team: 'teamA',
+                      });
+                    } else {
+                      fireFX({
+                        kind: 'point',
+                        title: 'POINT!',
+                        sub: `${teamAName} scored!`,
+                        score: `${scoreA + 1} - ${scoreB}`,
+                        team: 'teamA',
+                      });
+                    }
+                  }}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm active:scale-95",
+                    isDay
+                      ? "bg-blue-500/10 border border-blue-500/25 text-[#155EEF] hover:bg-blue-500/20"
+                      : "bg-blue-500/15 border border-blue-500/30 text-blue-400 hover:bg-blue-500/25"
+                  )}
+                  title="Preview the real-time broadcast score FX animation"
+                >
+                  <Sparkles size={13} />
+                  <span>FX Preview</span>
+                </button>
+              </div>
             </div>
 
             <div className="w-full md:w-auto flex justify-start md:justify-end">
@@ -292,7 +495,38 @@ export const MatchDetail: React.FC = () => {
         </Container>
       </div>
 
-      {/* Real-time Spectator Live Moment Overlay */}
+      {/* Real-time Broadcast Score FX Fullscreen Layer */}
+      <ScoreFXLayer event={fx} />
+
+      {/* 3-2-1 Kickoff Countdown Overlay */}
+      <AnimatePresence>
+        {showCountdown && (
+          <CountdownOverlay
+            teamA={teamAName}
+            teamB={teamBName}
+            onDone={() => setShowCountdown(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Fullscreen Victory Trophy Celebration Overlay */}
+      <AnimatePresence>
+        {showFinalCelebration && (
+          <FinalOverlay
+            teamA={teamAName}
+            teamB={teamBName}
+            scoreA={scoreA}
+            scoreB={scoreB}
+            subtitle={
+              ((liveMatch?.liveState as Record<string, unknown>)?.resultText as string) ||
+              `${sportName} Championship Final`
+            }
+            onClose={() => setShowFinalCelebration(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Real-time Spectator Live Moment Toast */}
       <AnimatePresence>
         {moment && (
           <motion.div

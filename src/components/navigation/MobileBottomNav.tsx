@@ -36,7 +36,7 @@ export const MobileBottomNav: React.FC = () => {
 
   // Check if any match is currently live
   const matches = useCollection<Match>('matches');
-  const hasLiveMatches = matches.data.some((m) => m.status === 'live');
+  const hasLiveMatches = matches.data.some((m) => m.status === 'live' || m.status === 'paused');
 
   // Hide on admin routes
   if (pathname.startsWith('/admin')) return null;

@@ -88,7 +88,7 @@ export const SportDetail: React.FC = () => {
       });
   }, [firestoreMatches, matchedSport?.id, sportKeys, systemSettings?.publicMatchesVisible]);
 
-  const liveMatches = sportMatches.filter(m => m.status === 'live');
+  const liveMatches = sportMatches.filter(m => m.status === 'live' || m.status === 'paused');
   const completedMatches = sportMatches.filter(m => m.status === 'completed');
 
   const tournamentMap = React.useMemo(
@@ -241,19 +241,28 @@ export const SportDetail: React.FC = () => {
           </div>
           {liveMatches.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {liveMatches.map(m => (
-                <MatchCard
-                  key={m.id}
-                  id={m.id}
-                  sport={sportName}
-                  teamA={m.participantA?.name || m.teamAId || 'Team A'}
-                  teamB={m.participantB?.name || m.teamBId || 'Team B'}
-                  scoreA={m.score?.teamA ?? 0}
-                  scoreB={m.score?.teamB ?? 0}
-                  status="live"
-                  time={m.liveState?.clock || 'LIVE'}
-                />
-              ))}
+              {liveMatches.map(m => {
+                const isPaused = m.status === 'paused';
+                const isHalfTime = Boolean((m.liveState as Record<string, unknown>)?.isHalfTime);
+                const isCricket = (m.sportId || '').toLowerCase().includes('cricket');
+                const timeLabel = isPaused 
+                  ? (isCricket ? 'INNINGS BREAK' : isHalfTime ? 'HALF TIME' : 'PAUSED') 
+                  : (m.liveState?.clock || 'LIVE');
+
+                return (
+                  <MatchCard
+                    key={m.id}
+                    id={m.id}
+                    sport={sportName}
+                    teamA={m.participantA?.name || m.teamAId || 'Team A'}
+                    teamB={m.participantB?.name || m.teamBId || 'Team B'}
+                    scoreA={m.score?.teamA ?? 0}
+                    scoreB={m.score?.teamB ?? 0}
+                    status={m.status as any}
+                    time={timeLabel}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div

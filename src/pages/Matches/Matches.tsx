@@ -102,7 +102,7 @@ export const Matches: React.FC = () => {
 
   const filteredMatches = useMemo(() => {
     if (activeTab === 'ALL') return allItems;
-    if (activeTab === 'LIVE') return allItems.filter((m) => m.status === 'live');
+    if (activeTab === 'LIVE') return allItems.filter((m) => m.status === 'live' || m.status === 'paused');
     if (activeTab === 'UPCOMING') return allItems.filter((m) => m.status === 'upcoming' || m.status === 'scheduled');
     if (activeTab === 'COMPLETED') return allItems.filter((m) => m.status === 'completed');
     return allItems;
@@ -124,6 +124,11 @@ export const Matches: React.FC = () => {
 
   const getMatchTime = (match: Match) => {
     if (match.status === 'live') return match.liveState?.clock || 'LIVE';
+    if (match.status === 'paused') {
+      const isCricket = (match.sportId || '').toLowerCase().includes('cricket');
+      const isHalfTime = Boolean((match.liveState as Record<string, unknown>)?.isHalfTime);
+      return isCricket ? 'INNINGS BREAK' : isHalfTime ? 'HALF TIME' : 'PAUSED';
+    }
     if (match.scheduledAt) {
       const date = typeof (match.scheduledAt as any).toDate === 'function' 
         ? (match.scheduledAt as any).toDate() 

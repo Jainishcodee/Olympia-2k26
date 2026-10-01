@@ -22,7 +22,7 @@ export const LiveNowSection: React.FC = () => {
   );
 
   const liveMatches = React.useMemo(
-    () => matches.data.filter((m) => m.status === 'live'),
+    () => matches.data.filter((m) => m.status === 'live' || m.status === 'paused'),
     [matches.data]
   );
 
@@ -143,7 +143,11 @@ export const LiveNowSection: React.FC = () => {
             const teamB = getTeamName(match.teamBId, match.participantB?.name);
             const scoreA = getScoreA(match);
             const scoreB = getScoreB(match);
-            const clock = match.liveState?.clock || 'LIVE';
+            const isPaused = match.status === 'paused';
+            const isHalfTime = Boolean((match.liveState as Record<string, unknown>)?.isHalfTime);
+            const isCricket = (match.sportId || '').toLowerCase().includes('cricket');
+            const pausedLabel = isCricket ? 'INNINGS BREAK' : isHalfTime ? 'HALF TIME' : 'PAUSED';
+            const clock = isPaused ? pausedLabel : (match.liveState?.clock || 'LIVE');
 
             return (
               <motion.div
@@ -155,16 +159,22 @@ export const LiveNowSection: React.FC = () => {
               >
                 <TiltCard
                   tiltAngle={8}
-                  glowColor="rgba(255, 77, 61, 0.15)"
-                  cursorLabel="LIVE"
+                  glowColor={isPaused ? "rgba(217, 164, 65, 0.18)" : "rgba(255, 77, 61, 0.15)"}
+                  cursorLabel={isPaused ? "BREAK" : "LIVE"}
                 >
                   <Link to={`/match/${match.id}`} className="block group h-full">
                     <div className={`p-6 rounded-2xl relative overflow-hidden transition-all duration-300 border ${
                       isDay
-                        ? 'bg-white/90 border-[#FF4D3D]/30 shadow-[0_10px_30px_rgba(255,77,61,0.06)] hover:border-[#FF4D3D] hover:shadow-[0_16px_40px_rgba(255,77,61,0.18)]'
-                        : 'bg-[#071426]/90 border-[#FF4D3D]/30 shadow-[0_10px_30px_rgba(0,0,0,0.6)] hover:border-[#D9A441] hover:shadow-[0_10px_30px_rgba(217,164,65,0.25)]'
+                        ? isPaused
+                          ? 'bg-white/90 border-[#D9A441]/35 shadow-[0_10px_30px_rgba(217,164,65,0.06)] hover:border-[#D9A441]'
+                          : 'bg-white/90 border-[#FF4D3D]/30 shadow-[0_10px_30px_rgba(255,77,61,0.06)] hover:border-[#FF4D3D] hover:shadow-[0_16px_40px_rgba(255,77,61,0.18)]'
+                        : isPaused
+                          ? 'bg-[#071426]/90 border-[#D9A441]/40 shadow-[0_10px_30px_rgba(0,0,0,0.6)] hover:border-[#D9A441]'
+                          : 'bg-[#071426]/90 border-[#FF4D3D]/30 shadow-[0_10px_30px_rgba(0,0,0,0.6)] hover:border-[#D9A441] hover:shadow-[0_10px_30px_rgba(217,164,65,0.25)]'
                     }`}>
-                      <div className="absolute inset-0 bg-gradient-to-br from-[#FF4D3D]/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className={`absolute inset-0 bg-gradient-to-br ${
+                        isPaused ? 'from-[#D9A441]/10' : 'from-[#FF4D3D]/10'
+                      } via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
                       
                       <div className="flex justify-between items-center mb-6">
                         <span className={`text-[11px] font-black uppercase tracking-[0.2em] ${
@@ -173,8 +183,12 @@ export const LiveNowSection: React.FC = () => {
                           {match.sportId}
                         </span>
                         
-                        <span className="text-[10px] font-black text-[#FF4D3D] uppercase tracking-widest bg-[#FF4D3D]/15 border border-[#FF4D3D]/30 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-[0_0_10px_rgba(255,77,61,0.3)]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#FF4D3D] animate-ping" />
+                        <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1.5 ${
+                          isPaused
+                            ? 'text-[#D9A441] bg-[#D9A441]/15 border border-[#D9A441]/35 shadow-[0_0_10px_rgba(217,164,65,0.25)]'
+                            : 'text-[#FF4D3D] bg-[#FF4D3D]/15 border border-[#FF4D3D]/30 shadow-[0_0_10px_rgba(255,77,61,0.3)]'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${isPaused ? 'bg-[#D9A441]' : 'bg-[#FF4D3D] animate-ping'}`} />
                           {clock}
                         </span>
                       </div>

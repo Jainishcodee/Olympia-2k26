@@ -14,7 +14,7 @@ interface MatchCardProps {
   teamB: string;
   scoreA?: number;
   scoreB?: number;
-  status: 'live' | 'upcoming' | 'completed' | 'cancelled';
+  status: 'live' | 'upcoming' | 'completed' | 'cancelled' | 'paused';
   time: string;
   className?: string;
 }
@@ -32,12 +32,14 @@ export const MatchCard: React.FC<MatchCardProps> = ({
 }) => {
   const { theme } = useTheme();
   const isDay = theme === 'day';
+  const isPaused = status === 'paused';
+  const isLiveSession = status === 'live' || isPaused;
 
   return (
     <TiltCard
       tiltAngle={7}
-      glowColor={status === 'live' ? 'rgba(255, 77, 61, 0.18)' : isDay ? 'rgba(21, 94, 239, 0.12)' : 'rgba(217, 164, 65, 0.15)'}
-      cursorLabel={status === 'live' ? 'LIVE' : 'MATCH'}
+      glowColor={status === 'live' ? 'rgba(255, 77, 61, 0.18)' : isPaused ? 'rgba(217, 164, 65, 0.22)' : isDay ? 'rgba(21, 94, 239, 0.12)' : 'rgba(217, 164, 65, 0.15)'}
+      cursorLabel={status === 'live' ? 'LIVE' : isPaused ? 'BREAK' : 'MATCH'}
       className={className}
     >
       <Link to={`/match/${id}`} className="block group h-full">
@@ -45,16 +47,25 @@ export const MatchCard: React.FC<MatchCardProps> = ({
           className={cn(
             "p-6 rounded-2xl relative overflow-hidden transition-all duration-300 border h-full flex flex-col justify-between backdrop-blur-md",
             isDay
-              ? status === 'live'
-                ? "bg-white/90 border-[#FF4D3D]/40 shadow-[0_10px_30px_rgba(255,77,61,0.08)] hover:border-[#FF4D3D]"
+              ? isLiveSession
+                ? isPaused
+                  ? "bg-white/90 border-[#D9A441]/40 shadow-[0_10px_30px_rgba(217,164,65,0.08)] hover:border-[#D9A441]"
+                  : "bg-white/90 border-[#FF4D3D]/40 shadow-[0_10px_30px_rgba(255,77,61,0.08)] hover:border-[#FF4D3D]"
                 : "bg-white/80 border-[#071426]/10 shadow-[0_10px_30px_rgba(7,20,38,0.04)] hover:border-[#155EEF]/50"
-              : status === 'live' 
-                ? "bg-[#071426]/90 border-[#FF4D3D]/50 hover:border-[#FF4D3D] shadow-[0_10px_30px_rgba(0,0,0,0.6)]" 
+              : isLiveSession 
+                ? isPaused
+                  ? "bg-[#071426]/90 border-[#D9A441]/50 hover:border-[#D9A441] shadow-[0_10px_30px_rgba(0,0,0,0.6)]" 
+                  : "bg-[#071426]/90 border-[#FF4D3D]/50 hover:border-[#FF4D3D] shadow-[0_10px_30px_rgba(0,0,0,0.6)]" 
                 : "bg-[#071426]/90 border-white/10 hover:border-[#1264FF]/50 shadow-[0_10px_30px_rgba(0,0,0,0.6)]"
           )}
         >
-          {status === 'live' && (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#FF4D3D]/10 via-transparent to-transparent pointer-events-none" />
+          {isLiveSession && (
+            <div className={cn(
+              "absolute inset-0 pointer-events-none",
+              isPaused
+                ? "bg-gradient-to-br from-[#D9A441]/10 via-transparent to-transparent"
+                : "bg-gradient-to-br from-[#FF4D3D]/10 via-transparent to-transparent"
+            )} />
           )}
           
           <div>
@@ -139,9 +150,9 @@ export const MatchCard: React.FC<MatchCardProps> = ({
             <span className={isDay ? "text-[#071426]/45" : "text-white/40"}>Telemetry</span>
             <span className={cn(
               "uppercase tracking-widest text-[11px] font-black group-hover:translate-x-1 transition-transform inline-flex items-center gap-1",
-              status === 'live' ? "text-[#FF4D3D]" : isDay ? "text-[#155EEF]" : "text-[#D9A441]"
+              status === 'live' ? "text-[#FF4D3D]" : isPaused ? "text-[#D9A441]" : isDay ? "text-[#155EEF]" : "text-[#D9A441]"
             )}>
-              {status === 'live' ? 'Watch Live →' : 'View Details →'}
+              {isLiveSession ? 'Watch Live →' : 'View Details →'}
             </span>
           </div>
         </div>

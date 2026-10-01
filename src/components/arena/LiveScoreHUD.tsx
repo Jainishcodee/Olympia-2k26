@@ -44,7 +44,7 @@ export const LiveScoreHUD: React.FC<{ className?: string }> = ({ className = '' 
   );
 
   const liveMatches = React.useMemo(
-    () => matches.data.filter((m) => m.status === 'live'),
+    () => matches.data.filter((m) => m.status === 'live' || m.status === 'paused'),
     [matches.data]
   );
 
@@ -67,7 +67,12 @@ export const LiveScoreHUD: React.FC<{ className?: string }> = ({ className = '' 
   const score = match.score as unknown as Record<string, unknown> | undefined;
   const scoreA = Number(score?.teamA ?? 0);
   const scoreB = Number(score?.teamB ?? 0);
-  const clock = match.liveState?.clock || 'LIVE';
+  const isPaused = match.status === 'paused';
+  const isHalfTime = Boolean((match.liveState as Record<string, unknown>)?.isHalfTime);
+  const isCricket = (match.sportId || '').toLowerCase().includes('cricket');
+  const clock = isPaused 
+    ? (isCricket ? 'INNINGS BREAK' : isHalfTime ? 'HALF TIME' : 'PAUSED') 
+    : (match.liveState?.clock || 'LIVE');
 
   return (
     <div className={`pointer-events-none select-none ${className}`}>
@@ -90,9 +95,13 @@ export const LiveScoreHUD: React.FC<{ className?: string }> = ({ className = '' 
 
         <div className="relative px-5 pt-3.5 pb-4">
           <div className="flex items-center justify-between gap-6 mb-2.5">
-            <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#FF4D3D]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#FF4D3D] shadow-[0_0_10px_2px_rgba(255,77,61,0.85)] animate-ping" />
-              LIVE TELEMETRY
+            <span className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] ${
+              isPaused ? 'text-[#D9A441]' : 'text-[#FF4D3D]'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                isPaused ? 'bg-[#D9A441]' : 'bg-[#FF4D3D] shadow-[0_0_10px_2px_rgba(255,77,61,0.85)] animate-ping'
+              }`} />
+              {isPaused ? 'LIVE SESSION BREAK' : 'LIVE TELEMETRY'}
             </span>
             <span
               className={`text-[10px] font-black uppercase tracking-[0.22em] ${

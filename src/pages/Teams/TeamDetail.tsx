@@ -204,19 +204,29 @@ export const TeamDetail: React.FC = () => {
               <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wider">Team Fixtures</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {teamMatches.map(m => (
-                <MatchCard
-                  key={m.id}
-                  id={m.id}
-                  sport={sportName}
-                  teamA={m.participantA?.name || m.teamAId || 'Team A'}
-                  teamB={m.participantB?.name || m.teamBId || 'Team B'}
-                  scoreA={m.score?.teamA ?? 0}
-                  scoreB={m.score?.teamB ?? 0}
-                  status={m.status === 'live' ? 'live' : m.status === 'completed' ? 'completed' : m.status === 'cancelled' ? 'cancelled' : 'upcoming'}
-                  time={m.status === 'live' ? (m.liveState?.clock || 'LIVE') : 'Scheduled'}
-                />
-              ))}
+              {teamMatches.map(m => {
+                const isPaused = m.status === 'paused';
+                const isLiveSession = m.status === 'live' || isPaused;
+                const isHalfTime = Boolean((m.liveState as Record<string, unknown>)?.isHalfTime);
+                const isCricket = (m.sportId || '').toLowerCase().includes('cricket');
+                const timeLabel = isLiveSession 
+                  ? (isPaused ? (isCricket ? 'INNINGS BREAK' : isHalfTime ? 'HALF TIME' : 'PAUSED') : (m.liveState?.clock || 'LIVE'))
+                  : 'Scheduled';
+
+                return (
+                  <MatchCard
+                    key={m.id}
+                    id={m.id}
+                    sport={sportName}
+                    teamA={m.participantA?.name || m.teamAId || 'Team A'}
+                    teamB={m.participantB?.name || m.teamBId || 'Team B'}
+                    scoreA={m.score?.teamA ?? 0}
+                    scoreB={m.score?.teamB ?? 0}
+                    status={isLiveSession ? (isPaused ? 'paused' : 'live') : m.status === 'completed' ? 'completed' : m.status === 'cancelled' ? 'cancelled' : 'upcoming'}
+                    time={timeLabel}
+                  />
+                );
+              })}
             </div>
           </section>
         )}
