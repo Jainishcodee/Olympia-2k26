@@ -131,67 +131,15 @@ const LeaderboardsManager: React.FC = () => {
     }
     setSyncingSport(sportId);
     try {
-      let entries = [];
-
-      if (isTeam) {
-        const sportTeams = teams.data
-          .filter((t) => t.sportId === sportId || (sportId === 'lan-games' && t.sportId === 'counter-strike'))
-          .sort((a, b) => (b.points || 0) - (a.points || 0));
-
-        entries = sportTeams.map((t, idx) => ({
-          position: idx + 1,
-          entityId: t.id,
-          entityType: 'team' as const,
-          entityName: t.name,
-          logo: t.logo || '',
-          sportId,
-          points: t.points || 0,
-          wins: t.wins || 0,
-          draws: t.draws || 0,
-          losses: t.losses || 0,
-          matchesPlayed: (t.wins || 0) + (t.draws || 0) + (t.losses || 0) || 1,
-          stats: {
-            goalsFor: (t as unknown as Record<string, number>).goalsFor ?? 0,
-            goalsAgainst: (t as unknown as Record<string, number>).goalsAgainst ?? 0,
-            goalDifference: (t as unknown as Record<string, number>).goalDifference ?? 0,
-          },
-        }));
-      } else {
-        const sportPlayers = players.data
-          .filter((p) => p.sportId === sportId)
-          .sort((a, b) => (b.stats?.points || 0) - (a.stats?.points || 0))
-          .slice(0, 3);
-
-        entries = sportPlayers.map((p, idx) => ({
-          position: idx + 1,
-          entityId: p.id,
-          entityType: 'player' as const,
-          entityName: p.name,
-          logo: p.photo || '',
-          sportId,
-          points: p.stats?.points || 0,
-          wins: p.stats?.wins || 0,
-          draws: 0,
-          losses: p.stats?.losses || 0,
-          matchesPlayed: p.stats?.matchesPlayed || 1,
-          stats: {
-            rating: p.stats?.rating || 4.8,
-          },
-        }));
-      }
-
-      const docData: Leaderboard = {
-        id: sportId,
+      const { syncSportLeaderboardToFirestore } = await import('@/services/standings/standingsService');
+      const entries = await syncSportLeaderboardToFirestore(
         sportId,
         sportName,
-        category: isTeam ? 'team' : 'individual',
-        lastUpdated: Timestamp.now(),
-        entries,
-      };
+        isTeam ? 'team' : 'individual'
+      );
 
-      await setDoc(doc(db, 'leaderboards', sportId), docData);
       await log('LEADERBOARD_PUBLISHED', 'leaderboard', sportId, { label: sportName });
-      toast.success(`Published live standings to leaderboards/${sportId}`);
+      toast.success(`Published live standings (${entries.length} entries) from completed matches to leaderboards/${sportId}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Sync failed');
     } finally {

@@ -48,10 +48,18 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   sportId,
   liveState,
 }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
-  const isCricket = (sportId || '').toLowerCase().includes('cricket');
-  const isVolleyball = (sportId || '').toLowerCase().includes('volleyball');
+  const { isDay } = useTheme();
+  const live = (liveState || {}) as Record<string, any>;
+  const sId = (sportId || '').toLowerCase();
+  const isCricket = sId.includes('cricket');
+  const isVolleyball = sId.includes('volleyball');
+  const isBadminton = sId.includes('badminton');
+  const isTableTennis = sId.includes('table-tennis') || sId.includes('table_tennis');
+  const isRacquet = isBadminton || isTableTennis;
+  const isCounterStrike = sId.includes('counter') || sId.includes('cs') || sId.includes('strike');
+  const isCarrom = sId.includes('carrom');
+  const isSmashKarts = sId.includes('smash') || sId.includes('kart');
+  const isChess = sId.includes('chess');
 
   return (
     <div
@@ -132,7 +140,7 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                   </div>
                 ) : liveState?.battingTeam === 'teamA' ? (
                   <div className="text-sm sm:text-base font-black text-emerald-400">
-                    {scoreA}/{liveState?.wickets ?? 0} <span className="text-xs font-semibold opacity-75">({liveState?.overs ?? 0}.{liveState?.ball ?? 0} ov)</span>
+                    {scoreA}/{liveState?.wickets ?? 0} <span className="text-xs font-semibold opacity-75">({liveState?.overs ?? 0}.{liveState?.ball ?? 0}{liveState?.maxOvers ? ` / ${liveState.maxOvers}` : ''} ov)</span>
                   </div>
                 ) : (
                   <div className="text-xs sm:text-sm font-semibold opacity-60">
@@ -144,7 +152,28 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             {isVolleyball && (
               <div className="mt-2 text-center">
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#155EEF]/15 border border-[#155EEF]/30 text-[#4B90FF]">
-                  Sets Won: {liveState?.setsWon?.teamA ?? 0}
+                  Sets Won: {live.setsWon?.teamA ?? 0}
+                </span>
+              </div>
+            )}
+            {isRacquet && (
+              <div className="mt-2 text-center">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#155EEF]/15 border border-[#155EEF]/30 text-[#4B90FF]">
+                  Games Won: {live.gamesWon?.teamA ?? live.setsWon?.teamA ?? 0}
+                </span>
+              </div>
+            )}
+            {isCounterStrike && (
+              <div className="mt-2 text-center">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-blue-500/15 border border-blue-500/30 text-blue-400">
+                  CT Side · {scoreA} Rds
+                </span>
+              </div>
+            )}
+            {isSmashKarts && (
+              <div className="mt-2 text-center">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-cyan-500/15 border border-cyan-500/30 text-cyan-400">
+                  {scoreA} Elims
                 </span>
               </div>
             )}
@@ -179,14 +208,39 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             </div>
             {isCricket && (
               <div className="mt-2 text-xs sm:text-sm font-black uppercase tracking-wider text-[#D9A441]">
-                {liveState?.innings === 2 ? '2nd Innings' : '1st Innings'}
-                {liveState?.overs !== undefined && ` · ${liveState.overs}.${liveState.ball || 0} ov`}
+                {live.innings === 2 ? '2nd Innings' : '1st Innings'}
+                {live.overs !== undefined && ` · ${live.overs}.${live.ball || 0} ov`}
               </div>
             )}
             {isVolleyball && (
               <div className="mt-2 text-xs sm:text-sm font-black uppercase tracking-wider text-[#D9A441] text-center">
-                Set {liveState?.currentSet ?? 1} · Target {liveState?.targetPoints ?? 25} pts
-                {liveState?.winByTwo !== false && ' (Win by 2)'}
+                Set {String(live.currentSet ?? 1)} · Target {String(live.targetPoints ?? 25)} pts
+                {live.winByTwo !== false && ' (Win by 2)'}
+              </div>
+            )}
+            {isRacquet && (
+              <div className="mt-2 text-xs sm:text-sm font-black uppercase tracking-wider text-[#D9A441] text-center">
+                Game {String(live.currentSet ?? live.game ?? 1)} · Target {isBadminton ? 21 : 11} pts (Win by 2)
+              </div>
+            )}
+            {isCounterStrike && (
+              <div className="mt-2 text-xs sm:text-sm font-black uppercase tracking-wider text-orange-400 text-center">
+                Round {String(live.round ?? (scoreA + scoreB + 1))} / 24 · MR12 (Target: 13 Rds)
+              </div>
+            )}
+            {isCarrom && (
+              <div className="mt-2 text-xs sm:text-sm font-black uppercase tracking-wider text-amber-400 text-center">
+                Board {String(live.board ?? 1)} · Target: {String(live.targetPoints ?? 25)} pts
+              </div>
+            )}
+            {isSmashKarts && (
+              <div className="mt-2 text-xs sm:text-sm font-black uppercase tracking-wider text-cyan-400 text-center">
+                Arena Battle · Target: {String(live.targetPoints ?? live.targetKills ?? 20)} Elims
+              </div>
+            )}
+            {isChess && (
+              <div className="mt-2 text-xs sm:text-sm font-black uppercase tracking-wider text-yellow-400 text-center">
+                Move {String(live.move ?? 1)}{live.lastMove ? ` · Last: ${String(live.lastMove)}` : ''}
               </div>
             )}
           </div>
@@ -223,11 +277,11 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                   </div>
                 ) : liveState?.battingTeam === 'teamB' ? (
                   <div className="text-sm sm:text-base font-black text-emerald-400">
-                    {scoreB}/{liveState?.wickets ?? 0} <span className="text-xs font-semibold opacity-75">({liveState?.overs ?? 0}.{liveState?.ball ?? 0} ov)</span>
+                    {scoreB}/{live.wickets ?? 0} <span className="text-xs font-semibold opacity-75">({live.overs ?? 0}.{live.ball ?? 0}{live.maxOvers ? ` / ${live.maxOvers}` : ''} ov)</span>
                   </div>
                 ) : (
                   <div className="text-xs sm:text-sm font-semibold opacity-60">
-                    {liveState?.innings === 1 ? 'Yet to bat' : `${scoreB} runs`}
+                    {live.innings === 1 ? 'Yet to bat' : `${scoreB} runs`}
                   </div>
                 )}
               </div>
@@ -235,7 +289,28 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             {isVolleyball && (
               <div className="mt-2 text-center">
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#FF4D3D]/15 border border-[#FF4D3D]/30 text-[#FF4D3D]">
-                  Sets Won: {liveState?.setsWon?.teamB ?? 0}
+                  Sets Won: {live.setsWon?.teamB ?? 0}
+                </span>
+              </div>
+            )}
+            {isRacquet && (
+              <div className="mt-2 text-center">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#FF4D3D]/15 border border-[#FF4D3D]/30 text-[#FF4D3D]">
+                  Games Won: {live.gamesWon?.teamB ?? live.setsWon?.teamB ?? 0}
+                </span>
+              </div>
+            )}
+            {isCounterStrike && (
+              <div className="mt-2 text-center">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                  T Side · {scoreB} Rds
+                </span>
+              </div>
+            )}
+            {isSmashKarts && (
+              <div className="mt-2 text-center">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#FF4D3D]/15 border border-[#FF4D3D]/30 text-[#FF4D3D]">
+                  {scoreB} Elims
                 </span>
               </div>
             )}
@@ -245,31 +320,31 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
         {/* Cricket Additional Context (Target / Result / Batsmen) */}
         {isCricket && (
           <div className="w-full max-w-2xl mt-6 space-y-3">
-            {liveState?.resultText && (
+            {live.resultText && (
               <div className="py-2.5 px-4 rounded-xl bg-[#D9A441]/15 border border-[#D9A441]/40 text-[#D9A441] font-black text-sm sm:text-base uppercase tracking-wider text-center shadow-lg">
-                🏆 {liveState.resultText}
+                🏆 {String(live.resultText)}
               </div>
             )}
-            {!liveState?.resultText && liveState?.innings === 2 && liveState?.targetRuns && (
+            {!live.resultText && live.innings === 2 && live.targetRuns && (
               <div className="flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm font-bold tracking-wider">
                 <span className="px-3.5 py-1.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400">
-                  Target: {liveState.targetRuns}
+                  Target: {String(live.targetRuns)}
                 </span>
                 <span className="px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400">
-                  Need {liveState.requiredRuns ?? Math.max(0, liveState.targetRuns - scoreB)} runs in {liveState.ballsRemaining ?? 0} balls
+                  Need {String(live.requiredRuns ?? Math.max(0, live.targetRuns - scoreB))} runs in {String(live.ballsRemaining ?? 0)} balls
                 </span>
               </div>
             )}
-            {(liveState?.strikerName || liveState?.currentBowlerName) && (
+            {(live.strikerName || live.currentBowlerName) && (
               <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-300 bg-white/5 py-2 px-4 rounded-xl border border-white/10">
-                {liveState.strikerName && (
-                  <span>🏏 {liveState.strikerName}* <span className="text-amber-400">{liveState.strikerRuns ?? 0}</span>({liveState.strikerBalls ?? 0})</span>
+                {live.strikerName && (
+                  <span>🏏 {String(live.strikerName)}* <span className="text-amber-400">{String(live.strikerRuns ?? 0)}</span>({String(live.strikerBalls ?? 0)})</span>
                 )}
-                {liveState.nonStrikerName && (
-                  <span>{liveState.nonStrikerName} <span className="text-slate-300">{liveState.nonStrikerRuns ?? 0}</span>({liveState.nonStrikerBalls ?? 0})</span>
+                {live.nonStrikerName && (
+                  <span>{String(live.nonStrikerName)} <span className="text-slate-300">{String(live.nonStrikerRuns ?? 0)}</span>({String(live.nonStrikerBalls ?? 0)})</span>
                 )}
-                {liveState.currentBowlerName && (
-                  <span>🎯 Bowler: {liveState.currentBowlerName} <span className="text-red-400">{liveState.bowlerWickets ?? 0}/{liveState.bowlerRunsConceded ?? 0}</span></span>
+                {live.currentBowlerName && (
+                  <span>🎯 Bowler: {String(live.currentBowlerName)} <span className="text-red-400">{String(live.bowlerWickets ?? 0)}/{String(live.bowlerRunsConceded ?? 0)}</span></span>
                 )}
               </div>
             )}
@@ -279,22 +354,22 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
         {/* Volleyball Additional Context (Sets Ticker, Completed Sets & Final Result) */}
         {isVolleyball && (
           <div className="w-full max-w-2xl mt-6 space-y-3">
-            {liveState?.resultText && (
+            {live.resultText && (
               <div className="py-2.5 px-4 rounded-xl bg-[#D9A441]/15 border border-[#D9A441]/40 text-[#D9A441] font-black text-sm sm:text-base uppercase tracking-wider text-center shadow-lg">
-                🏆 {liveState.resultText}
+                🏆 {String(live.resultText)}
               </div>
             )}
             <div className="flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm font-bold tracking-wider">
               <span className="px-3.5 py-1.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400">
-                Sets: {teamA} {liveState?.setsWon?.teamA ?? 0} — {liveState?.setsWon?.teamB ?? 0} {teamB}
+                Sets: {teamA} {String(live.setsWon?.teamA ?? 0)} — {String(live.setsWon?.teamB ?? 0)} {teamB}
               </span>
               <span className="px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400">
-                Current Set: {liveState?.currentSetScore?.teamA ?? scoreA} — {liveState?.currentSetScore?.teamB ?? scoreB}
+                Current Set: {String(live.currentSetScore?.teamA ?? scoreA)} — {String(live.currentSetScore?.teamB ?? scoreB)}
               </span>
             </div>
-            {Array.isArray(liveState?.completedSets) && liveState.completedSets.length > 0 && (
+            {Array.isArray(live.completedSets) && live.completedSets.length > 0 && (
               <div className="flex flex-wrap items-center justify-center gap-2">
-                {liveState.completedSets.map((s, idx) => (
+                {live.completedSets.map((s, idx) => (
                   <span
                     key={idx}
                     className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-xs font-mono font-bold text-slate-300"
@@ -302,6 +377,97 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                     Set {s.set}: <strong className="text-white">{s.teamA}–{s.teamB}</strong>
                   </span>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Racquet Sports Additional Context (Badminton & Table Tennis) */}
+        {isRacquet && (
+          <div className="w-full max-w-2xl mt-6 space-y-3">
+            {live.resultText && (
+              <div className="py-2.5 px-4 rounded-xl bg-[#D9A441]/15 border border-[#D9A441]/40 text-[#D9A441] font-black text-sm sm:text-base uppercase tracking-wider text-center shadow-lg">
+                🏆 {String(live.resultText)}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm font-bold tracking-wider">
+              <span className="px-3.5 py-1.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400">
+                Games: {teamA} {String(live.gamesWon?.teamA ?? live.setsWon?.teamA ?? 0)} — {String(live.gamesWon?.teamB ?? live.setsWon?.teamB ?? 0)} {teamB}
+              </span>
+              <span className="px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                Current Game: {String(live.currentSetScore?.teamA ?? scoreA)} — {String(live.currentSetScore?.teamB ?? scoreB)}
+              </span>
+            </div>
+            {Array.isArray(live.completedSets) && live.completedSets.length > 0 && (
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {live.completedSets.map((s, idx) => (
+                  <span
+                    key={idx}
+                    className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-xs font-mono font-bold text-slate-300"
+                  >
+                    Game {s.set}: <strong className="text-white">{s.teamA}–{s.teamB}</strong>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Counter-Strike Context */}
+        {isCounterStrike && (
+          <div className="w-full max-w-2xl mt-6 space-y-3">
+            {live.resultText ? (
+              <div className="py-2.5 px-4 rounded-xl bg-[#D9A441]/15 border border-[#D9A441]/40 text-[#D9A441] font-black text-sm sm:text-base uppercase tracking-wider text-center shadow-lg">
+                🏆 {String(live.resultText)}
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm font-bold tracking-wider">
+                <span className="px-3.5 py-1.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400">
+                  Counter-Terrorists: {scoreA}
+                </span>
+                <span className="px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                  Terrorists: {scoreB}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Carrom Context */}
+        {isCarrom && (
+          <div className="w-full max-w-2xl mt-6 space-y-3">
+            {live.resultText && (
+              <div className="py-2.5 px-4 rounded-xl bg-[#D9A441]/15 border border-[#D9A441]/40 text-[#D9A441] font-black text-sm sm:text-base uppercase tracking-wider text-center shadow-lg">
+                🏆 {String(live.resultText)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Smash Karts Context */}
+        {isSmashKarts && (
+          <div className="w-full max-w-2xl mt-6 space-y-3">
+            {live.resultText && (
+              <div className="py-2.5 px-4 rounded-xl bg-[#D9A441]/15 border border-[#D9A441]/40 text-[#D9A441] font-black text-sm sm:text-base uppercase tracking-wider text-center shadow-lg">
+                🏆 {String(live.resultText)}
+              </div>
+            )}
+            {live.mvp && (
+              <div className="flex items-center justify-center">
+                <span className="px-3.5 py-1.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 font-bold text-xs sm:text-sm tracking-wider">
+                  ⭐ MVP: {String(live.mvp)}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Chess Context */}
+        {isChess && (
+          <div className="w-full max-w-2xl mt-6 space-y-3">
+            {live.resultText && (
+              <div className="py-2.5 px-4 rounded-xl bg-[#D9A441]/15 border border-[#D9A441]/40 text-[#D9A441] font-black text-sm sm:text-base uppercase tracking-wider text-center shadow-lg">
+                ♔ {String(live.resultText)}
               </div>
             )}
           </div>

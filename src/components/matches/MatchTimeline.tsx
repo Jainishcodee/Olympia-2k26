@@ -79,9 +79,9 @@ const getEventBadge = (type: string) => {
   if (t === 'drinks_break' || t === 'break') {
     return { icon: '🥤', label: 'DRINKS BREAK', color: 'text-cyan-400 bg-cyan-500/15 border-cyan-500/30' };
   }
-  // Volleyball / Court
+  // Court, Combat & Board Events
   if (t === 'point') {
-    return { icon: '🏐', label: 'POINT', color: 'text-amber-400 bg-amber-500/15 border-amber-500/30' };
+    return { icon: '🎯', label: 'POINT', color: 'text-amber-400 bg-amber-500/15 border-amber-500/30' };
   }
   if (t === 'point_removed') {
     return { icon: '❌', label: 'POINT CANCELLED', color: 'text-rose-400 bg-rose-500/15 border-rose-500/30' };
@@ -91,6 +91,30 @@ const getEventBadge = (type: string) => {
   }
   if (t === 'set_completed' || t === 'set_won') {
     return { icon: '🏆', label: 'SET COMPLETE', color: 'text-purple-400 bg-purple-500/15 border-purple-500/30' };
+  }
+  if (t === 'game_won') {
+    return { icon: '🏸', label: 'GAME WON', color: 'text-purple-400 bg-purple-500/15 border-purple-500/30' };
+  }
+  if (t === 'round_win' || t === 'round_won') {
+    return { icon: '🔫', label: 'ROUND WON', color: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30' };
+  }
+  if (t === 'round_removed') {
+    return { icon: '❌', label: 'ROUND CANCELLED', color: 'text-rose-400 bg-rose-500/15 border-rose-500/30' };
+  }
+  if (t === 'carrom_coin') {
+    return { icon: '⚪', label: 'COIN POCKETED', color: 'text-amber-400 bg-amber-500/15 border-amber-500/30' };
+  }
+  if (t === 'queen_pocketed' || t === 'queen') {
+    return { icon: '👑', label: 'QUEEN COVERED', color: 'text-pink-400 bg-pink-500/15 border-pink-500/30' };
+  }
+  if (t === 'board_completed') {
+    return { icon: '🎯', label: 'BOARD COMPLETE', color: 'text-amber-400 bg-amber-500/15 border-amber-500/30' };
+  }
+  if (t === 'chess_move') {
+    return { icon: '♟️', label: 'CHESS MOVE', color: 'text-blue-400 bg-blue-500/15 border-blue-500/30' };
+  }
+  if (t === 'chess_result') {
+    return { icon: '♔', label: 'CHESS RESULT', color: 'text-yellow-400 bg-yellow-500/15 border-yellow-500/30' };
   }
   if (t === 'timeout') {
     return { icon: '⏱️', label: 'TIMEOUT', color: 'text-yellow-400 bg-yellow-500/15 border-yellow-500/30' };

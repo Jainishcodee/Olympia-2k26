@@ -15,6 +15,8 @@ export const DISCIPLINE_LIST: SportOption[] = [
   { id: 'cricket', name: 'Cricket', icon: '🏏', category: 'team', description: 'Team Standings' },
   { id: 'volleyball', name: 'Volleyball', icon: '🏐', category: 'team', description: 'Team Standings' },
   { id: 'hand-tennis', name: 'Hand Tennis', icon: '✋', category: 'team', description: 'Team Standings' },
+  { id: 'counter-strike', name: 'Counter-Strike', icon: '🔫', category: 'team', description: 'Team Standings' },
+  { id: 'smash-karts', name: 'Smash Karts', icon: '🏎️', category: 'team', description: 'Team Standings' },
   { id: 'lan-games', name: 'LAN Games', icon: '🎮', category: 'team', description: 'Team Standings' },
   { id: 'badminton', name: 'Badminton', icon: '🏸', category: 'individual', description: 'Top 3 Podium' },
   { id: 'table-tennis', name: 'Table Tennis', icon: '🏓', category: 'individual', description: 'Top 3 Podium' },

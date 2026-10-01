@@ -133,6 +133,7 @@ export interface Match {
   allowReviews: boolean;
   archived: boolean;
   round?: string;
+  maxOvers?: number;
   lastSequence?: number;
   isHidden?: boolean;
   createdBy: string;

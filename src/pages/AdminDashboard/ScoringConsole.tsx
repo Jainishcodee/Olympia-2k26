@@ -17,7 +17,7 @@ import {
   formatSportPositioning,
   type ScoreDelta,
 } from '@/services/scoring/scoringService';
-import { updateMatchStatus } from '@/services/matches/matchService';
+import { updateMatchStatus, updateMatch } from '@/services/matches/matchService';
 import type { EventType, Match, MatchEvent, MatchStatus, Player, Sport, SportPositioning, Team } from '@/types';
 
 import { RollingScore, RollingLabel } from '@/components/scoring/RollingScore';
@@ -142,6 +142,14 @@ const ScoringConsole: React.FC = () => {
   const teamBPlayers = useMemo(() => {
     return players.data.filter((p) => p.teamId === liveMatch?.teamBId);
   }, [players.data, liveMatch?.teamBId]);
+
+  const matchMaxOvers = useMemo(() => {
+    return Number(
+      liveMatch?.liveState?.maxOvers ??
+      (liveMatch as any)?.maxOvers ??
+      0
+    );
+  }, [liveMatch]);
 
   // Real-time Firestore subscription to the Match document (Single Source of Truth)
   useEffect(() => {
@@ -457,6 +465,7 @@ const ScoringConsole: React.FC = () => {
         fxTitle: 'MATCH STARTED',
         fxSub: `${teamAInfo.shortName} vs ${teamBInfo.shortName}`,
         accent: '#D9A441',
+        data: isCricket && matchMaxOvers > 0 ? { maxOvers: matchMaxOvers } : undefined,
       });
       toast.success('Match is now LIVE!');
     } catch (err) {
@@ -874,6 +883,31 @@ const ScoringConsole: React.FC = () => {
     setLineupModal(false);
   };
 
+  const handleUpdateCricketOvers = async (newOvers: number) => {
+    if (!matchId) return;
+    try {
+      await updateMatch(matchId, {
+        maxOvers: newOvers,
+        liveState: {
+          ...(liveMatch?.liveState || {}),
+          maxOvers: newOvers,
+          ballsRemaining: Math.max(0, newOvers * 6 - (currentCricket.overs * 6 + currentCricket.balls)),
+        },
+      } as any);
+      await recordEvent({
+        type: 'ball',
+        description: `Cricket overs quota updated to ${newOvers} Overs`,
+        newLiveState: {
+          maxOvers: newOvers,
+          ballsRemaining: Math.max(0, newOvers * 6 - (currentCricket.overs * 6 + currentCricket.balls)),
+        },
+      });
+      toast.success(`Match overs updated to ${newOvers} OV in Firestore!`);
+    } catch (err) {
+      toast.error('Failed to update match overs');
+    }
+  };
+
   /* 3. Volleyball Live Scoring Engine */
   const handleVolleyballPoint = async (team: 'teamA' | 'teamB') => {
     const side = team === 'teamA' ? teamAInfo : teamBInfo;
@@ -1020,19 +1054,200 @@ const ScoringConsole: React.FC = () => {
     });
   };
 
-  /* 4. Chess */
+  /* 4. Racquet Sports (Badminton & Table Tennis) */
+  const handleRacquetPoint = (team: 'teamA' | 'teamB', emoji: string = '🏸') => {
+    const side = team === 'teamA' ? teamAInfo : teamBInfo;
+    const currentSet = Number(liveMatch?.liveState?.currentSet || liveMatch?.liveState?.game || 1);
+    creditTeam(team);
+    recordEvent({
+      type: 'point',
+      team,
+      teamName: side.name,
+      description: `${emoji} Point for ${side.shortName}`,
+      scoreDelta: { [team]: 1, points: 1 },
+      positioning: { game: currentSet },
+      fxKind: 'point',
+      fxTitle: 'POINT!',
+      fxSub: side.name,
+    });
+  };
+
+  const handleRacquetRemovePoint = (team: 'teamA' | 'teamB', emoji: string = '🏸') => {
+    const side = team === 'teamA' ? teamAInfo : teamBInfo;
+    const currentSet = Number(liveMatch?.liveState?.currentSet || liveMatch?.liveState?.game || 1);
+    recordEvent({
+      type: 'point_removed',
+      team,
+      teamName: side.name,
+      description: `${emoji} Point removed from ${side.shortName}`,
+      scoreDelta: { [team]: -1, points: 1 },
+      positioning: { game: currentSet },
+    });
+  };
+
+  const handleRacquetEndGame = (emoji: string = '🏸') => {
+    const currentSet = Number(liveMatch?.liveState?.currentSet || liveMatch?.liveState?.game || 1);
+    const curA = Number(liveMatch?.liveState?.currentSetScore?.teamA ?? liveMatch?.score?.teamA ?? 0);
+    const curB = Number(liveMatch?.liveState?.currentSetScore?.teamB ?? liveMatch?.score?.teamB ?? 0);
+    const winnerKey = curA > curB ? 'teamA' : 'teamB';
+    const side = winnerKey === 'teamA' ? teamAInfo : teamBInfo;
+
+    recordEvent({
+      type: 'game_won',
+      team: winnerKey,
+      teamName: side.name,
+      description: `${emoji} Game ${currentSet} Won by ${side.name} (${curA} - ${curB})`,
+      positioning: { game: currentSet },
+      fxKind: 'set',
+      fxTitle: 'GAME WON!',
+      fxSub: side.name,
+    });
+  };
+
+  /* 5. Counter-Strike (MR12) */
+  const handleCSRoundWin = (team: 'teamA' | 'teamB') => {
+    const side = team === 'teamA' ? teamAInfo : teamBInfo;
+    const curRound = Number(liveMatch?.liveState?.round || (Number(liveMatch?.score?.teamA || 0) + Number(liveMatch?.score?.teamB || 0) + 1));
+    creditTeam(team);
+    recordEvent({
+      type: 'round_win',
+      team,
+      teamName: side.name,
+      description: `🔫 Round ${curRound} Won by ${side.name}`,
+      scoreDelta: { [team]: 1 },
+      positioning: { round: curRound },
+      fxKind: 'goal',
+      fxTitle: 'ROUND WON!',
+      fxSub: side.name,
+      accent: '#FF5722',
+    });
+  };
+
+  const handleCSRemoveRound = (team: 'teamA' | 'teamB') => {
+    const side = team === 'teamA' ? teamAInfo : teamBInfo;
+    const curRound = Number(liveMatch?.liveState?.round || 1);
+    recordEvent({
+      type: 'round_removed',
+      team,
+      teamName: side.name,
+      description: `Round removed from ${side.name}`,
+      scoreDelta: { [team]: -1 },
+      positioning: { round: curRound },
+    });
+  };
+
+  const handleCSSwapSides = () => {
+    recordEvent({
+      type: 'half_time',
+      description: `Sides Swapped (CT ⇄ T)`,
+      fxKind: 'neutral',
+      fxTitle: 'SIDES SWAPPED',
+      fxSub: 'Half-time intermission',
+    });
+  };
+
+  /* 6. Carrom */
+  const handleCarromScore = (team: 'teamA' | 'teamB', delta: number) => {
+    const side = team === 'teamA' ? teamAInfo : teamBInfo;
+    const curBoard = Number(liveMatch?.liveState?.board || 1);
+    if (delta > 0) creditTeam(team);
+    const eventType = delta === 3 ? 'queen_pocketed' : delta > 0 ? 'carrom_coin' : 'point_removed';
+    recordEvent({
+      type: eventType,
+      team,
+      teamName: side.name,
+      description: delta === 3
+        ? `👑 Queen Pocketed (+3) by ${side.name}`
+        : delta > 0
+          ? `⚪ Coin Pocketed (+1) by ${side.name}`
+          : `❌ Foul / Penalty (-1) on ${side.name}`,
+      scoreDelta: { [team]: delta, points: Math.abs(delta) },
+      positioning: { board: curBoard },
+      fxKind: delta > 0 ? 'point' : 'neutral',
+      fxTitle: delta === 3 ? 'QUEEN COVERED!' : delta > 0 ? 'COIN POCKETED' : 'PENALTY',
+      fxSub: side.name,
+    });
+  };
+
+  const handleCarromEndBoard = () => {
+    const curBoard = Number(liveMatch?.liveState?.board || 1);
+    recordEvent({
+      type: 'board_completed',
+      description: `🎯 Board ${curBoard} Completed`,
+      positioning: { board: curBoard },
+      fxKind: 'neutral',
+      fxTitle: 'BOARD COMPLETED',
+      fxSub: `Board ${curBoard}`,
+    });
+  };
+
+  /* 7. Smash Karts (Arena Battle) */
+  const [kartPlayerA, setKartPlayerA] = useState('');
+  const [kartPlayerB, setKartPlayerB] = useState('');
+
+  const handleSmashKartsPoint = (team: 'teamA' | 'teamB', delta: number) => {
+    const side = team === 'teamA' ? teamAInfo : teamBInfo;
+    const player = team === 'teamA' ? kartPlayerA.trim() : kartPlayerB.trim();
+    if (delta > 0) creditTeam(team);
+    recordEvent({
+      type: delta > 0 ? 'point' : 'point_removed',
+      team,
+      teamName: side.name,
+      playerName: player || undefined,
+      data: player ? { player } : undefined,
+      description: delta > 0
+        ? `🏎️ Elimination (+1) by ${player ? `${player} · ` : ''}${side.name}`
+        : `−1 Point for ${side.name}`,
+      scoreDelta: { [team]: delta, points: Math.abs(delta) },
+      fxKind: delta > 0 ? 'point' : 'neutral',
+      fxTitle: delta > 0 ? 'ELIMINATION!' : 'POINT REMOVED',
+      fxSub: player ? `${player} · ${side.shortName}` : side.name,
+    });
+  };
+
+  const handleSmashKartsDeclareWinner = (team: 'teamA' | 'teamB') => {
+    const side = team === 'teamA' ? teamAInfo : teamBInfo;
+    recordEvent({
+      type: 'match_end',
+      team,
+      teamName: side.name,
+      description: `🏆 ${side.name} won the Smash Karts Arena Battle!`,
+      fxKind: 'goal',
+      fxTitle: 'VICTORY!',
+      fxSub: side.name,
+    });
+  };
+
+  /* 8. Chess */
+  const [chessMoveText, setChessMoveText] = useState('');
+  const handleChessMove = () => {
+    const curMove = Number(liveMatch?.liveState?.move || 1);
+    const notation = chessMoveText.trim() || `Move ${curMove}`;
+    recordEvent({
+      type: 'chess_move',
+      description: `♟ Move ${curMove}: ${notation}`,
+      data: { pgnMove: notation },
+      positioning: { move: curMove },
+      fxKind: 'neutral',
+      fxTitle: 'MOVE PLAYED',
+      fxSub: notation,
+    });
+    setChessMoveText('');
+  };
+
   const handleChessResult = (result: 'white_wins' | 'draw' | 'black_wins') => {
     const map = {
-      white_wins: { label: 'WHITE WINS', desc: '1 – 0', team: 'teamA' as const },
-      draw: { label: 'DRAW', desc: '½ – ½', team: undefined },
-      black_wins: { label: 'BLACK WINS', desc: '0 – 1', team: 'teamB' as const },
+      white_wins: { label: 'WHITE WINS', desc: '1 – 0', team: 'teamA' as const, delta: { teamA: 1, teamB: 0 } },
+      draw: { label: 'DRAW', desc: '½ – ½', team: undefined, delta: { teamA: 0.5, teamB: 0.5 } },
+      black_wins: { label: 'BLACK WINS', desc: '0 – 1', team: 'teamB' as const, delta: { teamA: 0, teamB: 1 } },
     };
     const sel = map[result];
     recordEvent({
-      type: 'match_end',
+      type: 'chess_result',
       team: sel.team,
-      description: `Chess match concluded: ${sel.label} (${sel.desc})`,
-      newScore: { ...(liveMatch?.score || {}), result },
+      data: { result: result === 'white_wins' ? '1-0' : result === 'black_wins' ? '0-1' : '0.5-0.5' },
+      description: `♔ Chess match concluded: ${sel.label} (${sel.desc})`,
+      scoreDelta: sel.delta,
       fxKind: 'neutral',
       fxTitle: sel.label,
       fxSub: sel.desc,
@@ -1040,7 +1255,7 @@ const ScoringConsole: React.FC = () => {
     });
   };
 
-  /* 5. Generic Points (Carrom, LAN, etc.) */
+  /* 9. Generic Points Fallback */
   const handleSimplePoint = (team: 'teamA' | 'teamB', delta: number) => {
     const currentScore = (liveMatch?.score || { teamA: 0, teamB: 0 }) as Record<string, unknown>;
     const side = team === 'teamA' ? teamAInfo : teamBInfo;
@@ -1236,6 +1451,52 @@ const ScoringConsole: React.FC = () => {
             >
               🥤 Drinks Break
             </Pad>
+          </div>
+
+          {/* Custom Overs Quota Control */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border border-[#1A2440] bg-[#050B14] p-3 rounded-lg">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#8FA0BC] block">
+                Match Overs Quota
+              </span>
+              <span className="text-xs font-mono font-bold text-[#D9A441]">
+                {matchMaxOvers > 0 ? `${matchMaxOvers} Overs` : 'Open / Unlimited Overs'}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1">
+              {[2, 5, 10, 15, 20].map((ov) => (
+                <button
+                  key={ov}
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => handleUpdateCricketOvers(ov)}
+                  className={cn(
+                    'px-2 py-1 text-[11px] font-bold rounded border transition-colors',
+                    matchMaxOvers === ov
+                      ? 'border-[#D9A441] bg-[#D9A441]/20 text-[#D9A441] font-black'
+                      : 'border-[#1E2A45] bg-[#101A2E] text-slate-300 hover:bg-[#1E2A45]'
+                  )}
+                >
+                  {ov} ov
+                </button>
+              ))}
+              <button
+                type="button"
+                disabled={isBusy}
+                onClick={() => {
+                  const input = window.prompt('Enter custom match overs (e.g. 2, 15, 30, 50):', String(matchMaxOvers || 20));
+                  if (input) {
+                    const parsed = parseInt(input, 10);
+                    if (!isNaN(parsed) && parsed > 0) {
+                      handleUpdateCricketOvers(parsed);
+                    }
+                  }
+                }}
+                className="px-2.5 py-1 text-[11px] font-bold rounded border border-[#1E2A45] bg-[#101A2E] text-slate-300 hover:bg-[#1E2A45]"
+              >
+                ✎ Custom
+              </button>
+            </div>
           </div>
         </div>
       );
@@ -1558,23 +1819,98 @@ const ScoringConsole: React.FC = () => {
       );
     }
 
-    if (s.includes('badminton') || s.includes('table-tennis') || s.includes('hand-tennis')) {
+    if (s.includes('badminton') || s.includes('table-tennis') || s.includes('table_tennis')) {
+      const isBadminton = s.includes('badminton');
+      const emoji = isBadminton ? '🏸' : '🏓';
+      const defaultTarget = isBadminton ? 21 : 11;
+      const ls = (liveMatch?.liveState || {}) as Record<string, any>;
+      const currentSet = Number(ls.currentSet || ls.game || 1);
+      const targetPoints = Number(ls.targetPoints || defaultTarget);
+      const gamesWonA = Number(ls.gamesWon?.teamA ?? ls.setsWon?.teamA ?? 0);
+      const gamesWonB = Number(ls.gamesWon?.teamB ?? ls.setsWon?.teamB ?? 0);
+      const curPtsA = Number(ls.currentSetScore?.teamA ?? liveMatch?.score?.teamA ?? 0);
+      const curPtsB = Number(ls.currentSetScore?.teamB ?? liveMatch?.score?.teamB ?? 0);
+      const completedGames = (ls.completedSets as Array<{ set: number; teamA: number; teamB: number; winner: string }>) || [];
+
       return (
         <div className="space-y-5">
+          {/* HUD Banner */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#1E2A45] bg-[#101A2E] p-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-black text-[#D9A441] text-sm uppercase">
+                {emoji} GAME {currentSet}
+              </span>
+              <span className="text-[#8FA0BC]">· Target: {targetPoints} pts (Win by 2)</span>
+            </div>
+            <div className="flex items-center gap-3 font-mono font-bold">
+              <span className="text-blue-400">{teamAInfo.shortName}: {gamesWonA} games</span>
+              <span className="text-[#5E6E86]">—</span>
+              <span className="text-[#FF4D3D]">{teamBInfo.shortName}: {gamesWonB} games</span>
+            </div>
+          </div>
+
+          {/* Current Game Score Readout */}
+          <div className="flex items-center justify-center gap-6 rounded-xl border border-[#1A2440] bg-[#070D18] py-4">
+            <div className="text-center">
+              <span className="block text-xs font-black uppercase tracking-wider text-blue-400">{teamAInfo.shortName}</span>
+              <span className="text-4xl font-mono font-black text-white tabular-nums">{curPtsA}</span>
+            </div>
+            <span className="text-2xl font-black text-[#3B4D6B]">:</span>
+            <div className="text-center">
+              <span className="block text-xs font-black uppercase tracking-wider text-[#FF4D3D]">{teamBInfo.shortName}</span>
+              <span className="text-4xl font-mono font-black text-white tabular-nums">{curPtsB}</span>
+            </div>
+          </div>
+
+          {/* 1-Tap Scoring Pads */}
           <div>
-            <PanelLabel hint="rallies & points">Sets & Points</PanelLabel>
+            <PanelLabel hint="single tap scores point">Rally Winner (+ Point)</PanelLabel>
             <div className="grid grid-cols-2 gap-3">
-              <Pad tone="blue" size="lg" onClick={() => handleAddPoint('teamA')} disabled={isBusy}>
-                + Point <span className="opacity-70">{teamAInfo.shortName}</span>
+              <Pad
+                tone="blue"
+                size="lg"
+                onClick={() => handleRacquetPoint('teamA', emoji)}
+                disabled={isBusy || liveMatch?.status === 'completed'}
+              >
+                + POINT <span className="opacity-70">{teamAInfo.shortName}</span>
               </Pad>
-              <Pad tone="coral" size="lg" onClick={() => handleAddPoint('teamB')} disabled={isBusy}>
-                + Point <span className="opacity-70">{teamBInfo.shortName}</span>
+              <Pad
+                tone="coral"
+                size="lg"
+                onClick={() => handleRacquetPoint('teamB', emoji)}
+                disabled={isBusy || liveMatch?.status === 'completed'}
+              >
+                + POINT <span className="opacity-70">{teamBInfo.shortName}</span>
+              </Pad>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-3">
+              <Pad
+                tone="slate"
+                size="sm"
+                onClick={() => handleRacquetRemovePoint('teamA', emoji)}
+                disabled={isBusy || curPtsA === 0 || liveMatch?.status === 'completed'}
+              >
+                − Point {teamAInfo.shortName}
+              </Pad>
+              <Pad
+                tone="slate"
+                size="sm"
+                onClick={() => handleRacquetRemovePoint('teamB', emoji)}
+                disabled={isBusy || curPtsB === 0 || liveMatch?.status === 'completed'}
+              >
+                − Point {teamBInfo.shortName}
               </Pad>
             </div>
           </div>
+
+          {/* Game Controls */}
           <div className="grid grid-cols-3 gap-2">
-            <Pad tone="gold" onClick={handleEndSet} disabled={isBusy}>
-              End Set
+            <Pad
+              tone="gold"
+              onClick={() => handleRacquetEndGame(emoji)}
+              disabled={isBusy || liveMatch?.status === 'completed'}
+            >
+              🏆 End Game
             </Pad>
             <Pad
               tone="yellow"
@@ -1585,12 +1921,12 @@ const ScoringConsole: React.FC = () => {
                   type: 'timeout',
                   team: 'teamA',
                   teamName: teamAInfo.name,
-                  description: `Timeout taken by ${teamAInfo.shortName}`,
+                  description: `Timeout called by ${teamAInfo.shortName}`,
                   newScore: (liveMatch?.score || {}) as Record<string, unknown>,
                 })
               }
             >
-              TO {teamAInfo.shortName}
+              ⏱️ TO {teamAInfo.shortName}
             </Pad>
             <Pad
               tone="yellow"
@@ -1601,12 +1937,336 @@ const ScoringConsole: React.FC = () => {
                   type: 'timeout',
                   team: 'teamB',
                   teamName: teamBInfo.name,
-                  description: `Timeout taken by ${teamBInfo.shortName}`,
+                  description: `Timeout called by ${teamBInfo.shortName}`,
                   newScore: (liveMatch?.score || {}) as Record<string, unknown>,
                 })
               }
             >
-              TO {teamBInfo.shortName}
+              ⏱️ TO {teamBInfo.shortName}
+            </Pad>
+          </div>
+
+          {/* Completed Games History */}
+          {completedGames.length > 0 && (
+            <div className="rounded-lg border border-[#1E2A45] bg-[#101A2E] p-3">
+              <span className="block text-[10px] font-black uppercase tracking-wider text-[#8FA0BC] mb-2">
+                Completed Games
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {completedGames.map((g, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2.5 py-1 rounded bg-[#070D18] border border-[#1A2440] font-mono text-xs text-slate-300"
+                  >
+                    Game {g.set}: <strong className="text-white">{g.teamA}–{g.teamB}</strong>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (s.includes('counter') || s.includes('cs') || s.includes('strike')) {
+      const curRound = Number(liveMatch?.liveState?.round || (Number(liveMatch?.score?.teamA || 0) + Number(liveMatch?.score?.teamB || 0) + 1));
+      const targetRounds = Number(liveMatch?.liveState?.roundsRequiredToWin || 13);
+      const roundsA = Number(liveMatch?.score?.teamA ?? 0);
+      const roundsB = Number(liveMatch?.score?.teamB ?? 0);
+
+      return (
+        <div className="space-y-5">
+          {/* CS Match HUD */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#1E2A45] bg-[#101A2E] p-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-black text-orange-400 text-sm uppercase">
+                🔫 ROUND {curRound} / 24
+              </span>
+              <span className="text-[#8FA0BC]">· MR12 (Target: {targetRounds} Rounds)</span>
+            </div>
+            <div className="flex items-center gap-3 font-mono font-bold">
+              <span className="text-blue-400">{teamAInfo.shortName}: {roundsA}</span>
+              <span className="text-[#5E6E86]">—</span>
+              <span className="text-amber-400">{teamBInfo.shortName}: {roundsB}</span>
+            </div>
+          </div>
+
+          {/* Big Rounds Readout */}
+          <div className="flex items-center justify-center gap-6 rounded-xl border border-[#1A2440] bg-[#070D18] py-4">
+            <div className="text-center">
+              <span className="block text-xs font-black uppercase tracking-wider text-blue-400">{teamAInfo.shortName} (CT)</span>
+              <span className="text-4xl font-mono font-black text-white tabular-nums">{roundsA}</span>
+            </div>
+            <span className="text-2xl font-black text-[#3B4D6B]">:</span>
+            <div className="text-center">
+              <span className="block text-xs font-black uppercase tracking-wider text-amber-400">{teamBInfo.shortName} (T)</span>
+              <span className="text-4xl font-mono font-black text-white tabular-nums">{roundsB}</span>
+            </div>
+          </div>
+
+          {/* 1-Tap Round Wins */}
+          <div>
+            <PanelLabel hint="single tap awards round win">Round Winner</PanelLabel>
+            <div className="grid grid-cols-2 gap-3">
+              <Pad
+                tone="blue"
+                size="lg"
+                onClick={() => handleCSRoundWin('teamA')}
+                disabled={isBusy || liveMatch?.status === 'completed'}
+              >
+                🔫 + ROUND <span className="opacity-70">{teamAInfo.shortName}</span>
+              </Pad>
+              <Pad
+                tone="coral"
+                size="lg"
+                onClick={() => handleCSRoundWin('teamB')}
+                disabled={isBusy || liveMatch?.status === 'completed'}
+              >
+                🔫 + ROUND <span className="opacity-70">{teamBInfo.shortName}</span>
+              </Pad>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-3">
+              <Pad
+                tone="slate"
+                size="sm"
+                onClick={() => handleCSRemoveRound('teamA')}
+                disabled={isBusy || roundsA === 0 || liveMatch?.status === 'completed'}
+              >
+                − Round {teamAInfo.shortName}
+              </Pad>
+              <Pad
+                tone="slate"
+                size="sm"
+                onClick={() => handleCSRemoveRound('teamB')}
+                disabled={isBusy || roundsB === 0 || liveMatch?.status === 'completed'}
+              >
+                − Round {teamBInfo.shortName}
+              </Pad>
+            </div>
+          </div>
+
+          {/* Side Swap & Tactical Timeouts */}
+          <div className="grid grid-cols-3 gap-2">
+            <Pad
+              tone="gold"
+              onClick={handleCSSwapSides}
+              disabled={isBusy || liveMatch?.status === 'completed'}
+            >
+              ⇄ Swap Sides
+            </Pad>
+            <Pad
+              tone="yellow"
+              size="sm"
+              disabled={isBusy}
+              onClick={() =>
+                recordEvent({
+                  type: 'timeout',
+                  team: 'teamA',
+                  teamName: teamAInfo.name,
+                  description: `Tac Timeout called by ${teamAInfo.shortName}`,
+                  newScore: (liveMatch?.score || {}) as Record<string, unknown>,
+                })
+              }
+            >
+              ⏱️ TO {teamAInfo.shortName}
+            </Pad>
+            <Pad
+              tone="yellow"
+              size="sm"
+              disabled={isBusy}
+              onClick={() =>
+                recordEvent({
+                  type: 'timeout',
+                  team: 'teamB',
+                  teamName: teamBInfo.name,
+                  description: `Tac Timeout called by ${teamBInfo.shortName}`,
+                  newScore: (liveMatch?.score || {}) as Record<string, unknown>,
+                })
+              }
+            >
+              ⏱️ TO {teamBInfo.shortName}
+            </Pad>
+          </div>
+        </div>
+      );
+    }
+
+    if (s.includes('carrom')) {
+      const curBoard = Number(liveMatch?.liveState?.board || 1);
+      const targetPoints = Number(liveMatch?.liveState?.targetPoints || 25);
+      const scoreA = Number(liveMatch?.score?.teamA ?? 0);
+      const scoreB = Number(liveMatch?.score?.teamB ?? 0);
+
+      return (
+        <div className="space-y-5">
+          {/* Carrom HUD */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#1E2A45] bg-[#101A2E] p-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-black text-amber-400 text-sm uppercase">
+                🎯 BOARD {curBoard}
+              </span>
+              <span className="text-[#8FA0BC]">· First to {targetPoints} points wins</span>
+            </div>
+            <div className="flex items-center gap-3 font-mono font-bold">
+              <span className="text-blue-400">{teamAInfo.shortName}: {scoreA} pts</span>
+              <span className="text-[#5E6E86]">—</span>
+              <span className="text-[#FF4D3D]">{teamBInfo.shortName}: {scoreB} pts</span>
+            </div>
+          </div>
+
+          {/* Team A Scoring Controls */}
+          <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase text-blue-400">{teamAInfo.name} ({scoreA} pts)</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <Pad tone="blue" size="md" onClick={() => handleCarromScore('teamA', 1)} disabled={isBusy}>
+                ⚪ +1 Coin
+              </Pad>
+              <Pad tone="gold" size="md" onClick={() => handleCarromScore('teamA', 3)} disabled={isBusy}>
+                👑 +3 Queen
+              </Pad>
+              <Pad tone="slate" size="md" onClick={() => handleCarromScore('teamA', -1)} disabled={isBusy || scoreA === 0}>
+                ❌ −1 Foul
+              </Pad>
+            </div>
+          </div>
+
+          {/* Team B Scoring Controls */}
+          <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-3.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase text-rose-400">{teamBInfo.name} ({scoreB} pts)</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <Pad tone="coral" size="md" onClick={() => handleCarromScore('teamB', 1)} disabled={isBusy}>
+                ⚪ +1 Coin
+              </Pad>
+              <Pad tone="gold" size="md" onClick={() => handleCarromScore('teamB', 3)} disabled={isBusy}>
+                👑 +3 Queen
+              </Pad>
+              <Pad tone="slate" size="md" onClick={() => handleCarromScore('teamB', -1)} disabled={isBusy || scoreB === 0}>
+                ❌ −1 Foul
+              </Pad>
+            </div>
+          </div>
+
+          {/* Board Progression */}
+          <Pad tone="gold" onClick={handleCarromEndBoard} disabled={isBusy || liveMatch?.status === 'completed'}>
+            🎯 Complete Board {curBoard}
+          </Pad>
+        </div>
+      );
+    }
+
+    if (s.includes('smash') || s.includes('kart')) {
+      const targetPoints = Number(liveMatch?.liveState?.targetPoints ?? liveMatch?.liveState?.targetKills ?? 20);
+      const scoreA = Number(liveMatch?.score?.teamA ?? 0);
+      const scoreB = Number(liveMatch?.score?.teamB ?? 0);
+      const mvp = (liveMatch?.liveState as any)?.mvp;
+
+      return (
+        <div className="space-y-5">
+          {/* Smash Karts Arena HUD */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#1E2A45] bg-[#101A2E] p-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-black text-cyan-400 text-sm uppercase">
+                🏎️ ARENA BATTLE
+              </span>
+              <span className="text-[#8FA0BC]">· Target: {targetPoints} Elims to Win</span>
+            </div>
+            {mvp && (
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 font-bold text-[11px]">
+                ⭐ MVP: {mvp}
+              </span>
+            )}
+          </div>
+
+          {/* Optional Player Attribution */}
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <label className="text-[10px] font-bold uppercase text-blue-400 block mb-1">
+                {teamAInfo.shortName} Player (Optional for MVP)
+              </label>
+              <input
+                type="text"
+                value={kartPlayerA}
+                onChange={(e) => setKartPlayerA(e.target.value)}
+                placeholder="Player tag..."
+                className="w-full rounded border border-[#1E2A45] bg-[#101A2E] px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase text-rose-400 block mb-1">
+                {teamBInfo.shortName} Player (Optional for MVP)
+              </label>
+              <input
+                type="text"
+                value={kartPlayerB}
+                onChange={(e) => setKartPlayerB(e.target.value)}
+                placeholder="Player tag..."
+                className="w-full rounded border border-[#1E2A45] bg-[#101A2E] px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:border-rose-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* 1-Tap Elimination Scoring */}
+          <div>
+            <PanelLabel hint="tap to record elimination">Eliminations (+1 Point)</PanelLabel>
+            <div className="grid grid-cols-2 gap-3">
+              <Pad
+                tone="blue"
+                size="lg"
+                onClick={() => handleSmashKartsPoint('teamA', 1)}
+                disabled={isBusy || liveMatch?.status === 'completed'}
+              >
+                🏎️ + ELIM <span className="opacity-70">{teamAInfo.shortName}</span>
+              </Pad>
+              <Pad
+                tone="coral"
+                size="lg"
+                onClick={() => handleSmashKartsPoint('teamB', 1)}
+                disabled={isBusy || liveMatch?.status === 'completed'}
+              >
+                🏎️ + ELIM <span className="opacity-70">{teamBInfo.shortName}</span>
+              </Pad>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-3">
+              <Pad
+                tone="slate"
+                size="sm"
+                onClick={() => handleSmashKartsPoint('teamA', -1)}
+                disabled={isBusy || scoreA === 0 || liveMatch?.status === 'completed'}
+              >
+                − Point {teamAInfo.shortName}
+              </Pad>
+              <Pad
+                tone="slate"
+                size="sm"
+                onClick={() => handleSmashKartsPoint('teamB', -1)}
+                disabled={isBusy || scoreB === 0 || liveMatch?.status === 'completed'}
+              >
+                − Point {teamBInfo.shortName}
+              </Pad>
+            </div>
+          </div>
+
+          {/* Quick Victory Confirmation */}
+          <div className="grid grid-cols-2 gap-2">
+            <Pad
+              tone="gold"
+              size="sm"
+              onClick={() => handleSmashKartsDeclareWinner('teamA')}
+              disabled={isBusy || liveMatch?.status === 'completed'}
+            >
+              🏆 {teamAInfo.shortName} Wins
+            </Pad>
+            <Pad
+              tone="gold"
+              size="sm"
+              onClick={() => handleSmashKartsDeclareWinner('teamB')}
+              disabled={isBusy || liveMatch?.status === 'completed'}
+            >
+              🏆 {teamBInfo.shortName} Wins
             </Pad>
           </div>
         </div>
@@ -1614,25 +2274,78 @@ const ScoringConsole: React.FC = () => {
     }
 
     if (s.includes('chess')) {
+      const curMove = Number(liveMatch?.liveState?.move || 1);
+      const lastMove = (liveMatch?.liveState as any)?.lastMove;
+
       return (
         <div className="space-y-5">
-          <PanelLabel hint="board adjudication">Result</PanelLabel>
-          <div className="grid grid-cols-3 gap-3">
-            <Pad size="lg" onClick={() => handleChessResult('white_wins')} style={{ background: '#EEF2F7', color: '#080A0F' }}>
-              ♔ White wins
-            </Pad>
-            <Pad tone="slate" size="lg" onClick={() => handleChessResult('draw')}>
-              Draw ½–½
-            </Pad>
-            <Pad size="lg" onClick={() => handleChessResult('black_wins')} style={{ background: '#111827', color: '#EEF2F7' }}>
-              ♚ Black wins
-            </Pad>
+          {/* Chess HUD */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#1E2A45] bg-[#101A2E] p-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-black text-[#D9A441] text-sm uppercase">
+                ♔ MOVE {curMove}
+              </span>
+              {lastMove && <span className="text-[#8FA0BC]">· Last: {lastMove}</span>}
+            </div>
+            <div className="flex items-center gap-3 font-mono font-bold">
+              <span className="text-white">White: {teamAInfo.name}</span>
+              <span className="text-[#5E6E86]">vs</span>
+              <span className="text-slate-400">Black: {teamBInfo.name}</span>
+            </div>
+          </div>
+
+          {/* Fast Result 1-Tap Adjudication */}
+          <div>
+            <PanelLabel hint="tap to complete match with official score">Adjudication / Result</PanelLabel>
+            <div className="grid grid-cols-3 gap-3">
+              <Pad
+                size="lg"
+                onClick={() => handleChessResult('white_wins')}
+                disabled={isBusy || liveMatch?.status === 'completed'}
+                style={{ background: '#EEF2F7', color: '#080A0F' }}
+              >
+                ♔ White wins (1–0)
+              </Pad>
+              <Pad
+                tone="slate"
+                size="lg"
+                onClick={() => handleChessResult('draw')}
+                disabled={isBusy || liveMatch?.status === 'completed'}
+              >
+                ½ Draw (½–½)
+              </Pad>
+              <Pad
+                size="lg"
+                onClick={() => handleChessResult('black_wins')}
+                disabled={isBusy || liveMatch?.status === 'completed'}
+                style={{ background: '#111827', color: '#EEF2F7', border: '1px solid #374151' }}
+              >
+                ♚ Black wins (0–1)
+              </Pad>
+            </div>
+          </div>
+
+          {/* Optional Quick Move Tracker */}
+          <div className="rounded-xl border border-[#1A2440] bg-[#070D18] p-3 space-y-2">
+            <PanelLabel hint="optional move notation tracker">Move Telemetry</PanelLabel>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={chessMoveText}
+                onChange={(e) => setChessMoveText(e.target.value)}
+                placeholder={`e.g. e4, Nf3, O-O (Move ${curMove})`}
+                className="flex-1 rounded border border-[#1E2A45] bg-[#101A2E] px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
+              />
+              <Pad tone="gold" size="sm" onClick={handleChessMove} disabled={isBusy}>
+                ♟ Record Move
+              </Pad>
+            </div>
           </div>
         </div>
       );
     }
 
-    // Generic points (Carrom, LAN, etc.)
+    // Generic points (Hand Tennis, etc.)
     return (
       <div className="space-y-5">
         <PanelLabel hint="points tally">Score</PanelLabel>
@@ -1659,10 +2372,23 @@ const ScoringConsole: React.FC = () => {
   /* ------------------------------------------------------------- RENDER */
 
   const isLive = isMatchLive && !isPaused;
-  const isCricket = (liveMatch?.sportId || '').toLowerCase().includes('cricket');
+  const sId = (liveMatch?.sportId || '').toLowerCase();
+  const isCricket = sId.includes('cricket');
+  const isSetSport = sId.includes('volleyball') || sId.includes('badminton') || sId.includes('table-tennis') || sId.includes('table_tennis');
 
-  const primaryScore = isCricket ? currentCricket.runs : Number(liveMatch?.score?.teamA ?? 0);
-  const secondaryScore = isCricket ? currentCricket.wickets : Number(liveMatch?.score?.teamB ?? 0);
+  const matchLive = (liveMatch?.liveState || {}) as Record<string, any>;
+
+  const primaryScore = isCricket
+    ? currentCricket.runs
+    : isSetSport && matchLive.currentSetScore?.teamA !== undefined
+      ? Number(matchLive.currentSetScore.teamA)
+      : Number(liveMatch?.score?.teamA ?? 0);
+
+  const secondaryScore = isCricket
+    ? currentCricket.wickets
+    : isSetSport && matchLive.currentSetScore?.teamB !== undefined
+      ? Number(matchLive.currentSetScore.teamB)
+      : Number(liveMatch?.score?.teamB ?? 0);
 
   const statusLabel = isPaused
     ? 'PAUSED'
@@ -1778,62 +2504,87 @@ const ScoringConsole: React.FC = () => {
               )}
             </div>
           </div>
+        </header>
 
-          {/* Score Plate */}
-          <div className="relative overflow-hidden border-t border-[#1A2440] bg-[#0B1220]">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0"
-              style={{
-                background:
-                  'radial-gradient(ellipse 70% 140% at 50% 130%, rgba(18,100,255,0.22) 0%, rgba(11,18,32,0) 65%)',
-              }}
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
-              style={{ background: 'linear-gradient(90deg, transparent, #D9A441, transparent)' }}
-            />
+        {/* Score Plate / Point Card (Scrollable with page) */}
+        <div className="relative overflow-hidden border-b border-[#1A2440] bg-[#0B1220]">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse 70% 140% at 50% 130%, rgba(18,100,255,0.22) 0%, rgba(11,18,32,0) 65%)',
+            }}
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
+            style={{ background: 'linear-gradient(90deg, transparent, #D9A441, transparent)' }}
+          />
 
-            <div className="relative grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-5 sm:px-8 sm:py-6">
-              <TeamPlate team={teamAInfo} side="left" />
+          <div className="relative grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-5 sm:px-8 sm:py-6">
+            <TeamPlate team={teamAInfo} side="left" />
 
-              <div className="flex flex-col items-center">
-                <div className="flex items-center justify-center gap-3 text-[clamp(2.2rem,6vw,4.2rem)] font-black leading-none tracking-tight">
-                  {isCricket ? (
-                    <span className="text-[#EEF2F7]">
-                      <RollingScore value={`${primaryScore}/${secondaryScore}`} />
-                    </span>
-                  ) : (
-                    <>
-                      <span className="text-[#EEF2F7]">
-                        <RollingScore value={primaryScore} />
-                      </span>
-                      <span className="text-[0.5em] text-[#2C3A58]">–</span>
-                      <span className="text-[#EEF2F7]">
-                        <RollingScore value={secondaryScore} />
-                      </span>
-                    </>
-                  )}
-                </div>
-
-                <div className="mt-3 flex items-center gap-3">
-                  <span className="border border-[#1E2A45] bg-[#101A2E] px-3 py-1 font-mono text-[15px] font-bold tabular-nums text-[#8FA0BC] flex items-center gap-1.5">
-                    <FiClock className="h-3.5 w-3.5 text-amber-400" />
-                    {elapsedTime}
+            <div className="flex flex-col items-center">
+              <div className="flex items-center justify-center gap-3 text-[clamp(2.2rem,6vw,4.2rem)] font-black leading-none tracking-tight">
+                {isCricket ? (
+                  <span className="text-[#EEF2F7]">
+                    <RollingScore value={`${primaryScore}/${secondaryScore}`} />
                   </span>
-                  {isCricket && (
-                    <span className="border border-[#1E2A45] bg-[#101A2E] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-[#8FA0BC]">
-                      {currentCricket.overs}.{currentCricket.balls} OV · RR {runRate}
+                ) : (
+                  <>
+                    <span className="text-[#EEF2F7]">
+                      <RollingScore value={primaryScore} />
                     </span>
-                  )}
-                </div>
+                    <span className="text-[0.5em] text-[#2C3A58]">–</span>
+                    <span className="text-[#EEF2F7]">
+                      <RollingScore value={secondaryScore} />
+                    </span>
+                  </>
+                )}
               </div>
 
-              <TeamPlate team={teamBInfo} side="right" />
+              <div className="mt-3 flex items-center gap-3">
+                <span className="border border-[#1E2A45] bg-[#101A2E] px-3 py-1 font-mono text-[15px] font-bold tabular-nums text-[#8FA0BC] flex items-center gap-1.5">
+                  <FiClock className="h-3.5 w-3.5 text-amber-400" />
+                  {elapsedTime}
+                </span>
+                {isCricket && (
+                  <span className="border border-[#1E2A45] bg-[#101A2E] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-[#8FA0BC]">
+                    {currentCricket.overs}.{currentCricket.balls}{matchMaxOvers > 0 ? ` / ${matchMaxOvers}` : ''} OV · RR {runRate}
+                  </span>
+                )}
+                {isSetSport && (
+                  <span className="border border-[#1E2A45] bg-[#101A2E] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-[#D9A441]">
+                    {sId.includes('volleyball') ? 'SET' : 'GAME'} {String(matchLive.currentSet || matchLive.game || 1)} · {teamAInfo.shortName} {String(matchLive.gamesWon?.teamA ?? matchLive.setsWon?.teamA ?? 0)}–{String(matchLive.gamesWon?.teamB ?? matchLive.setsWon?.teamB ?? 0)} {teamBInfo.shortName}
+                  </span>
+                )}
+                {(sId.includes('counter') || sId.includes('cs') || sId.includes('strike')) && (
+                  <span className="border border-[#1E2A45] bg-[#101A2E] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-orange-400">
+                    ROUND {String(matchLive.round || (Number(liveMatch?.score?.teamA || 0) + Number(liveMatch?.score?.teamB || 0) + 1))} / 24 (MR12)
+                  </span>
+                )}
+                {sId.includes('carrom') && (
+                  <span className="border border-[#1E2A45] bg-[#101A2E] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-amber-400">
+                    BOARD {String(matchLive.board || 1)} · TARGET 25
+                  </span>
+                )}
+                {(sId.includes('smash') || sId.includes('kart')) && (
+                  <span className="border border-[#1E2A45] bg-[#101A2E] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-cyan-400">
+                    ARENA BATTLE{matchLive.mvp ? ` · ${String(matchLive.mvp)}` : ''}
+                  </span>
+                )}
+                {sId.includes('chess') && (
+                  <span className="border border-[#1E2A45] bg-[#101A2E] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-yellow-400">
+                    MOVE {String(matchLive.move || 1)}
+                  </span>
+                )}
+              </div>
             </div>
+
+            <TeamPlate team={teamBInfo} side="right" />
           </div>
-        </header>
+        </div>
 
         {/* Workspace */}
         <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_420px] lg:p-6">

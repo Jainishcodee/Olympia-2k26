@@ -73,6 +73,10 @@ export interface SportPositioning {
   round?: number;
   /** Carrom / Racing */
   lap?: number;
+  board?: number;
+  /** Chess */
+  move?: number;
+  [key: string]: unknown;
 }
 
 export interface MatchEvent {

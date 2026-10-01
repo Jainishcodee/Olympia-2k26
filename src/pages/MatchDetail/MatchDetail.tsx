@@ -47,7 +47,11 @@ export const MatchDetail: React.FC = () => {
 
   const isFootball = (liveMatch?.sportId || '').toLowerCase().includes('football') || (liveMatch?.sportId || '').toLowerCase().includes('soccer');
   const isCricket = (liveMatch?.sportId || '').toLowerCase().includes('cricket');
-  const isVolleyball = (liveMatch?.sportId || '').toLowerCase().includes('volleyball');
+  const sId = (liveMatch?.sportId || '').toLowerCase();
+  const isVolleyball = sId.includes('volleyball');
+  const isBadminton = sId.includes('badminton');
+  const isTableTennis = sId.includes('table-tennis') || sId.includes('table_tennis');
+  const isRacquet = isBadminton || isTableTennis;
   const isHalfTime = Boolean((liveMatch?.liveState as Record<string, unknown>)?.isHalfTime);
 
   // Spectator experience: Live moments triggered automatically by canonical events
@@ -59,22 +63,42 @@ export const MatchDetail: React.FC = () => {
     if (latest.sequence && latest.sequence > seenSeqRef.current) {
       const isInitial = seenSeqRef.current === 0;
       seenSeqRef.current = latest.sequence;
-      if (!isInitial && isVolleyball) {
-        if (latest.type === 'point') {
+      if (!isInitial) {
+        if (latest.type === 'goal') {
+          const sideName = latest.teamName || (latest.team === 'teamB' ? teamBName : teamAName);
+          setMoment({
+            icon: '⚽',
+            title: 'GOAL!',
+            subtitle: `${sideName} scored!`,
+          });
+        } else if (latest.type === 'point' || latest.type === 'carrom_coin') {
           const sideName = latest.teamName || (latest.team === 'teamB' ? teamBName : teamAName);
           const scoreTxt = latest.snapshot?.score ? `${latest.snapshot.score.teamA ?? 0} — ${latest.snapshot.score.teamB ?? 0}` : '';
+          const sEmoji = sId.includes('badminton') ? '🏸' : sId.includes('table-tennis') ? '🏓' : sId.includes('smash') ? '🏎️' : sId.includes('carrom') ? '⚪' : '🏐';
           setMoment({
-            icon: '🏐',
-            title: 'POINT!',
+            icon: sEmoji,
+            title: sId.includes('smash') ? 'ELIMINATION!' : 'POINT!',
             subtitle: `${sideName}${scoreTxt ? ` · ${scoreTxt}` : ''}`,
           });
-        } else if (latest.type === 'set_completed' || latest.type === 'set_won') {
+        } else if (latest.type === 'queen_pocketed' || latest.type === 'queen') {
           setMoment({
-            icon: '🏆',
-            title: 'SET COMPLETE',
+            icon: '👑',
+            title: 'QUEEN COVERED!',
             subtitle: latest.description,
           });
-        } else if (latest.type === 'match_end' || liveMatch?.status === 'completed') {
+        } else if (latest.type === 'round_win' || latest.type === 'round_won') {
+          setMoment({
+            icon: '🔫',
+            title: 'ROUND WON!',
+            subtitle: latest.description,
+          });
+        } else if (latest.type === 'set_completed' || latest.type === 'set_won' || latest.type === 'game_won') {
+          setMoment({
+            icon: '🏆',
+            title: isRacquet ? 'GAME WON!' : 'SET COMPLETE',
+            subtitle: latest.description,
+          });
+        } else if (latest.type === 'chess_result' || latest.type === 'match_end' || liveMatch?.status === 'completed') {
           setMoment({
             icon: '🏆',
             title: 'MATCH COMPLETE',
@@ -83,7 +107,7 @@ export const MatchDetail: React.FC = () => {
         }
       }
     }
-  }, [liveEvents, isVolleyball, teamAName, teamBName, liveMatch?.status, liveMatch?.liveState]);
+  }, [liveEvents, sId, isRacquet, teamAName, teamBName, liveMatch?.status, liveMatch?.liveState]);
 
   useEffect(() => {
     if (moment) {
@@ -122,7 +146,7 @@ export const MatchDetail: React.FC = () => {
     ? deriveFootballStats(liveEvents) 
     : isCricket 
       ? deriveCricketStats(liveEvents, liveMatch || undefined)
-      : isVolleyball
+      : isVolleyball || isRacquet
         ? deriveVolleyballStats(liveEvents, liveMatch || undefined)
         : [];
 

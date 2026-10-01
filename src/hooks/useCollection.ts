@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   collection,
+  collectionGroup,
   doc,
   onSnapshot,
   query,
@@ -127,6 +128,86 @@ export function useCollection<T extends { id: string }>(
         },
         (err) => {
           console.error(`[firestore] ${name}:`, err);
+          setError(describeError(err));
+          setIsReady(true);
+        },
+      );
+    } catch (err) {
+      setError(describeError(err));
+      setIsReady(true);
+    }
+
+    return () => unsubscribe?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, signature, enabled, sortBy, direction, max]);
+
+  return { data: rows, isLoading: !isReady && enabled, error, isReady };
+}
+
+export function useCollectionGroup<T extends { id: string }>(
+  name: string,
+  options: CollectionOptions = {},
+): QueryState<T> {
+  const {
+    constraints = [],
+    sortBy,
+    direction = 'asc',
+    max,
+    enabled = true,
+  } = options;
+
+  const [rows, setRows] = useState<T[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
+
+  const signature = useMemo(
+    () => JSON.stringify(constraints.map((c) => String(c))),
+    [constraints],
+  );
+
+  useEffect(() => {
+    if (!enabled) return undefined;
+
+    if (!isFirebaseConfigured || !db) {
+      setError(
+        'Firebase is not configured. Set VITE_FIREBASE_* in .env and restart the dev server.',
+      );
+      setIsReady(true);
+      return undefined;
+    }
+
+    let unsubscribe: Unsubscribe | undefined;
+    try {
+      unsubscribe = onSnapshot(
+        query(collectionGroup(db, name), ...constraints),
+        (snapshot) => {
+          let next = snapshot.docs.map(
+            (d) => ({
+              id: d.id,
+              matchId: d.data().matchId || d.ref.parent?.parent?.id,
+              ...d.data(),
+            }) as T,
+          );
+          if (sortBy) {
+            next = [...next].sort((a, b) => {
+              const left = (a as Record<string, unknown>)[sortBy];
+              const right = (b as Record<string, unknown>)[sortBy];
+              if (left === right) return 0;
+              if (left === undefined || left === null) return 1;
+              if (right === undefined || right === null) return -1;
+              const result =
+                typeof left === 'number' && typeof right === 'number'
+                  ? left - right
+                  : String(left).localeCompare(String(right));
+              return direction === 'desc' ? -result : result;
+            });
+          }
+          setRows(max ? next.slice(0, max) : next);
+          setError(null);
+          setIsReady(true);
+        },
+        (err) => {
+          console.error(`[firestore collectionGroup] ${name}:`, err);
           setError(describeError(err));
           setIsReady(true);
         },

@@ -113,6 +113,10 @@ export interface SystemSettings {
   autoAdvanceOvers: boolean;
   /** Require a confirmation before ending a match */
   confirmBeforeEndMatch: boolean;
+  /** Custom default overs quota for cricket matches (e.g. 2, 15, 20) */
+  cricketMaxOvers?: number;
+  /** Full custom formula rules for cricket */
+  cricketConfig?: Record<string, unknown>;
 
   /* --- Public interaction defaults ------------------------------------- */
   defaultReactionsEnabled: boolean;
@@ -164,6 +168,7 @@ export const DEFAULT_SETTINGS: SystemSettings = {
   allowOperatorUndo: true,
   autoAdvanceOvers: true,
   confirmBeforeEndMatch: true,
+  cricketMaxOvers: 20,
 
   defaultReactionsEnabled: true,
   defaultRatingsEnabled: true,

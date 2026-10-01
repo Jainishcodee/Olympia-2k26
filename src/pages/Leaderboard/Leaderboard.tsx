@@ -15,10 +15,10 @@ import { ChampionsArchive } from './components/ChampionsArchive';
 import { EntityProfileModal } from './components/EntityProfileModal';
 import { LeaderboardCTA } from './components/LeaderboardCTA';
 import type { LeaderboardItem } from './components/PodiumHero';
-import type { Player, Team, Sport, SystemSettings } from '@/types';
+import type { Player, Team, Sport, Match, SystemSettings } from '@/types';
 import { cn } from '@/utils/cn';
 
-const TEAM_SPORTS = ['football', 'cricket', 'volleyball', 'hand-tennis', 'lan-games'];
+const TEAM_SPORTS = ['football', 'cricket', 'volleyball', 'hand-tennis', 'counter-strike', 'smash-karts', 'lan-games'];
 
 export const Leaderboard: React.FC = () => {
   const { theme } = useTheme();
@@ -32,6 +32,7 @@ export const Leaderboard: React.FC = () => {
   const playersCol = useCollection<Player>('players');
   const teamsCol = useCollection<Team>('teams');
   const sportsCol = useCollection<Sport>('sports');
+  const matchesCol = useCollection<Match>('matches');
   const leaderboardsCol = useCollection<any>('leaderboards');
   const settingsDoc = useDoc<SystemSettings>('settings', 'default');
 
@@ -110,7 +111,92 @@ export const Leaderboard: React.FC = () => {
     return playersCol.data.filter((p) => p.sportId === selectedSport);
   }, [playersCol.data, selectedSport]);
 
-  // Sync: prioritize explicit 'leaderboards' collection documents if published
+  // Authoritative standings derived directly from completed matches
+  const derivedMatchesStandings = useMemo(() => {
+    const sLower = selectedSport.toLowerCase();
+    const completedMatches = matchesCol.data.filter((m) => {
+      if (m.status !== 'completed') return false;
+      const mSport = (m.sportId || '').toLowerCase();
+      if (sLower === 'lan-games' || sLower === 'counter-strike') {
+        return mSport.includes('strike') || mSport.includes('cs') || mSport.includes('lan');
+      }
+      return mSport === sLower || mSport.includes(sLower) || sLower.includes(mSport);
+    });
+
+    const isFootball = sLower.includes('football') || sLower.includes('soccer');
+
+    const entityStats = new Map<string, {
+      played: number;
+      wins: number;
+      draws: number;
+      losses: number;
+      points: number;
+      goalsFor: number;
+      goalsAgainst: number;
+    }>();
+
+    const getStats = (id: string) => {
+      if (!entityStats.has(id)) {
+        entityStats.set(id, {
+          played: 0,
+          wins: 0,
+          draws: 0,
+          losses: 0,
+          points: 0,
+          goalsFor: 0,
+          goalsAgainst: 0,
+        });
+      }
+      return entityStats.get(id)!;
+    };
+
+    for (const match of completedMatches) {
+      const idA = match.teamAId || match.participantA?.id || '';
+      const idB = match.teamBId || match.participantB?.id || '';
+      if (!idA || !idB) continue;
+
+      const stA = getStats(idA);
+      const stB = getStats(idB);
+
+      stA.played += 1;
+      stB.played += 1;
+
+      const scA = Number(match.score?.teamA ?? 0);
+      const scB = Number(match.score?.teamB ?? 0);
+
+      stA.goalsFor += scA;
+      stA.goalsAgainst += scB;
+      stB.goalsFor += scB;
+      stB.goalsAgainst += scA;
+
+      let winner: 'A' | 'B' | 'draw' = 'draw';
+      const liveWinner = (match.liveState as any)?.winnerTeam;
+      if (liveWinner === 'teamA') winner = 'A';
+      else if (liveWinner === 'teamB') winner = 'B';
+      else if (liveWinner === 'draw' || liveWinner === 'tie') winner = 'draw';
+      else if (scA > scB) winner = 'A';
+      else if (scB > scA) winner = 'B';
+
+      if (winner === 'A') {
+        stA.wins += 1;
+        stB.losses += 1;
+        stA.points += isFootball ? 3 : 2;
+      } else if (winner === 'B') {
+        stB.wins += 1;
+        stA.losses += 1;
+        stB.points += isFootball ? 3 : 2;
+      } else {
+        stA.draws += 1;
+        stB.draws += 1;
+        stA.points += 1;
+        stB.points += 1;
+      }
+    }
+
+    return entityStats;
+  }, [matchesCol.data, selectedSport]);
+
+  // Sync: prioritize explicit 'leaderboards' collection documents if published, else completed match standings
   const effectiveTeams = useMemo(() => {
     if (customLeaderboardDoc && customLeaderboardDoc.category === 'team' && customLeaderboardDoc.entries?.length) {
       return customLeaderboardDoc.entries.map((entry: any) => ({
@@ -129,8 +215,37 @@ export const Leaderboard: React.FC = () => {
         active: true,
       } as unknown as Team));
     }
-    return activeTeams;
-  }, [customLeaderboardDoc, activeTeams, selectedSport]);
+
+    return activeTeams.map((t) => {
+      const derived = derivedMatchesStandings.get(t.id);
+      const pts = derived ? derived.points : 0;
+      const w = derived ? derived.wins : 0;
+      const d = derived ? derived.draws : 0;
+      const l = derived ? derived.losses : 0;
+      const gf = derived ? derived.goalsFor : 0;
+      const ga = derived ? derived.goalsAgainst : 0;
+      const gd = gf - ga;
+
+      return {
+        ...t,
+        points: pts,
+        wins: w,
+        draws: d,
+        losses: l,
+        goalsFor: gf,
+        goalsAgainst: ga,
+        goalDifference: gd,
+      };
+    }).sort((a, b) => {
+      const pB = (b as any).points ?? 0;
+      const pA = (a as any).points ?? 0;
+      if (pB !== pA) return pB - pA;
+      const gdB = (b as any).goalDifference ?? 0;
+      const gdA = (a as any).goalDifference ?? 0;
+      if (gdB !== gdA) return gdB - gdA;
+      return ((b as any).wins ?? 0) - ((a as any).wins ?? 0);
+    });
+  }, [customLeaderboardDoc, activeTeams, derivedMatchesStandings, selectedSport]);
 
   const effectivePlayers = useMemo(() => {
     if (customLeaderboardDoc && customLeaderboardDoc.category === 'individual' && customLeaderboardDoc.entries?.length) {
@@ -156,8 +271,30 @@ export const Leaderboard: React.FC = () => {
         },
       } as unknown as Player));
     }
-    return activePlayers;
-  }, [customLeaderboardDoc, activePlayers, selectedSport]);
+
+    return activePlayers.map((p) => {
+      const derived = derivedMatchesStandings.get(p.id);
+      const pts = derived ? derived.points : 0;
+      const w = derived ? derived.wins : 0;
+      const l = derived ? derived.losses : 0;
+
+      return {
+        ...p,
+        stats: {
+          ...(p.stats || {}),
+          points: pts,
+          wins: w,
+          losses: l,
+          matchesPlayed: w + l,
+        },
+      };
+    }).sort((a, b) => {
+      const pB = (b.stats as any)?.points ?? 0;
+      const pA = (a.stats as any)?.points ?? 0;
+      if (pB !== pA) return pB - pA;
+      return ((b.stats as any)?.wins ?? 0) - ((a.stats as any)?.wins ?? 0);
+    });
+  }, [customLeaderboardDoc, activePlayers, derivedMatchesStandings, selectedSport]);
 
   const totalEntries = isTeamSport ? effectiveTeams.length : effectivePlayers.length;
 

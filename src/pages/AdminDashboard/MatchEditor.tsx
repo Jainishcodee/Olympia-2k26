@@ -50,6 +50,7 @@ interface MatchForm {
   featured: boolean;
   featuredPriority: string;
   isHidden: boolean;
+  maxOvers?: string;
 }
 
 const EMPTY: MatchForm = {
@@ -57,6 +58,7 @@ const EMPTY: MatchForm = {
   tournamentId: '',
   round: '',
   matchNumber: '1',
+  maxOvers: '20',
   teamAId: '',
   teamBId: '',
   date: '',
@@ -132,6 +134,7 @@ const MatchEditor: React.FC = () => {
       featured: match.featured ?? false,
       featuredPriority: String(match.featuredPriority ?? 1),
       isHidden: match.isHidden ?? false,
+      maxOvers: String(match.maxOvers ?? match.liveState?.maxOvers ?? 20),
     });
   }, [existing.data]);
 
@@ -211,6 +214,8 @@ const MatchEditor: React.FC = () => {
     setSaving(true);
     try {
       const scheduled = new Date(`${form.date}T${form.time || '00:00'}`);
+      const isCricketMatch = sport?.slug === 'cricket' || form.sportId.toLowerCase().includes('cricket');
+      const parsedOvers = Number(form.maxOvers) || 20;
 
       if (isEdit && matchId) {
         // METADATA-ONLY update — never touch live scoring state
@@ -233,6 +238,7 @@ const MatchEditor: React.FC = () => {
           allowRatings: form.allowRatings,
           allowReviews: form.allowReviews,
           isHidden: Boolean(form.isHidden),
+          ...(isCricketMatch ? { maxOvers: parsedOvers, 'liveState.maxOvers': parsedOvers } : {}),
         };
         await updateMatch(matchId, metadataPayload as Partial<Match>);
         await log('MATCH_UPDATED', 'match', matchId, { metadata: { step: 'editor' } });
@@ -256,7 +262,8 @@ const MatchEditor: React.FC = () => {
           endedAt: null,
           status: 'scheduled' as MatchStatus,
           score: { teamA: 0, teamB: 0, details: {} },
-          liveState: {},
+          liveState: isCricketMatch ? { maxOvers: parsedOvers } : {},
+          ...(isCricketMatch ? { maxOvers: parsedOvers } : {}),
           displayMode: form.displayMode,
           featured: form.featured,
           featuredPriority: Number(form.featuredPriority) || 0,
@@ -394,6 +401,17 @@ const MatchEditor: React.FC = () => {
                 onChange={(e) => set('matchNumber', e.target.value)}
                 helpText="Unique within the tournament."
               />
+              {(sport?.slug === 'cricket' || form.sportId.toLowerCase().includes('cricket')) && (
+                <FormField
+                  label="Match Overs Quota"
+                  type="number"
+                  min={1}
+                  max={200}
+                  value={form.maxOvers || '20'}
+                  onChange={(e) => set('maxOvers', e.target.value)}
+                  helpText="Configured overs for this cricket match (e.g. 2, 15, 20, or custom)."
+                />
+              )}
             </FormGrid>
           </FormSection>
         )}

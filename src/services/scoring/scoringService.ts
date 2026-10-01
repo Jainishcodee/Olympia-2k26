@@ -30,43 +30,59 @@ export const formatSportPositioning = (
 ): string => {
   if (!pos) return clock || 'LIVE';
   const s = (sportId || '').toLowerCase();
+  const p = pos as Record<string, any>;
 
   if (s.includes('cricket')) {
-    const inn = pos.innings ? `Inn ${pos.innings} · ` : '';
-    const ov = pos.over !== undefined && pos.ball !== undefined ? `Over ${pos.over}.${pos.ball}` : '';
+    const inn = p.innings ? `Inn ${p.innings} · ` : '';
+    const ov = p.over !== undefined && p.ball !== undefined ? `Over ${p.over}.${p.ball}` : '';
     return `${inn}${ov}` || 'Cricket';
   }
 
   if (s.includes('football') || s.includes('soccer')) {
-    const period = pos.period === 1 ? '1H' : pos.period === 2 ? '2H' : pos.period ? `P${pos.period}` : '';
-    let time = clock || (pos.matchSecond !== undefined ? `${Math.floor(pos.matchSecond / 60)}'` : '');
-    if (pos.addedTime !== undefined && pos.addedTime > 0) {
-      const baseMin = pos.period === 1 ? 45 : 90;
-      time = `${baseMin}+${pos.addedTime}'`;
+    const period = p.period === 1 ? '1H' : p.period === 2 ? '2H' : p.period ? `P${p.period}` : '';
+    let time = clock || (p.matchSecond !== undefined ? `${Math.floor(p.matchSecond / 60)}'` : '');
+    if (p.addedTime !== undefined && p.addedTime > 0) {
+      const baseMin = p.period === 1 ? 45 : 90;
+      time = `${baseMin}+${p.addedTime}'`;
     }
     return [period, time].filter(Boolean).join(' ') || 'Match play';
   }
 
   if (s.includes('volleyball') || s.includes('tennis')) {
-    const set = pos.set !== undefined ? `Set ${pos.set}` : '';
-    const rally = pos.rally !== undefined ? `Rally ${pos.rally}` : '';
+    const set = p.set !== undefined ? `Set ${p.set}` : '';
+    const rally = p.rally !== undefined ? `Rally ${p.rally}` : '';
     return [set, rally].filter(Boolean).join(' · ') || 'Set play';
   }
 
   if (s.includes('badminton') || s.includes('table-tennis') || s.includes('table_tennis')) {
-    const game = pos.game !== undefined ? `Game ${pos.game}` : '';
-    const rally = pos.rally !== undefined ? `Rally ${pos.rally}` : '';
+    const game = p.game !== undefined ? `Game ${p.game}` : p.set !== undefined ? `Game ${p.set}` : '';
+    const rally = p.rally !== undefined ? `Rally ${p.rally}` : '';
     return [game, rally].filter(Boolean).join(' · ') || 'Game play';
   }
 
   if (s.includes('strike') || s.includes('cs') || s.includes('lan')) {
-    const map = pos.map !== undefined ? `Map ${pos.map}` : '';
-    const round = pos.round !== undefined ? `Round ${pos.round}` : '';
+    const map = p.map !== undefined ? `Map ${p.map}` : '';
+    const round = p.round !== undefined ? `Round ${p.round}` : '';
     return [map, round].filter(Boolean).join(' · ') || 'Round play';
   }
 
-  if (pos.lap !== undefined) {
-    return `Lap ${pos.lap}`;
+  if (s.includes('carrom') || s.includes('racing')) {
+    const board = p.board !== undefined ? `Board ${p.board}` : '';
+    const lap = p.lap !== undefined ? `Lap ${p.lap}` : '';
+    return board || lap || 'Board play';
+  }
+
+  if (s.includes('chess')) {
+    const move = p.move !== undefined ? `Move ${p.move}` : '';
+    return move || 'Move play';
+  }
+
+  if (s.includes('smash') || s.includes('kart')) {
+    return 'Arena Battle';
+  }
+
+  if (p.lap !== undefined) {
+    return `Lap ${p.lap}`;
   }
 
   return clock || 'LIVE';
@@ -150,8 +166,14 @@ export const inferScoreDelta = (
     if (isA) return { teamA: -1 };
     if (isB) return { teamB: -1 };
   }
-  if (t === 'point') {
+  // Net / Racquet / Combat / Board Points
+  if (t === 'point' || t === 'carrom_coin' || t === 'coin') {
     const pts = Number(data?.points ?? 1);
+    if (isA) return { teamA: pts };
+    if (isB) return { teamB: pts };
+  }
+  if (t === 'queen' || t === 'queen_pocketed') {
+    const pts = Number(data?.points ?? 3);
     if (isA) return { teamA: pts };
     if (isB) return { teamB: pts };
   }
@@ -191,10 +213,23 @@ export const inferScoreDelta = (
     return { [teamKey]: runs, runs, extras: runs, balls: 1 };
   }
 
-  if (t === 'set_won' || t === 'set_completed' || t === 'game_won' || t === 'round_won' || t === 'map_won') {
+  // Counter-Strike / Sets / Games
+  if (t === 'round_win' || t === 'round_won' || t === 'set_won' || t === 'set_completed' || t === 'game_won' || t === 'map_won') {
     if (isA) return { teamA: 1 };
     if (isB) return { teamB: 1 };
     return { details: {} };
+  }
+  if (t === 'round_removed') {
+    if (isA) return { teamA: -1 };
+    if (isB) return { teamB: -1 };
+  }
+
+  // Chess Results
+  if (t === 'chess_result') {
+    const res = data?.result;
+    if (res === '1-0' || isA) return { teamA: 1, teamB: 0 };
+    if (res === '0-1' || isB) return { teamA: 0, teamB: 1 };
+    return { teamA: 0.5, teamB: 0.5 };
   }
   return null;
 };
@@ -235,6 +270,13 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
       input.type === 'drinks_break' ||
       input.type === 'set_started' ||
       input.type === 'set_completed' ||
+      input.type === 'game_started' ||
+      input.type === 'game_won' ||
+      input.type === 'round_win' ||
+      input.type === 'board_completed' ||
+      input.type === 'lap_complete' ||
+      input.type === 'chess_result' ||
+      input.type === 'chess_move' ||
       input.type === 'match_end' ||
       input.type === 'full_time';
     if (isTerminalStatus && !input.data?.isPrivilegedCorrection && !isLifecycleAction) {
@@ -246,8 +288,16 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
 
     const currentScore = (matchData?.score || { teamA: 0, teamB: 0, details: {} }) as unknown as Record<string, unknown>;
     const currentLiveState = (matchData?.liveState || {}) as unknown as Record<string, unknown>;
-    const isCricket = (input.sportId || '').toLowerCase().includes('cricket');
-    const isVolleyball = (input.sportId || '').toLowerCase().includes('volleyball');
+    const sId = (input.sportId || '').toLowerCase();
+    const isCricket = sId.includes('cricket');
+    const isVolleyball = sId.includes('volleyball');
+    const isBadminton = sId.includes('badminton');
+    const isTableTennis = sId.includes('table-tennis') || sId.includes('table_tennis');
+    const isChess = sId.includes('chess');
+    const isCarrom = sId.includes('carrom');
+    const isCounterStrike = sId.includes('counter') || sId.includes('cs') || sId.includes('strike');
+    const isSmashKarts = sId.includes('smash') || sId.includes('kart');
+    const isSetBasedSport = isVolleyball || isBadminton || isTableTennis;
 
     // Derive score and liveState against the FRESH transaction snapshot
     let computedScore: Record<string, unknown>;
@@ -256,7 +306,7 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
       ...(input.newLiveState || {}),
     };
 
-    // Automatic lifecycle mappings for periods, cricket innings, and volleyball sets
+    // Automatic lifecycle mappings for periods, cricket innings, and multi-sport sets/rounds
     if (input.type === 'match_start') {
       if (isCricket) {
         computedLiveState.innings = 1;
@@ -269,28 +319,56 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
         computedLiveState.totalRuns = 0;
         computedLiveState.extras = 0;
         computedLiveState.inningsStatus = 'in_progress';
-      } else if (isVolleyball) {
-        const bestOf = Number(input.data?.bestOf ?? currentLiveState.bestOf ?? matchData.liveState?.bestOf ?? 3);
-        const setsReq = Number(input.data?.setsRequiredToWin ?? currentLiveState.setsRequiredToWin ?? matchData.liveState?.setsRequiredToWin ?? Math.ceil(bestOf / 2));
+        const customMaxOvers = Number(
+          input.data?.maxOvers ??
+          input.data?.oversQuota ??
+          currentLiveState.maxOvers ??
+          matchData?.liveState?.maxOvers ??
+          (matchData as any)?.maxOvers ??
+          20
+        );
+        computedLiveState.maxOvers = customMaxOvers;
+        computedLiveState.ballsRemaining = customMaxOvers * 6;
+      } else if (isSetBasedSport) {
+        const defaultTarget = isBadminton ? 21 : isTableTennis ? 11 : 25;
+        const bestOf = Number(input.data?.bestOf ?? currentLiveState.bestOf ?? matchData?.liveState?.bestOf ?? 3);
+        const setsReq = Number(input.data?.setsRequiredToWin ?? currentLiveState.setsRequiredToWin ?? matchData?.liveState?.setsRequiredToWin ?? Math.ceil(bestOf / 2));
         computedLiveState.bestOf = bestOf;
         computedLiveState.setsRequiredToWin = setsReq;
         computedLiveState.currentSet = 1;
+        computedLiveState.game = 1;
         computedLiveState.currentSetScore = { teamA: 0, teamB: 0 };
         computedLiveState.setsWon = { teamA: 0, teamB: 0 };
-        computedLiveState.targetPoints = 25;
+        computedLiveState.gamesWon = { teamA: 0, teamB: 0 };
+        computedLiveState.targetPoints = Number(input.data?.targetPoints ?? defaultTarget);
         computedLiveState.winByTwo = true;
         computedLiveState.setStatus = 'in_progress';
         computedLiveState.completedSets = [];
+      } else if (isCounterStrike) {
+        computedLiveState.round = 1;
+        computedLiveState.roundsRequiredToWin = Number(input.data?.roundsRequiredToWin ?? 13);
+        computedLiveState.maxRounds = 24;
+      } else if (isCarrom) {
+        computedLiveState.board = 1;
+        computedLiveState.targetPoints = Number(input.data?.targetPoints ?? 25);
+      } else if (isSmashKarts) {
+        computedLiveState.mode = 'Team Battle';
+        computedLiveState.targetPoints = Number(input.data?.targetPoints ?? input.data?.targetKills ?? 20);
+        computedLiveState.playerKills = {};
+      } else if (isChess) {
+        computedLiveState.move = 1;
       } else {
         computedLiveState.period = 1;
         computedLiveState.isHalfTime = false;
       }
-    } else if (input.type === 'set_started' && isVolleyball) {
+    } else if (input.type === 'set_started' && isSetBasedSport) {
       const setNum = Number(input.data?.set ?? input.positioning?.set ?? (Number(currentLiveState.currentSet || 1)));
       const bestOf = Number(computedLiveState.bestOf ?? currentLiveState.bestOf ?? 3);
       const isDeciding = setNum >= bestOf;
-      const targetPts = Number(input.data?.targetPoints ?? (isDeciding ? (computedLiveState.decidingSetTarget ?? 15) : 25));
+      const defaultTarget = isBadminton ? 21 : isTableTennis ? 11 : 25;
+      const targetPts = Number(input.data?.targetPoints ?? (isDeciding ? (computedLiveState.decidingSetTarget ?? (isVolleyball ? 15 : defaultTarget)) : defaultTarget));
       computedLiveState.currentSet = setNum;
+      computedLiveState.game = setNum;
       computedLiveState.targetPoints = targetPts;
       computedLiveState.setStatus = 'in_progress';
       computedLiveState.currentSetScore = { teamA: 0, teamB: 0 };
@@ -317,6 +395,15 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
       computedLiveState.totalRuns = 0;
       computedLiveState.extras = 0;
       computedLiveState.extrasDetail = { wides: 0, noBalls: 0, byes: 0, legByes: 0 };
+      const configuredMaxOvers = Number(
+        input.data?.maxOvers ??
+        currentLiveState.maxOvers ??
+        matchData?.liveState?.maxOvers ??
+        (matchData as any)?.maxOvers ??
+        20
+      );
+      computedLiveState.maxOvers = configuredMaxOvers;
+      computedLiveState.ballsRemaining = configuredMaxOvers * 6;
     } else if (input.type === 'innings_end' || input.type === 'innings_completed') {
       computedLiveState.inningsStatus = 'completed';
       if (!computedLiveState.firstInnings) {
@@ -338,6 +425,13 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
     } else if (input.type === 'over_completed') {
       computedLiveState.ball = 0;
       computedLiveState.legalBalls = 0;
+    } else if (input.type === 'board_completed' && isCarrom) {
+      computedLiveState.board = Number(computedLiveState.board || 1) + 1;
+    } else if (input.type === 'chess_move' && isChess) {
+      computedLiveState.move = Number(computedLiveState.move || 1) + 1;
+      if (input.data?.pgnMove) {
+        computedLiveState.lastMove = input.data.pgnMove;
+      }
     }
 
     if (input.deriveState) {
@@ -574,13 +668,14 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
           }
         }
 
-        // Volleyball Set Progression, Win-by-Two & Match Completion
-        if (isVolleyball) {
+        // Multi-Sport Set/Game Progression, Win-by-Two & Match Completion (Volleyball, Badminton, Table Tennis)
+        if (isSetBasedSport) {
+          const defaultTarget = isBadminton ? 21 : isTableTennis ? 11 : 25;
           const bestOf = Number(computedLiveState.bestOf ?? currentLiveState.bestOf ?? 3);
           const setsRequiredToWin = Number(computedLiveState.setsRequiredToWin ?? currentLiveState.setsRequiredToWin ?? Math.ceil(bestOf / 2));
-          let currentSet = Number(computedLiveState.currentSet ?? currentLiveState.set ?? 1);
+          let currentSet = Number(computedLiveState.currentSet ?? computedLiveState.game ?? currentLiveState.set ?? 1);
           const winByTwo = computedLiveState.winByTwo !== false && currentLiveState.winByTwo !== false;
-          let targetPoints = Number(computedLiveState.targetPoints ?? currentLiveState.targetPoints ?? (currentSet >= bestOf ? (computedLiveState.decidingSetTarget ?? 15) : 25));
+          let targetPoints = Number(computedLiveState.targetPoints ?? currentLiveState.targetPoints ?? (isVolleyball && currentSet >= bestOf ? (computedLiveState.decidingSetTarget ?? 15) : defaultTarget));
 
           const compLive = computedLiveState as Record<string, any>;
           const curLive = currentLiveState as Record<string, any>;
@@ -633,6 +728,7 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
               currentSetsWon[scoringTeam] += 1;
 
               const matchWon = currentSetsWon[scoringTeam] >= setsRequiredToWin;
+              const term = isBadminton || isTableTennis ? 'Game' : 'Set';
               if (matchWon) {
                 computedLiveState.setStatus = 'completed';
                 computedLiveState.matchStatus = 'completed';
@@ -641,10 +737,12 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
                 const winnerLabel = scoringTeam === 'teamA'
                   ? (matchData.participantA?.name || 'Team A')
                   : (matchData.participantB?.name || 'Team B');
-                computedLiveState.resultText = `${winnerLabel} won ${currentSetsWon.teamA}–${currentSetsWon.teamB}`;
+                computedLiveState.resultText = `${winnerLabel} won ${currentSetsWon.teamA}–${currentSetsWon.teamB} (${term}s)`;
                 computedLiveState.currentSet = currentSet;
+                computedLiveState.game = currentSet;
                 computedLiveState.currentSetScore = { ...currentSetPts };
                 computedLiveState.setsWon = { ...currentSetsWon };
+                computedLiveState.gamesWon = { ...currentSetsWon };
                 computedLiveState.completedSets = updatedCompletedSets;
                 computedLiveState.targetPoints = targetPoints;
                 computedLiveState.winByTwo = winByTwo;
@@ -653,16 +751,19 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
                 updatedTeamB = currentSetPts.teamB;
                 updatedDetails.sets = updatedCompletedSets;
                 updatedDetails.setsWon = currentSetsWon;
+                updatedDetails.gamesWon = currentSetsWon;
                 updatedDetails.currentSet = currentSet;
               } else {
                 // Set transition to next set
                 const nextSet = currentSet + 1;
                 const isDeciding = nextSet >= bestOf;
-                const nextTargetPoints = isDeciding ? Number(computedLiveState.decidingSetTarget ?? 15) : 25;
+                const nextTargetPoints = isDeciding ? Number(computedLiveState.decidingSetTarget ?? (isVolleyball ? 15 : defaultTarget)) : defaultTarget;
 
                 computedLiveState.currentSet = nextSet;
+                computedLiveState.game = nextSet;
                 computedLiveState.currentSetScore = { teamA: 0, teamB: 0 };
                 computedLiveState.setsWon = { ...currentSetsWon };
+                computedLiveState.gamesWon = { ...currentSetsWon };
                 computedLiveState.targetPoints = nextTargetPoints;
                 computedLiveState.winByTwo = winByTwo;
                 computedLiveState.setStatus = 'in_progress';
@@ -673,13 +774,16 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
                 updatedTeamB = 0;
                 updatedDetails.sets = [...updatedCompletedSets, { set: nextSet, teamA: 0, teamB: 0 }];
                 updatedDetails.setsWon = currentSetsWon;
+                updatedDetails.gamesWon = currentSetsWon;
                 updatedDetails.currentSet = nextSet;
               }
             } else {
               // Set continues
               computedLiveState.currentSet = currentSet;
+              computedLiveState.game = currentSet;
               computedLiveState.currentSetScore = { ...currentSetPts };
               computedLiveState.setsWon = { ...currentSetsWon };
+              computedLiveState.gamesWon = { ...currentSetsWon };
               computedLiveState.targetPoints = targetPoints;
               computedLiveState.winByTwo = winByTwo;
               computedLiveState.setStatus = 'in_progress';
@@ -689,6 +793,7 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
               updatedTeamB = currentSetPts.teamB;
               updatedDetails.sets = [...existingCompletedSets, { set: currentSet, teamA: currentSetPts.teamA, teamB: currentSetPts.teamB }];
               updatedDetails.setsWon = currentSetsWon;
+              updatedDetails.gamesWon = currentSetsWon;
               updatedDetails.currentSet = currentSet;
             }
           } else if (input.type === 'point_removed') {
@@ -763,6 +868,106 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
               updatedDetails.sets = [...updatedCompletedSets, { set: nextSet, teamA: 0, teamB: 0 }];
               updatedDetails.setsWon = currentSetsWon;
               updatedDetails.currentSet = nextSet;
+            }
+          }
+        }
+
+        // Multi-Sport Completion & Derived Metrics
+        if (isCounterStrike) {
+          const roundsReq = Number(computedLiveState.roundsRequiredToWin ?? currentLiveState.roundsRequiredToWin ?? 13);
+          const roundNum = updatedTeamA + updatedTeamB + 1;
+          computedLiveState.round = roundNum;
+          if (updatedTeamA >= roundsReq) {
+            computedLiveState.matchStatus = 'completed';
+            computedLiveState.winnerTeam = 'teamA';
+            computedLiveState.winnerTeamId = matchData.teamAId;
+            const winnerLabel = matchData.participantA?.name || 'Team A';
+            computedLiveState.resultText = `${winnerLabel} won ${updatedTeamA}–${updatedTeamB}`;
+          } else if (updatedTeamB >= roundsReq) {
+            computedLiveState.matchStatus = 'completed';
+            computedLiveState.winnerTeam = 'teamB';
+            computedLiveState.winnerTeamId = matchData.teamBId;
+            const winnerLabel = matchData.participantB?.name || 'Team B';
+            computedLiveState.resultText = `${winnerLabel} won ${updatedTeamB}–${updatedTeamA}`;
+          }
+        }
+
+        if (isCarrom) {
+          const targetPts = Number(computedLiveState.targetPoints ?? currentLiveState.targetPoints ?? 25);
+          if (updatedTeamA >= targetPts) {
+            computedLiveState.matchStatus = 'completed';
+            computedLiveState.winnerTeam = 'teamA';
+            computedLiveState.winnerTeamId = matchData.teamAId;
+            const winnerLabel = matchData.participantA?.name || 'Team A';
+            computedLiveState.resultText = `${winnerLabel} won ${updatedTeamA}–${updatedTeamB}`;
+          } else if (updatedTeamB >= targetPts) {
+            computedLiveState.matchStatus = 'completed';
+            computedLiveState.winnerTeam = 'teamB';
+            computedLiveState.winnerTeamId = matchData.teamBId;
+            const winnerLabel = matchData.participantB?.name || 'Team B';
+            computedLiveState.resultText = `${winnerLabel} won ${updatedTeamB}–${updatedTeamA}`;
+          }
+        }
+
+        if (isSmashKarts) {
+          if (input.playerName || input.data?.player) {
+            const scorerName = String(input.playerName || input.data?.player);
+            const playerKills = { ...(((computedLiveState.playerKills as Record<string, number>) || {})) };
+            playerKills[scorerName] = (playerKills[scorerName] || 0) + 1;
+            computedLiveState.playerKills = playerKills;
+
+            let topPlayer = scorerName;
+            let maxPoints = 0;
+            for (const [pName, pPts] of Object.entries(playerKills)) {
+              if (pPts > maxPoints) {
+                maxPoints = pPts;
+                topPlayer = pName;
+              }
+            }
+            computedLiveState.mvp = `${topPlayer} (${maxPoints} pts)`;
+          }
+
+          const targetPts = Number(computedLiveState.targetPoints ?? computedLiveState.targetKills ?? currentLiveState.targetPoints ?? 20);
+          if (updatedTeamA >= targetPts) {
+            computedLiveState.matchStatus = 'completed';
+            computedLiveState.winnerTeam = 'teamA';
+            computedLiveState.winnerTeamId = matchData.teamAId;
+            const winnerLabel = matchData.participantA?.name || 'Team A';
+            const mvpSuffix = computedLiveState.mvp ? ` · MVP: ${computedLiveState.mvp}` : '';
+            computedLiveState.resultText = `${winnerLabel} won the game (${updatedTeamA}–${updatedTeamB})${mvpSuffix}`;
+          } else if (updatedTeamB >= targetPts) {
+            computedLiveState.matchStatus = 'completed';
+            computedLiveState.winnerTeam = 'teamB';
+            computedLiveState.winnerTeamId = matchData.teamBId;
+            const winnerLabel = matchData.participantB?.name || 'Team B';
+            const mvpSuffix = computedLiveState.mvp ? ` · MVP: ${computedLiveState.mvp}` : '';
+            computedLiveState.resultText = `${winnerLabel} won the game (${updatedTeamB}–${updatedTeamA})${mvpSuffix}`;
+          }
+        }
+
+        if (isChess) {
+          if (input.type === 'chess_result' || input.type === 'match_end') {
+            const res = String(input.data?.result || (input.team === 'teamA' ? '1-0' : input.team === 'teamB' ? '0-1' : '0.5-0.5'));
+            computedLiveState.matchStatus = 'completed';
+            if (res === '1-0' || input.team === 'teamA') {
+              updatedTeamA = 1;
+              updatedTeamB = 0;
+              computedLiveState.winnerTeam = 'teamA';
+              computedLiveState.winnerTeamId = matchData.teamAId;
+              const winnerLabel = matchData.participantA?.name || 'White';
+              computedLiveState.resultText = `${winnerLabel} won (1–0)`;
+            } else if (res === '0-1' || input.team === 'teamB') {
+              updatedTeamA = 0;
+              updatedTeamB = 1;
+              computedLiveState.winnerTeam = 'teamB';
+              computedLiveState.winnerTeamId = matchData.teamBId;
+              const winnerLabel = matchData.participantB?.name || 'Black';
+              computedLiveState.resultText = `${winnerLabel} won (0–1)`;
+            } else {
+              updatedTeamA = 0.5;
+              updatedTeamB = 0.5;
+              computedLiveState.winnerTeam = 'tie';
+              computedLiveState.resultText = 'Draw (½–½)';
             }
           }
         }
@@ -873,15 +1078,16 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
       targetStatus = 'paused';
     } else if (input.type === 'match_end' || input.type === 'full_time' || computedLiveState.resultText) {
       targetStatus = 'completed';
-      if (isVolleyball && !computedLiveState.resultText) {
-        const setsA = Number((computedLiveState as any).setsWon?.teamA ?? (computedScore?.details as any)?.setsWon?.teamA ?? 0);
-        const setsB = Number((computedLiveState as any).setsWon?.teamB ?? (computedScore?.details as any)?.setsWon?.teamB ?? 0);
+      if ((isVolleyball || isBadminton || isTableTennis) && !computedLiveState.resultText) {
+        const setsA = Number((computedLiveState as any).setsWon?.teamA ?? (computedLiveState as any).gamesWon?.teamA ?? (computedScore?.details as any)?.setsWon?.teamA ?? 0);
+        const setsB = Number((computedLiveState as any).setsWon?.teamB ?? (computedLiveState as any).gamesWon?.teamB ?? (computedScore?.details as any)?.setsWon?.teamB ?? 0);
         const winner = setsA > setsB ? 'teamA' : setsB > setsA ? 'teamB' : undefined;
+        const term = isBadminton || isTableTennis ? 'Games' : 'Sets';
         if (winner) {
           const winnerLabel = winner === 'teamA' ? (matchData.participantA?.name || 'Team A') : (matchData.participantB?.name || 'Team B');
           computedLiveState.winnerTeam = winner;
           computedLiveState.winnerTeamId = winner === 'teamA' ? matchData.teamAId : matchData.teamBId;
-          computedLiveState.resultText = `${winnerLabel} won ${setsA}–${setsB}`;
+          computedLiveState.resultText = `${winnerLabel} won ${setsA}–${setsB} (${term})`;
         } else {
           computedLiveState.resultText = `Match tied ${setsA}–${setsB}`;
         }

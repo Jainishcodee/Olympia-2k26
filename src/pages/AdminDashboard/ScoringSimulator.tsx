@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   calculateCricketNRR,
   calculateFootballNetScore,
@@ -12,13 +12,23 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';
 import { HiOutlineCalculator, HiOutlineSparkles, HiOutlineCheckCircle, HiOutlineArrowPath } from 'react-icons/hi2';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/config/firebase';
+import { saveSettings } from '@/services/settings/settingsService';
+import { DEFAULT_SETTINGS } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
+import { useAuditLog } from '@/hooks/useAuditLog';
 
 type SportTab = 'cricket' | 'football' | 'volleyball' | 'hand-tennis';
 
 export const ScoringSimulator: React.FC = () => {
   const { theme } = useTheme();
   const isDay = theme === 'day';
+  const { user } = useAuth();
+  const { log } = useAuditLog();
   const [activeTab, setActiveTab] = useState<SportTab>('cricket');
+  const [isCustomOvers, setIsCustomOvers] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Formula Configuration State (Admin custom rules)
   const [cricketConfig, setCricketConfig] = useState({
@@ -147,11 +157,98 @@ export const ScoringSimulator: React.FC = () => {
   const volleyballResult = calculateVolleyballNetScore(volleyballInput);
   const racketResult = calculateRacketNetScore(racketInput);
 
-  const handleSaveFormula = () => {
-    toast.success('Scoring formula rules saved & applied to tournament database!', {
-      icon: '⚙️',
-      duration: 3000,
-    });
+  // Load saved cricket formula / custom overs from Firestore on mount
+  useEffect(() => {
+    const loadSavedFormula = async () => {
+      try {
+        if (!db) return;
+        const snap = await getDoc(doc(db, 'settings', 'cricket_formula'));
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.oversQuota && Number(data.oversQuota) > 0) {
+            const quota = Number(data.oversQuota);
+            setCricketConfig(prev => ({
+              ...prev,
+              oversQuota: quota,
+              winPoints: Number(data.winPoints ?? prev.winPoints),
+              tiePoints: Number(data.tiePoints ?? prev.tiePoints),
+              lossPoints: Number(data.lossPoints ?? prev.lossPoints),
+              allOutFullQuota: data.allOutFullQuota ?? prev.allOutFullQuota,
+              allowTenRunBall: data.allowTenRunBall ?? prev.allowTenRunBall,
+            }));
+            setCricketInput(prev => ({
+              ...prev,
+              maxOversQuota: quota,
+              teamOvers: Math.min(prev.teamOvers, quota),
+              opponentOvers: Math.min(prev.opponentOvers, quota),
+            }));
+            if (![20, 50, 10, 6].includes(quota)) {
+              setIsCustomOvers(true);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load saved cricket formula:', err);
+      }
+    };
+    loadSavedFormula();
+  }, []);
+
+  const handleSaveFormula = async () => {
+    setIsSaving(true);
+    try {
+      // 1. Persist to system settings singleton (settings/default)
+      await saveSettings({
+        ...DEFAULT_SETTINGS,
+        cricketMaxOvers: cricketConfig.oversQuota,
+        cricketConfig: {
+          oversQuota: cricketConfig.oversQuota,
+          winPoints: cricketConfig.winPoints,
+          tiePoints: cricketConfig.tiePoints,
+          lossPoints: cricketConfig.lossPoints,
+          allOutFullQuota: cricketConfig.allOutFullQuota,
+          allowTenRunBall: cricketConfig.allowTenRunBall,
+        },
+      } as any);
+
+      // 2. Also persist to dedicated settings/cricket_formula doc
+      if (db) {
+        await setDoc(
+          doc(db, 'settings', 'cricket_formula'),
+          {
+            oversQuota: cricketConfig.oversQuota,
+            winPoints: cricketConfig.winPoints,
+            tiePoints: cricketConfig.tiePoints,
+            lossPoints: cricketConfig.lossPoints,
+            allOutFullQuota: cricketConfig.allOutFullQuota,
+            allowTenRunBall: cricketConfig.allowTenRunBall,
+            updatedAt: serverTimestamp(),
+            updatedBy: user?.uid || 'admin',
+          },
+          { merge: true },
+        );
+      }
+
+      await log('SETTINGS_UPDATED', 'settings', 'cricket_formula', {
+        metadata: {
+          cricketMaxOvers: cricketConfig.oversQuota,
+          cricketConfig,
+        },
+      });
+
+      toast.success(
+        `Scoring formula saved to Firestore! Cricket match format set to ${cricketConfig.oversQuota} Overs.`,
+        {
+          icon: '⚙️',
+          duration: 3500,
+        },
+      );
+    } catch (err) {
+      console.error('Failed to save formula to Firestore:', err);
+      toast.error('Failed to save formula to Firestore');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Preset match scenarios to verify logic
@@ -247,10 +344,11 @@ export const ScoringSimulator: React.FC = () => {
         <div className="flex gap-2">
           <button
             onClick={handleSaveFormula}
-            className="px-5 py-2.5 bg-[#D9A441] hover:bg-[#c49235] text-slate-950 font-bold rounded-xl shadow-sm text-sm flex items-center gap-2 transition-all active:scale-95"
+            disabled={isSaving}
+            className="px-5 py-2.5 bg-[#D9A441] hover:bg-[#c49235] text-slate-950 font-bold rounded-xl shadow-sm text-sm flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <HiOutlineCheckCircle className="w-5 h-5" />
-            Save & Publish Formula
+            {isSaving ? 'Saving to Firestore…' : 'Save & Publish Formula'}
           </button>
         </div>
       </div>
@@ -323,11 +421,17 @@ export const ScoringSimulator: React.FC = () => {
                 Match Format (Overs Quota)
               </label>
               <select
-                value={cricketConfig.oversQuota}
+                value={isCustomOvers || ![20, 50, 15, 10, 6, 2].includes(cricketConfig.oversQuota) ? 'custom' : cricketConfig.oversQuota}
                 onChange={e => {
-                  const quota = Number(e.target.value);
-                  setCricketConfig(c => ({ ...c, oversQuota: quota }));
-                  setCricketInput(i => ({ ...i, maxOversQuota: quota, teamOvers: Math.min(i.teamOvers, quota) }));
+                  const val = e.target.value;
+                  if (val === 'custom') {
+                    setIsCustomOvers(true);
+                  } else {
+                    setIsCustomOvers(false);
+                    const quota = Number(val);
+                    setCricketConfig(c => ({ ...c, oversQuota: quota }));
+                    setCricketInput(i => ({ ...i, maxOversQuota: quota, teamOvers: Math.min(i.teamOvers, quota), opponentOvers: Math.min(i.opponentOvers, quota) }));
+                  }
                 }}
                 className={cn(
                   'w-full mt-1 px-3 py-2 border rounded-lg font-medium text-sm focus:ring-2 focus:ring-amber-400 outline-none',
@@ -336,9 +440,79 @@ export const ScoringSimulator: React.FC = () => {
               >
                 <option value={20} className={isDay ? '' : 'bg-slate-900 text-white'}>T20 Format (20 Overs)</option>
                 <option value={50} className={isDay ? '' : 'bg-slate-900 text-white'}>One Day Format (50 Overs)</option>
+                <option value={15} className={isDay ? '' : 'bg-slate-900 text-white'}>15 Overs Match</option>
                 <option value={10} className={isDay ? '' : 'bg-slate-900 text-white'}>T10 Quick Format (10 Overs)</option>
                 <option value={6} className={isDay ? '' : 'bg-slate-900 text-white'}>Super Six (6 Overs)</option>
+                <option value={2} className={isDay ? '' : 'bg-slate-900 text-white'}>Super Over / Blitz (2 Overs)</option>
+                <option value="custom" className={isDay ? '' : 'bg-slate-900 text-white'}>⚡ Custom Overs (Manual Choice)</option>
               </select>
+
+              {(isCustomOvers || ![20, 50, 10, 6].includes(cricketConfig.oversQuota)) && (
+                <div className="mt-2.5 p-3 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className={cn('text-xs font-bold uppercase tracking-wider', isDay ? 'text-amber-900' : 'text-amber-300')}>
+                      Custom Match Overs Quota
+                    </label>
+                    <span className="text-[10px] font-mono text-amber-400 bg-amber-400/20 px-2 py-0.5 rounded font-bold">
+                      {cricketConfig.oversQuota} OV
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      max={200}
+                      value={cricketConfig.oversQuota}
+                      onChange={e => {
+                        const val = Math.max(1, Math.min(200, Number(e.target.value) || 1));
+                        setCricketConfig(c => ({ ...c, oversQuota: val }));
+                        setCricketInput(i => ({
+                          ...i,
+                          maxOversQuota: val,
+                          teamOvers: Math.min(i.teamOvers, val),
+                          opponentOvers: Math.min(i.opponentOvers, val),
+                        }));
+                      }}
+                      className={cn(
+                        'w-28 px-3 py-1.5 border rounded-lg font-mono font-bold text-base focus:ring-2 focus:ring-amber-400 outline-none',
+                        isDay ? 'bg-white border-slate-300 text-slate-900' : 'bg-slate-950 border-white/20 text-white'
+                      )}
+                    />
+                    <span className={cn('text-xs font-semibold', isDay ? 'text-slate-600' : 'text-slate-300')}>
+                      overs per innings (e.g. 2, 15, or as many as you want)
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className={cn('text-[10px] uppercase font-bold mr-1', isDay ? 'text-slate-500' : 'text-slate-400')}>Quick:</span>
+                    {[2, 5, 8, 12, 15, 20, 25, 50].map(ov => (
+                      <button
+                        key={ov}
+                        type="button"
+                        onClick={() => {
+                          setIsCustomOvers(true);
+                          setCricketConfig(c => ({ ...c, oversQuota: ov }));
+                          setCricketInput(i => ({
+                            ...i,
+                            maxOversQuota: ov,
+                            teamOvers: Math.min(i.teamOvers, ov),
+                            opponentOvers: Math.min(i.opponentOvers, ov),
+                          }));
+                        }}
+                        className={cn(
+                          'px-2 py-0.5 rounded text-[11px] font-bold border transition-all',
+                          cricketConfig.oversQuota === ov
+                            ? 'bg-amber-400 text-slate-950 border-amber-400 font-black shadow-sm'
+                            : isDay
+                            ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
+                        )}
+                      >
+                        {ov} ov
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-2">
