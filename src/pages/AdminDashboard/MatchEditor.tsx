@@ -211,40 +211,62 @@ const MatchEditor: React.FC = () => {
     setSaving(true);
     try {
       const scheduled = new Date(`${form.date}T${form.time || '00:00'}`);
-      const payload = {
-        sportId: form.sportId,
-        tournamentId: form.tournamentId,
-        matchNumber: Number(form.matchNumber),
-        round: form.round,
-        teamAId: form.teamAId,
-        teamBId: form.teamBId,
-        participantA: participantLabel(form.teamAId, teamBased ? 'team' : 'player'),
-        participantB: participantLabel(form.teamBId, teamBased ? 'team' : 'player'),
-        venueId: form.venueId,
-        scheduledAt: Timestamp.fromDate(scheduled),
-        startedAt: null,
-        pausedAt: null,
-        endedAt: null,
-        status: 'scheduled' as MatchStatus,
-        score: { teamA: 0, teamB: 0, details: {} },
-        liveState: {},
-        displayMode: form.displayMode,
-        featured: form.featured,
-        featuredPriority: Number(form.featuredPriority) || 0,
-        allowReactions: form.allowReactions,
-        allowVoting: form.allowVoting,
-        allowRatings: form.allowRatings,
-        allowReviews: form.allowReviews,
-        isHidden: Boolean(form.isHidden),
-        createdBy: user?.uid ?? 'unknown',
-      };
 
       if (isEdit && matchId) {
-        await updateMatch(matchId, payload as Partial<Match>);
+        // METADATA-ONLY update — never touch live scoring state
+        const metadataPayload: Record<string, unknown> = {
+          sportId: form.sportId,
+          tournamentId: form.tournamentId,
+          matchNumber: Number(form.matchNumber),
+          round: form.round,
+          teamAId: form.teamAId,
+          teamBId: form.teamBId,
+          participantA: participantLabel(form.teamAId, teamBased ? 'team' : 'player'),
+          participantB: participantLabel(form.teamBId, teamBased ? 'team' : 'player'),
+          venueId: form.venueId,
+          scheduledAt: Timestamp.fromDate(scheduled),
+          displayMode: form.displayMode,
+          featured: form.featured,
+          featuredPriority: Number(form.featuredPriority) || 0,
+          allowReactions: form.allowReactions,
+          allowVoting: form.allowVoting,
+          allowRatings: form.allowRatings,
+          allowReviews: form.allowReviews,
+          isHidden: Boolean(form.isHidden),
+        };
+        await updateMatch(matchId, metadataPayload as Partial<Match>);
         await log('MATCH_UPDATED', 'match', matchId, { metadata: { step: 'editor' } });
         toast.success('Match updated');
         navigate(`/admin/matches/${matchId}`);
       } else {
+        // CREATE — full payload including initial scoring state
+        const payload = {
+          sportId: form.sportId,
+          tournamentId: form.tournamentId,
+          matchNumber: Number(form.matchNumber),
+          round: form.round,
+          teamAId: form.teamAId,
+          teamBId: form.teamBId,
+          participantA: participantLabel(form.teamAId, teamBased ? 'team' : 'player'),
+          participantB: participantLabel(form.teamBId, teamBased ? 'team' : 'player'),
+          venueId: form.venueId,
+          scheduledAt: Timestamp.fromDate(scheduled),
+          startedAt: null,
+          pausedAt: null,
+          endedAt: null,
+          status: 'scheduled' as MatchStatus,
+          score: { teamA: 0, teamB: 0, details: {} },
+          liveState: {},
+          displayMode: form.displayMode,
+          featured: form.featured,
+          featuredPriority: Number(form.featuredPriority) || 0,
+          allowReactions: form.allowReactions,
+          allowVoting: form.allowVoting,
+          allowRatings: form.allowRatings,
+          allowReviews: form.allowReviews,
+          isHidden: Boolean(form.isHidden),
+          createdBy: user?.uid ?? 'unknown',
+        };
         const newId = await createMatch(payload as unknown as Omit<Match, 'id'>);
         await log('MATCH_CREATED', 'match', newId, { metadata: { sportId: form.sportId } });
         toast.success('Match created');

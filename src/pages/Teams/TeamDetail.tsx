@@ -18,17 +18,29 @@ export const TeamDetail: React.FC = () => {
   const { data: allMatches } = useCollection<Match>('matches');
   const { data: allSports } = useCollection<Sport>('sports');
 
-  const team = teams?.find(t => t.id === teamId) || {
-    id: teamId || '1',
-    name: 'Thunderbolts',
-    shortName: 'THN',
-    sportId: 'basketball',
-    wins: 8,
-    losses: 2,
-    draws: 0,
-    points: 24,
-    playerIds: [] as string[],
-  };
+  const team = teams?.find(t => t.id === teamId);
+
+  if (isLoading) {
+    return (
+      <div className={cn('min-h-screen pt-28 pb-16', isDay ? 'bg-[#F7F6F1] text-[#071426]' : 'bg-[#080A0D] text-white')}>
+        <div className="max-w-xl mx-auto text-center py-20">
+          <p className={cn('text-sm font-semibold', isDay ? 'text-[#071426]/60' : 'text-white/50')}>Loading team...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!team) {
+    return (
+      <div className={cn('min-h-screen pt-28 pb-16', isDay ? 'bg-[#F7F6F1] text-[#071426]' : 'bg-[#080A0D] text-white')}>
+        <div className="max-w-xl mx-auto text-center py-20">
+          <h2 className="text-2xl font-black uppercase tracking-tight mb-2">Team Not Found</h2>
+          <p className={cn('text-sm', isDay ? 'text-[#071426]/60' : 'text-white/50')}>No team found with id "{teamId}".</p>
+          <Link to="/teams" className="mt-4 inline-block text-sm font-bold text-blue-500 hover:underline">← Back to teams</Link>
+        </div>
+      </div>
+    );
+  }
 
   const sportsMap = new Map<string, string>();
   allSports?.forEach(s => sportsMap.set(s.id, s.name));

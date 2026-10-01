@@ -20,12 +20,7 @@ interface ResultItem {
   time: string;
 }
 
-const fallbackCompletedMatches: ResultItem[] = [
-  { id: '5', sport: 'Tennis', teamA: 'Alex Rivers', teamB: 'Marcus Vance', scoreA: 3, scoreB: 1, status: 'completed', time: 'Final' },
-  { id: '6', sport: 'Basketball', teamA: 'Golden Hawks', teamB: 'Thunderbolts', scoreA: 102, scoreB: 98, status: 'completed', time: 'Final' },
-  { id: '7', sport: 'Football', teamA: 'Titan FC', teamB: 'Imperial SC', scoreA: 2, scoreB: 0, status: 'completed', time: 'Final' },
-  { id: '8', sport: 'Volleyball', teamA: 'Viper Spikes', teamB: 'Sky Strikers', scoreA: 3, scoreB: 2, status: 'completed', time: 'Final' },
-];
+
 
 export const Results: React.FC = () => {
   const { theme } = useTheme();
@@ -51,7 +46,7 @@ export const Results: React.FC = () => {
       time: 'Final',
     }));
 
-  const displayMatches = liveResultItems.length > 0 ? liveResultItems : fallbackCompletedMatches;
+  const displayMatches = liveResultItems;
   const sports = ['All', ...Array.from(new Set(displayMatches.map(m => m.sport)))];
 
   const filteredMatches = displayMatches.filter(m => {

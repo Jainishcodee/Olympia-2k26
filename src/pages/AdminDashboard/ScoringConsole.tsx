@@ -15,9 +15,10 @@ import {
   correctMatchEvent,
   subscribeToMatchEvents,
   formatSportPositioning,
+  type ScoreDelta,
 } from '@/services/scoring/scoringService';
 import { updateMatchStatus } from '@/services/matches/matchService';
-import type { EventType, Match, MatchEvent, MatchStatus, Sport, SportPositioning, Team } from '@/types';
+import type { EventType, Match, MatchEvent, MatchStatus, Player, Sport, SportPositioning, Team } from '@/types';
 
 import { RollingScore, RollingLabel } from '@/components/scoring/RollingScore';
 import {
@@ -119,6 +120,28 @@ const ScoringConsole: React.FC = () => {
 
   const sports = useCollection<Sport>('sports');
   const teams = useCollection<Team>('teams');
+  const players = useCollection<Player>('players');
+
+  // Football-specific state
+  const [footballModal, setFootballModal] = useState<{
+    type: 'goal' | 'yellow_card' | 'red_card' | 'substitution';
+    team: 'teamA' | 'teamB';
+  } | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState('');
+  const [assistPlayer, setAssistPlayer] = useState('');
+  const [subPlayerOff, setSubPlayerOff] = useState('');
+  const [subPlayerOn, setSubPlayerOn] = useState('');
+  const [footballAddedTime, setFootballAddedTime] = useState<number>(0);
+  const [volleyballPlayerA, setVolleyballPlayerA] = useState('');
+  const [volleyballPlayerB, setVolleyballPlayerB] = useState('');
+
+  const teamAPlayers = useMemo(() => {
+    return players.data.filter((p) => p.teamId === liveMatch?.teamAId);
+  }, [players.data, liveMatch?.teamAId]);
+
+  const teamBPlayers = useMemo(() => {
+    return players.data.filter((p) => p.teamId === liveMatch?.teamBId);
+  }, [players.data, liveMatch?.teamBId]);
 
   // Real-time Firestore subscription to the Match document (Single Source of Truth)
   useEffect(() => {
@@ -150,11 +173,39 @@ const ScoringConsole: React.FC = () => {
   const isMatchLive = liveMatch?.status === 'live';
   const isPaused = liveMatch?.status === 'paused';
 
+  // Derive elapsed time from Firestore timestamps so refresh doesn't reset the clock
   useEffect(() => {
+    if (!liveMatch?.startedAt) {
+      setSeconds(0);
+      return;
+    }
+
+    const startMs = typeof liveMatch.startedAt.toMillis === 'function'
+      ? liveMatch.startedAt.toMillis()
+      : Date.now();
+
+    // Calculate initial elapsed, accounting for any paused duration stored in liveState
+    const pausedDuration = Number((liveMatch.liveState as Record<string, unknown>)?.pausedDurationMs || 0);
+
+    const calcElapsed = () => {
+      if (isPaused && liveMatch.pausedAt) {
+        const pausedAtMs = typeof liveMatch.pausedAt.toMillis === 'function'
+          ? liveMatch.pausedAt.toMillis()
+          : Date.now();
+        return Math.floor((pausedAtMs - startMs - pausedDuration) / 1000);
+      }
+      return Math.floor((Date.now() - startMs - pausedDuration) / 1000);
+    };
+
+    setSeconds(Math.max(0, calcElapsed()));
+
     if (!isMatchLive || isPaused) return;
-    const interval = setInterval(() => setSeconds((s) => s + 1), 1000);
+
+    const interval = setInterval(() => {
+      setSeconds(Math.max(0, calcElapsed()));
+    }, 1000);
     return () => clearInterval(interval);
-  }, [isMatchLive, isPaused]);
+  }, [isMatchLive, isPaused, liveMatch?.startedAt, liveMatch?.pausedAt, liveMatch?.liveState]);
 
   const elapsedTime = useMemo(() => {
     const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -215,12 +266,7 @@ const ScoringConsole: React.FC = () => {
 
   const [cursor, setCursor] = useState({ teamA: 0, teamB: 0 });
   const [highlight, setHighlight] = useState<string | null>(null);
-  const [scorers, setScorers] = useState<ScorerRow[]>([
-    { id: 'p1', name: 'A. Vega', teamShort: 'TEA', teamKey: 'teamA', value: 3 },
-    { id: 'p2', name: 'R. Okoye', teamShort: 'TEA', teamKey: 'teamA', value: 2 },
-    { id: 'p3', name: 'M. Silva', teamShort: 'TEB', teamKey: 'teamB', value: 2 },
-    { id: 'p4', name: 'K. Ito', teamShort: 'TEB', teamKey: 'teamB', value: 1 },
-  ]);
+  const [scorers, setScorers] = useState<ScorerRow[]>([]);
 
   const creditTeam = (teamKey: 'teamA' | 'teamB'): string | null => {
     const pool = scorers.filter((s) => s.teamKey === teamKey);
@@ -250,8 +296,12 @@ const ScoringConsole: React.FC = () => {
       type,
       team,
       teamName,
+      playerId,
+      playerName,
+      data,
       description,
       newScore,
+      scoreDelta,
       newLiveState,
       positioning,
       fxKind,
@@ -262,8 +312,12 @@ const ScoringConsole: React.FC = () => {
       type: EventType;
       team?: 'teamA' | 'teamB' | '';
       teamName?: string;
+      playerId?: string;
+      playerName?: string;
+      data?: Record<string, unknown>;
       description: string;
-      newScore: Record<string, unknown>;
+      newScore?: Record<string, unknown>;
+      scoreDelta?: ScoreDelta;
       newLiveState?: Record<string, unknown>;
       positioning?: SportPositioning;
       fxKind?: FXKind;
@@ -280,10 +334,14 @@ const ScoringConsole: React.FC = () => {
           type,
           team: team || '',
           teamName: teamName || '',
+          playerId,
+          playerName,
+          data,
           description,
           matchTime: elapsedTime,
           positioning,
           newScore,
+          scoreDelta,
           newLiveState,
           createdBy: user?.uid || 'admin',
         });
@@ -465,29 +523,137 @@ const ScoringConsole: React.FC = () => {
   /* ======================================================== SPORT HANDLERS */
 
   /* 1. Football */
-  const handleFootballGoal = (team: 'teamA' | 'teamB') => {
-    const currentScore = (liveMatch?.score || { teamA: 0, teamB: 0 }) as Record<string, unknown>;
+  const handleOpenFootballModal = (
+    type: 'goal' | 'yellow_card' | 'red_card' | 'substitution',
+    team: 'teamA' | 'teamB'
+  ) => {
+    setSelectedPlayer('');
+    setAssistPlayer('');
+    setSubPlayerOff('');
+    setSubPlayerOn('');
+    setFootballModal({ type, team });
+  };
+
+  const handleConfirmFootballAction = async () => {
+    if (!footballModal) return;
+    const { type, team } = footballModal;
     const side = team === 'teamA' ? teamAInfo : teamBInfo;
-    const opponent = team === 'teamA' ? teamBInfo : teamAInfo;
-    const newTeamScore = Number(currentScore[team] || 0) + 1;
-    const newScore = { ...currentScore, [team]: newTeamScore };
-
     const period = Number(liveMatch?.liveState?.period || 1);
-    const positioning: SportPositioning = { period, matchSecond: seconds };
+    const positioning: SportPositioning = {
+      period,
+      matchSecond: seconds,
+      addedTime: footballAddedTime > 0 ? footballAddedTime : undefined,
+    };
 
-    creditTeam(team);
-    recordEvent({
-      type: 'goal',
-      team,
-      teamName: side.name,
-      description: `⚽ GOAL! ${side.name} score! (${newScore.teamA} - ${newScore.teamB})`,
-      newScore,
-      newLiveState: { ...liveMatch?.liveState, clock: elapsedTime, period },
+    if (type === 'goal') {
+      const currentScore = (liveMatch?.score || { teamA: 0, teamB: 0 }) as Record<string, unknown>;
+      const newTeamScore = Number(currentScore[team] || 0) + 1;
+      const newScore = { ...currentScore, [team]: newTeamScore };
+      creditTeam(team);
+
+      const scorerText = selectedPlayer ? ` (${selectedPlayer})` : '';
+      const assistText = assistPlayer ? ` [Assist: ${assistPlayer}]` : '';
+
+      await recordEvent({
+        type: 'goal',
+        team,
+        teamName: side.name,
+        playerName: selectedPlayer || undefined,
+        data: {
+          scorer: selectedPlayer || undefined,
+          assist: assistPlayer || undefined,
+        },
+        description: `⚽ GOAL! ${side.name}${scorerText}${assistText}`,
+        scoreDelta: { [team]: 1 },
+        newScore,
+        newLiveState: { ...liveMatch?.liveState, clock: elapsedTime, period },
+        positioning,
+        fxKind: 'goal',
+        fxTitle: 'GOAL!',
+        fxSub: selectedPlayer ? `${selectedPlayer} · ${side.shortName}` : side.name,
+      });
+    } else if (type === 'yellow_card') {
+      const playerText = selectedPlayer ? ` · ${selectedPlayer}` : '';
+      await recordEvent({
+        type: 'yellow_card',
+        team,
+        teamName: side.name,
+        playerName: selectedPlayer || undefined,
+        data: { player: selectedPlayer || undefined },
+        description: `🟨 Yellow Card · ${side.shortName}${playerText}`,
+        positioning,
+        newScore: (liveMatch?.score || {}) as Record<string, unknown>,
+      });
+    } else if (type === 'red_card') {
+      const playerText = selectedPlayer ? ` · ${selectedPlayer}` : '';
+      await recordEvent({
+        type: 'red_card',
+        team,
+        teamName: side.name,
+        playerName: selectedPlayer || undefined,
+        data: { player: selectedPlayer || undefined },
+        description: `🟥 Red Card · ${side.shortName}${playerText}`,
+        positioning,
+        newScore: (liveMatch?.score || {}) as Record<string, unknown>,
+      });
+    } else if (type === 'substitution') {
+      const offText = subPlayerOff || 'Player Off';
+      const onText = subPlayerOn || 'Player On';
+      await recordEvent({
+        type: 'substitution',
+        team,
+        teamName: side.name,
+        data: { playerOff: offText, playerOn: onText },
+        description: `🔄 SUB (${side.shortName}): ${onText} ON ⇄ ${offText} OFF`,
+        positioning,
+        newScore: (liveMatch?.score || {}) as Record<string, unknown>,
+      });
+    }
+
+    setFootballModal(null);
+  };
+
+  const handleFootballHalfTime = async () => {
+    if (!matchId) return;
+    const positioning: SportPositioning = {
+      period: 1,
+      matchSecond: seconds,
+      addedTime: footballAddedTime > 0 ? footballAddedTime : undefined,
+    };
+    await recordEvent({
+      type: 'half_time',
+      description: `⏱️ Half Time reached (${elapsedTime})`,
       positioning,
-      fxKind: 'goal',
-      fxTitle: 'GOAL!',
-      fxSub: side.name,
+      newScore: (liveMatch?.score || {}) as Record<string, unknown>,
+      fxKind: 'neutral',
+      fxTitle: 'HALF TIME',
+      fxSub: `${teamAInfo.shortName} vs ${teamBInfo.shortName}`,
+      accent: '#D9A441',
     });
+    toast('Half Time called', { icon: '⏱️' });
+  };
+
+  const handleFootballSecondHalf = async () => {
+    if (!matchId) return;
+    const positioning: SportPositioning = {
+      period: 2,
+      matchSecond: seconds,
+    };
+    await recordEvent({
+      type: 'second_half',
+      description: `⏱️ 2nd Half kicked off`,
+      positioning,
+      newScore: (liveMatch?.score || {}) as Record<string, unknown>,
+      fxKind: 'neutral',
+      fxTitle: '2ND HALF',
+      fxSub: `${teamAInfo.shortName} vs ${teamBInfo.shortName}`,
+      accent: '#1264FF',
+    });
+    toast.success('Second half underway');
+  };
+
+  const handleFootballGoal = (team: 'teamA' | 'teamB') => {
+    handleOpenFootballModal('goal', team);
   };
 
   const handleFootballRemoveGoal = (team: 'teamA' | 'teamB') => {
@@ -495,150 +661,284 @@ const ScoringConsole: React.FC = () => {
     const side = team === 'teamA' ? teamAInfo : teamBInfo;
     const newTeamScore = Math.max(0, Number(currentScore[team] || 0) - 1);
     const newScore = { ...currentScore, [team]: newTeamScore };
+    const period = Number(liveMatch?.liveState?.period || 1);
 
     recordEvent({
       type: 'goal_removed',
       team,
       teamName: side.name,
       description: `VAR / Goal Cancelled for ${side.name} (${newScore.teamA} - ${newScore.teamB})`,
+      scoreDelta: { [team]: -1 },
       newScore,
+      positioning: { period, matchSecond: seconds, addedTime: footballAddedTime > 0 ? footballAddedTime : undefined },
       fxKind: 'neutral',
       fxTitle: 'GOAL RULED OUT',
       fxSub: side.name,
     });
   };
 
-  /* 2. Cricket */
+  /* 2. Cricket Engine */
+  const battingTeamKey = (liveMatch?.liveState?.battingTeam || 'teamA') as 'teamA' | 'teamB';
+  const bowlingTeamKey = battingTeamKey === 'teamB' ? 'teamA' : 'teamB';
+  const battingTeamInfo = battingTeamKey === 'teamB' ? teamBInfo : teamAInfo;
+  const bowlingTeamInfo = battingTeamKey === 'teamB' ? teamAInfo : teamBInfo;
+  const battingPlayers = battingTeamKey === 'teamB' ? teamBPlayers : teamAPlayers;
+  const bowlingPlayers = battingTeamKey === 'teamB' ? teamAPlayers : teamBPlayers;
+
   const currentCricket = useMemo(() => {
     const score = (liveMatch?.score || {}) as Record<string, unknown>;
     const details = (score.details || {}) as Record<string, unknown>;
     const live = liveMatch?.liveState || {};
+    const bKey = (live.battingTeam || 'teamA') as 'teamA' | 'teamB';
     return {
-      runs: Number(score.teamA ?? details.runs ?? 0),
+      runs: Number(live.totalRuns ?? (bKey === 'teamB' ? score.teamB : score.teamA) ?? details.runs ?? 0),
       wickets: Number(live.wickets ?? details.wickets ?? 0),
-      overs: Number(live.over ?? details.overs ?? 0),
-      balls: Number(live.ball ?? details.balls ?? 0),
+      overs: Number(live.overs ?? live.over ?? details.overs ?? 0),
+      balls: Number(live.legalBalls ?? live.ball ?? details.balls ?? 0),
       innings: Number(live.innings ?? details.innings ?? 1),
       extras: Number(live.extras ?? details.extras ?? 0),
+      targetRuns: live.targetRuns as number | undefined,
+      requiredRuns: live.requiredRuns as number | undefined,
+      ballsRemaining: live.ballsRemaining as number | undefined,
+      strikerName: (live.strikerName as string) || '',
+      strikerRuns: Number(live.strikerRuns || 0),
+      strikerBalls: Number(live.strikerBalls || 0),
+      nonStrikerName: (live.nonStrikerName as string) || '',
+      nonStrikerRuns: Number(live.nonStrikerRuns || 0),
+      nonStrikerBalls: Number(live.nonStrikerBalls || 0),
+      currentBowlerName: (live.currentBowlerName as string) || '',
+      bowlerRunsConceded: Number(live.bowlerRunsConceded || 0),
+      bowlerWickets: Number(live.bowlerWickets || 0),
+      bowlerOvers: Number(live.bowlerOvers || 0),
+      bowlerBalls: Number(live.bowlerBalls || 0),
+      firstInnings: live.firstInnings as any,
+      resultText: live.resultText as string | undefined,
+      inningsStatus: live.inningsStatus as string | undefined,
     };
   }, [liveMatch]);
 
+  // Cricket dialog states
+  const [cricketWicketModal, setCricketWicketModal] = useState(false);
+  const [wicketDismissalType, setWicketDismissalType] = useState<
+    'bowled' | 'caught' | 'lbw' | 'run_out' | 'stumped' | 'hit_wicket'
+  >('caught');
+  const [wicketOutBatsman, setWicketOutBatsman] = useState<'striker' | 'nonStriker'>('striker');
+  const [wicketNextBatsman, setWicketNextBatsman] = useState('');
+  const [wicketFielder, setWicketFielder] = useState('');
+  const [lineupModal, setLineupModal] = useState(false);
+  const [lineupStriker, setLineupStriker] = useState('');
+  const [lineupNonStriker, setLineupNonStriker] = useState('');
+  const [lineupBowler, setLineupBowler] = useState('');
+
   const handleCricketRuns = (runsDelta: number, type: string) => {
     const illegal = type === 'wide' || type === 'no_ball';
-    const isBoundary = runsDelta === 6 || runsDelta === 4 || runsDelta === 10;
     const isTen = runsDelta === 10;
     const isSix = runsDelta === 6;
 
-    let nextBalls = currentCricket.balls;
-    let nextOvers = currentCricket.overs;
-
-    if (!illegal) {
-      if (nextBalls + 1 >= 6) {
-        nextBalls = 0;
-        nextOvers += 1;
-      } else {
-        nextBalls += 1;
-      }
-    }
-
-    const nextRuns = currentCricket.runs + runsDelta;
-    const nextExtras = illegal ? currentCricket.extras + 1 : currentCricket.extras;
-
+    const ballNum = illegal ? currentCricket.balls : (currentCricket.balls + 1);
     const positioning: SportPositioning = {
       innings: currentCricket.innings,
       over: currentCricket.overs,
-      ball: illegal ? currentCricket.balls : (currentCricket.balls + 1),
+      ball: ballNum,
     };
 
-    const newScore = {
-      ...(liveMatch?.score || {}),
-      teamA: nextRuns,
-      details: {
-        runs: nextRuns,
-        wickets: currentCricket.wickets,
-        overs: nextOvers,
-        balls: nextBalls,
-        innings: currentCricket.innings,
-        extras: nextExtras,
-      },
-    };
-
-    const newLiveState = {
-      ...liveMatch?.liveState,
-      innings: currentCricket.innings,
-      over: nextOvers,
-      ball: nextBalls,
-      wickets: currentCricket.wickets,
-      extras: nextExtras,
-    };
-
-    const title = isTen ? '10 RUNS (BONUS)' : isSix ? 'SIX!' : runsDelta === 4 ? 'FOUR!' : runsDelta === 0 ? 'DOT BALL' : `+${runsDelta} RUNS`;
+    const title = isTen
+      ? '10 RUNS (BONUS)'
+      : isSix
+        ? 'SIX!'
+        : runsDelta === 4
+          ? 'FOUR!'
+          : runsDelta === 0
+            ? 'DOT BALL'
+            : `+${runsDelta} RUNS`;
 
     recordEvent({
-      type: isTen ? 'ten' : isSix ? 'six' : runsDelta === 4 ? 'four' : type,
-      team: 'teamA',
-      teamName: teamAInfo.name,
-      description: `🏏 ${title} · Over ${currentCricket.overs}.${illegal ? currentCricket.balls : (currentCricket.balls + 1)} (Inn ${currentCricket.innings})`,
-      newScore,
-      newLiveState,
+      type: isTen ? 'ten' : isSix ? 'six' : runsDelta === 4 ? 'four' : (type as EventType),
+      team: battingTeamKey,
+      teamName: battingTeamInfo.name,
+      description: `🏏 ${title} · Over ${currentCricket.overs}.${ballNum} (${battingTeamInfo.shortName} Inn ${currentCricket.innings})`,
+      scoreDelta: {
+        runs: runsDelta,
+        balls: illegal ? 0 : 1,
+        extras: illegal ? 1 : (type === 'bye' || type === 'leg_bye' ? runsDelta : 0),
+      },
       positioning,
       fxKind: isTen || isSix ? 'six' : runsDelta === 4 ? 'four' : 'point',
       fxTitle: isTen ? '10' : isSix ? '6' : runsDelta === 4 ? 'FOUR' : runsDelta === 0 ? 'DOT' : `+${runsDelta}`,
-      fxSub: `${type.toUpperCase()} · ${teamAInfo.shortName}`,
+      fxSub: `${type.toUpperCase()} · ${battingTeamInfo.shortName}`,
       accent: isTen || isSix ? '#FFD21F' : runsDelta === 4 ? '#1264FF' : undefined,
     });
   };
 
-  const handleCricketWicket = () => {
-    let nextBalls = currentCricket.balls + 1;
-    let nextOvers = currentCricket.overs;
-    if (nextBalls >= 6) {
-      nextBalls = 0;
-      nextOvers += 1;
-    }
-
-    const nextWickets = currentCricket.wickets + 1;
+  const handleConfirmWicket = () => {
+    const ballNum = currentCricket.balls + 1;
     const positioning: SportPositioning = {
       innings: currentCricket.innings,
       over: currentCricket.overs,
-      ball: currentCricket.balls + 1,
+      ball: ballNum,
     };
 
-    const newScore = {
-      ...(liveMatch?.score || {}),
-      details: {
-        runs: currentCricket.runs,
-        wickets: nextWickets,
-        overs: nextOvers,
-        balls: nextBalls,
-        innings: currentCricket.innings,
-        extras: currentCricket.extras,
-      },
-    };
-
-    const newLiveState = {
-      ...liveMatch?.liveState,
-      over: nextOvers,
-      ball: nextBalls,
-      wickets: nextWickets,
-      innings: currentCricket.innings,
-    };
+    const outName = wicketOutBatsman === 'nonStriker' 
+      ? (currentCricket.nonStrikerName || 'Non-striker') 
+      : (currentCricket.strikerName || 'Striker');
+    const dismissalLabel = wicketDismissalType === 'bowled'
+      ? `b. ${currentCricket.currentBowlerName || 'Bowler'}`
+      : wicketDismissalType === 'caught'
+        ? `c. ${wicketFielder || 'Fielder'} b. ${currentCricket.currentBowlerName || 'Bowler'}`
+        : wicketDismissalType === 'lbw'
+          ? `lbw b. ${currentCricket.currentBowlerName || 'Bowler'}`
+          : wicketDismissalType === 'run_out'
+            ? `run out (${wicketFielder || 'Fielding team'})`
+            : wicketDismissalType === 'stumped'
+              ? `st. ${wicketFielder || 'Keeper'} b. ${currentCricket.currentBowlerName || 'Bowler'}`
+              : `hit wicket b. ${currentCricket.currentBowlerName || 'Bowler'}`;
 
     recordEvent({
       type: 'wicket',
-      team: 'teamA',
-      teamName: teamAInfo.name,
-      description: `🏏 OUT! Wicket #${nextWickets} falls · Over ${currentCricket.overs}.${currentCricket.balls + 1}`,
-      newScore,
-      newLiveState,
+      team: battingTeamKey,
+      teamName: battingTeamInfo.name,
+      description: `🎯 OUT! ${outName} ${dismissalLabel} · Over ${currentCricket.overs}.${ballNum}`,
+      scoreDelta: {
+        wickets: 1,
+        balls: 1,
+      },
+      data: {
+        dismissalType: wicketDismissalType,
+        outBatsman: wicketOutBatsman,
+        dismissedPlayer: outName,
+        fielder: wicketFielder || undefined,
+        newBatsman: wicketNextBatsman || undefined,
+      },
       positioning,
       fxKind: 'wicket',
       fxTitle: 'OUT!',
-      fxSub: `WICKET · ${teamAInfo.shortName}`,
+      fxSub: `WICKET · ${battingTeamInfo.shortName}`,
+      accent: '#EF4444',
+    });
+
+    setCricketWicketModal(false);
+    setWicketNextBatsman('');
+    setWicketFielder('');
+  };
+
+  const handleSwapStrike = () => {
+    recordEvent({
+      type: 'ball',
+      team: battingTeamKey,
+      teamName: battingTeamInfo.name,
+      description: '⇄ Strike rotated between batsmen',
+      data: { swapStriker: true },
     });
   };
 
-  /* 3. Sets & Points (Volleyball, Badminton, TT, Hand Tennis) */
+  const handleEndInnings = () => {
+    recordEvent({
+      type: 'innings_end',
+      team: battingTeamKey,
+      teamName: battingTeamInfo.name,
+      description: `🏁 End of Innings ${currentCricket.innings}: ${battingTeamInfo.name} ${currentCricket.runs}/${currentCricket.wickets} in ${currentCricket.overs}.${currentCricket.balls} ov`,
+      fxKind: 'neutral',
+      fxTitle: 'INNINGS COMPLETED',
+      fxSub: `Target: ${currentCricket.runs + 1}`,
+      accent: '#D9A441',
+    });
+  };
+
+  const handleStartSecondInnings = () => {
+    recordEvent({
+      type: 'innings_start',
+      team: bowlingTeamKey,
+      teamName: bowlingTeamInfo.name,
+      description: `🏏 2nd Innings began: ${bowlingTeamInfo.name} batting, chasing target of ${currentCricket.targetRuns ?? (currentCricket.runs + 1)}`,
+      data: { innings: 2 },
+      fxKind: 'neutral',
+      fxTitle: '2ND INNINGS',
+      fxSub: `Target: ${currentCricket.targetRuns ?? (currentCricket.runs + 1)}`,
+      accent: '#1264FF',
+    });
+  };
+
+  const handleSaveLineup = () => {
+    const updates: Record<string, unknown> = {};
+    if (lineupStriker) updates.strikerName = lineupStriker;
+    if (lineupNonStriker) updates.nonStrikerName = lineupNonStriker;
+    if (lineupBowler) updates.currentBowlerName = lineupBowler;
+
+    recordEvent({
+      type: 'ball',
+      team: battingTeamKey,
+      teamName: battingTeamInfo.name,
+      description: `Active players set: Striker: ${lineupStriker || currentCricket.strikerName || '—'}, Non-striker: ${lineupNonStriker || currentCricket.nonStrikerName || '—'}, Bowler: ${lineupBowler || currentCricket.currentBowlerName || '—'}`,
+      newLiveState: updates,
+    });
+    setLineupModal(false);
+  };
+
+  /* 3. Volleyball Live Scoring Engine */
+  const handleVolleyballPoint = async (team: 'teamA' | 'teamB') => {
+    const side = team === 'teamA' ? teamAInfo : teamBInfo;
+    const player = team === 'teamA' ? volleyballPlayerA : volleyballPlayerB;
+
+    const currentSet = Number(liveMatch?.liveState?.currentSet || liveMatch?.liveState?.set || 1);
+    const curA = Number(liveMatch?.liveState?.currentSetScore?.teamA ?? liveMatch?.score?.teamA ?? 0);
+    const curB = Number(liveMatch?.liveState?.currentSetScore?.teamB ?? liveMatch?.score?.teamB ?? 0);
+    const currentTotalRallies = curA + curB;
+
+    creditTeam(team);
+
+    const playerDesc = player ? ` (${player})` : '';
+    await recordEvent({
+      type: 'point',
+      team,
+      teamName: side.name,
+      playerName: player || undefined,
+      description: `🏐 Point for ${side.shortName}${playerDesc}`,
+      scoreDelta: { [team]: 1, points: 1 },
+      positioning: {
+        set: currentSet,
+        rally: currentTotalRallies + 1,
+      },
+      fxKind: 'point',
+      fxTitle: 'POINT!',
+      fxSub: player ? `${player} · ${side.shortName}` : side.name,
+    });
+  };
+
+  const handleVolleyballRemovePoint = async (team: 'teamA' | 'teamB') => {
+    const side = team === 'teamA' ? teamAInfo : teamBInfo;
+    const currentSet = Number(liveMatch?.liveState?.currentSet || liveMatch?.liveState?.set || 1);
+    await recordEvent({
+      type: 'point_removed',
+      team,
+      teamName: side.name,
+      description: `Point removed from ${side.shortName}`,
+      scoreDelta: { [team]: -1, points: 1 },
+      positioning: {
+        set: currentSet,
+      },
+    });
+  };
+
+  const handleVolleyballEndSet = async () => {
+    const currentSet = Number(liveMatch?.liveState?.currentSet || 1);
+    const curA = Number(liveMatch?.liveState?.currentSetScore?.teamA ?? liveMatch?.score?.teamA ?? 0);
+    const curB = Number(liveMatch?.liveState?.currentSetScore?.teamB ?? liveMatch?.score?.teamB ?? 0);
+    const winnerKey = curA > curB ? 'teamA' : 'teamB';
+    const side = winnerKey === 'teamA' ? teamAInfo : teamBInfo;
+
+    await recordEvent({
+      type: 'set_completed',
+      team: winnerKey,
+      teamName: side.name,
+      description: `🏆 Set ${currentSet} Completed · Won by ${side.name} (${curA} - ${curB})`,
+      positioning: { set: currentSet },
+      fxKind: 'set',
+      fxTitle: 'SET COMPLETE',
+      fxSub: side.name,
+    });
+  };
+
+  /* 4. Other Racquet & Net Sports (Badminton, TT, Hand Tennis) */
   const handleAddPoint = (team: 'teamA' | 'teamB') => {
     const currentScore = (liveMatch?.score || {}) as Record<string, unknown>;
     const details = (currentScore.details || {}) as Record<string, unknown>;
@@ -668,6 +968,10 @@ const ScoringConsole: React.FC = () => {
       team,
       teamName: side.name,
       description: `Point for ${side.name} (${updatedSets[currentSetIndex].teamA} - ${updatedSets[currentSetIndex].teamB})`,
+      scoreDelta: {
+        [team]: 1,
+        details: { sets: updatedSets, currentSet: currentSetIndex },
+      },
       newScore: { ...currentScore, details: { ...details, sets: updatedSets, currentSet: currentSetIndex } },
       newLiveState: { ...liveMatch?.liveState, set: currentSetIndex, rally: totalPoints },
       positioning,
@@ -698,6 +1002,10 @@ const ScoringConsole: React.FC = () => {
       team: winnerKey,
       teamName: winnerSide.name,
       description: `Set ${currentSetIndex + 1} Won by ${winnerSide.name} (${activeSet.teamA} - ${activeSet.teamB})`,
+      scoreDelta: {
+        [winnerKey]: 1,
+        details: { sets: nextSets, currentSet: nextSetIndex },
+      },
       newScore: {
         ...currentScore,
         teamA: teamASets,
@@ -746,6 +1054,7 @@ const ScoringConsole: React.FC = () => {
       team,
       teamName: side.name,
       description: `${delta > 0 ? '+ Point' : '− Point'} for ${side.name} (${newScore.teamA} - ${newScore.teamB})`,
+      scoreDelta: { [team]: delta },
       newScore,
       fxKind: delta > 0 ? 'point' : 'neutral',
       fxTitle: delta > 0 ? 'POINT' : 'POINT REMOVED',
@@ -759,58 +1068,173 @@ const ScoringConsole: React.FC = () => {
     const s = (liveMatch?.sportId || '').toLowerCase();
 
     if (s.includes('cricket')) {
+      const isInn1 = currentCricket.innings === 1;
+      const isInn2 = currentCricket.innings === 2;
+      const isInnCompleted = currentCricket.inningsStatus === 'completed';
+
       return (
-        <div className="space-y-5">
+        <div className="space-y-6">
+          {/* Batting Team & Innings Progression Banner */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-[#1E2A45] bg-[#101A2E]/80">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#8FA0BC] block">
+                {isInn2 ? '2nd Innings Batting' : '1st Innings Batting'}
+              </span>
+              <span className="text-sm font-black uppercase text-[#EEF2F7]">
+                🏏 {battingTeamInfo.name} ({battingTeamInfo.shortName})
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {isInn1 && !isInnCompleted && (
+                <Pad tone="yellow" size="sm" onClick={handleEndInnings} disabled={isBusy}>
+                  🏁 End 1st Innings
+                </Pad>
+              )}
+              {isInn1 && isInnCompleted && (
+                <Pad tone="green" size="sm" onClick={handleStartSecondInnings} disabled={isBusy}>
+                  ▶ Start 2nd Innings
+                </Pad>
+              )}
+              {isInn2 && (
+                <div className="text-right">
+                  <span className="text-[10px] font-bold uppercase text-amber-400 block">
+                    Target: {currentCricket.targetRuns ?? '—'}
+                  </span>
+                  <span className="text-xs font-black text-slate-300">
+                    Need {currentCricket.requiredRuns ?? '—'} in {currentCricket.ballsRemaining ?? '—'}b
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Active Batsmen & Bowler Crease Telemetry */}
+          <div className="p-3.5 rounded-lg border border-[#1E2A45] bg-[#070B14]">
+            <div className="flex items-center justify-between mb-3 border-b border-[#1E2A45] pb-2">
+              <PanelLabel hint="on-field telemetry">Crease & Bowling Attack</PanelLabel>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSwapStrike}
+                  disabled={isBusy}
+                  className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded border border-[#4B90FF]/40 bg-[#1264FF]/15 text-[#4B90FF] hover:bg-[#1264FF]/30 transition-colors"
+                >
+                  ⇄ Swap Strike
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLineupStriker(currentCricket.strikerName || '');
+                    setLineupNonStriker(currentCricket.nonStrikerName || '');
+                    setLineupBowler(currentCricket.currentBowlerName || '');
+                    setLineupModal(true);
+                  }}
+                  className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors"
+                >
+                  ✎ Set Lineup
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-2.5 rounded bg-[#101A2E] border border-emerald-500/30">
+                <span className="text-[10px] font-bold uppercase text-emerald-400 block">Striker *</span>
+                <span className="font-black text-sm text-white truncate block">
+                  {currentCricket.strikerName ? `${currentCricket.strikerName}*` : 'Not assigned'}
+                </span>
+                <span className="text-[11px] font-mono text-slate-400">
+                  {currentCricket.strikerRuns} ({currentCricket.strikerBalls}b)
+                </span>
+              </div>
+
+              <div className="p-2.5 rounded bg-[#101A2E] border border-white/10">
+                <span className="text-[10px] font-bold uppercase text-slate-400 block">Non-Striker</span>
+                <span className="font-black text-sm text-white truncate block">
+                  {currentCricket.nonStrikerName || 'Not assigned'}
+                </span>
+                <span className="text-[11px] font-mono text-slate-400">
+                  {currentCricket.nonStrikerRuns} ({currentCricket.nonStrikerBalls}b)
+                </span>
+              </div>
+
+              <div className="p-2.5 rounded bg-[#101A2E] border border-rose-500/30">
+                <span className="text-[10px] font-bold uppercase text-rose-400 block">Current Bowler</span>
+                <span className="font-black text-sm text-white truncate block">
+                  {currentCricket.currentBowlerName || 'Not assigned'}
+                </span>
+                <span className="text-[11px] font-mono text-slate-400">
+                  {currentCricket.bowlerWickets}/{currentCricket.bowlerRunsConceded} ({currentCricket.bowlerOvers}.{currentCricket.bowlerBalls} ov)
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Delivery Runs (Fast Action) */}
           <div>
-            <PanelLabel hint="delivery telemetry">Runs</PanelLabel>
+            <PanelLabel hint="delivery telemetry">Delivery Runs</PanelLabel>
             <div className="grid grid-cols-7 gap-2">
-              <Pad size="md" onClick={() => handleCricketRuns(0, 'dot')} disabled={isBusy}>Dot</Pad>
+              <Pad size="md" onClick={() => handleCricketRuns(0, 'dot')} disabled={isBusy}>Dot 0</Pad>
               <Pad tone="blue" size="md" onClick={() => handleCricketRuns(1, 'single')} disabled={isBusy}>+1</Pad>
               <Pad tone="blue" size="md" onClick={() => handleCricketRuns(2, 'double')} disabled={isBusy}>+2</Pad>
               <Pad tone="blue" size="md" onClick={() => handleCricketRuns(3, 'triple')} disabled={isBusy}>+3</Pad>
-              <Pad tone="green" size="md" onClick={() => handleCricketRuns(4, 'four')} disabled={isBusy}>Four</Pad>
-              <Pad tone="violet" size="md" onClick={() => handleCricketRuns(6, 'six')} disabled={isBusy}>Six</Pad>
-              <Pad tone="gold" size="md" sub="BONUS" onClick={() => handleCricketRuns(10, 'ten')} disabled={isBusy}>+10</Pad>
+              <Pad tone="green" size="md" onClick={() => handleCricketRuns(4, 'four')} disabled={isBusy}>Four 4</Pad>
+              <Pad tone="violet" size="md" onClick={() => handleCricketRuns(6, 'six')} disabled={isBusy}>Six 6</Pad>
+              <Pad tone="gold" size="md" sub="SUPER" onClick={() => handleCricketRuns(10, 'ten')} disabled={isBusy}>+10</Pad>
             </div>
           </div>
 
+          {/* Dismissals & Extras */}
           <div>
             <PanelLabel hint="dismissal + extras">Wickets & Extras</PanelLabel>
             <div className="grid grid-cols-5 gap-2">
-              <Pad tone="red" size="md" onClick={handleCricketWicket} disabled={isBusy}>Wicket</Pad>
-              <Pad tone="yellow" size="sm" onClick={() => handleCricketRuns(1, 'wide')} disabled={isBusy}>Wide</Pad>
-              <Pad tone="yellow" size="sm" onClick={() => handleCricketRuns(1, 'no_ball')} disabled={isBusy}>No ball</Pad>
-              <Pad size="sm" onClick={() => handleCricketRuns(1, 'bye')} disabled={isBusy}>Bye</Pad>
-              <Pad size="sm" onClick={() => handleCricketRuns(1, 'leg_bye')} disabled={isBusy}>Leg bye</Pad>
+              <Pad tone="red" size="md" onClick={() => setCricketWicketModal(true)} disabled={isBusy}>
+                🎯 Wicket
+              </Pad>
+              <Pad tone="yellow" size="sm" onClick={() => handleCricketRuns(1, 'wide')} disabled={isBusy}>
+                Wide +1
+              </Pad>
+              <Pad tone="yellow" size="sm" onClick={() => handleCricketRuns(1, 'no_ball')} disabled={isBusy}>
+                No ball +1
+              </Pad>
+              <Pad size="sm" onClick={() => handleCricketRuns(1, 'bye')} disabled={isBusy}>
+                Bye +1
+              </Pad>
+              <Pad size="sm" onClick={() => handleCricketRuns(1, 'leg_bye')} disabled={isBusy}>
+                Leg bye +1
+              </Pad>
             </div>
           </div>
 
+          {/* Over & Break Control */}
           <div className="grid grid-cols-2 gap-2">
             <Pad
-              tone="violet"
+              tone="slate"
+              size="sm"
               disabled={isBusy}
               onClick={() => {
                 recordEvent({
-                  type: 'period_start',
-                  description: `Innings ${currentCricket.innings + 1} begins`,
-                  newScore: (liveMatch?.score || {}) as Record<string, unknown>,
-                  newLiveState: { ...liveMatch?.liveState, innings: currentCricket.innings + 1, over: 0, ball: 0 },
+                  type: 'over_completed',
+                  team: battingTeamKey,
+                  teamName: battingTeamInfo.name,
+                  description: `⏱️ End of Over ${currentCricket.overs} (${battingTeamInfo.shortName}: ${currentCricket.runs}/${currentCricket.wickets})`,
                 });
               }}
             >
-              New Innings
+              ⏱️ End Over ({currentCricket.overs}.{currentCricket.balls})
             </Pad>
             <Pad
+              tone="slate"
+              size="sm"
               disabled={isBusy}
               onClick={() => {
                 recordEvent({
-                  type: 'period_end',
-                  description: `End of Over ${currentCricket.overs}`,
-                  newScore: (liveMatch?.score || {}) as Record<string, unknown>,
+                  type: 'drinks_break',
+                  description: `🥤 Drinks Break called (${currentCricket.overs}.${currentCricket.balls} ov)`,
                 });
               }}
             >
-              End Over
+              🥤 Drinks Break
             </Pad>
           </div>
         </div>
@@ -818,15 +1242,74 @@ const ScoringConsole: React.FC = () => {
     }
 
     if (s.includes('football') || s.includes('soccer')) {
+      const isPeriod1 = (liveMatch?.liveState?.period || 1) === 1;
+      const isPeriod2 = (liveMatch?.liveState?.period || 1) === 2;
+      const isHT = Boolean(liveMatch?.liveState?.isHalfTime);
+
       return (
-        <div className="space-y-5">
+        <div className="space-y-6">
+          {/* Match Halves & Lifecycle */}
           <div>
-            <PanelLabel hint="tap to score">Goals</PanelLabel>
+            <PanelLabel hint="match halves">Period & Halves</PanelLabel>
+            <div className="grid grid-cols-3 gap-2">
+              {isPeriod1 && !isHT && isMatchLive && !isPaused ? (
+                <Pad tone="yellow" onClick={handleFootballHalfTime} disabled={isBusy}>
+                  ⏱️ Half Time
+                </Pad>
+              ) : isHT || (isPaused && isPeriod1) ? (
+                <Pad tone="green" onClick={handleFootballSecondHalf} disabled={isBusy}>
+                  ▶ Start 2nd Half
+                </Pad>
+              ) : (
+                <Pad tone="slate" disabled className="opacity-50">
+                  {isPeriod2 ? '2nd Half Active' : '1st Half'}
+                </Pad>
+              )}
+
+              <Pad
+                tone="red"
+                onClick={() => setShowConfirm('end')}
+                disabled={isBusy || liveMatch?.status === 'completed'}
+              >
+                🏁 Full Time
+              </Pad>
+
+              <div className="flex items-center justify-center border border-[#1E2A45] bg-[#101A2E] text-[11px] font-black uppercase tracking-wider text-[#8FA0BC] px-3 py-2">
+                {isHT ? 'Half Time' : isPeriod2 ? '2nd Half (2H)' : '1st Half (1H)'}
+              </div>
+            </div>
+          </div>
+
+          {/* Stoppage / Added Time */}
+          <div>
+            <PanelLabel hint="stoppage time">Added Time (Stoppage)</PanelLabel>
+            <div className="flex items-center gap-2 flex-wrap">
+              {[0, 1, 2, 3, 4, 5, 6, 7].map((mins) => (
+                <button
+                  key={mins}
+                  type="button"
+                  onClick={() => setFootballAddedTime(mins)}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-mono font-bold rounded border transition-colors",
+                    footballAddedTime === mins
+                      ? "bg-[#D9A441] text-[#05070C] border-[#D9A441] shadow-sm"
+                      : "bg-[#101A2E] text-[#8FA0BC] border-[#1E2A45] hover:text-white hover:border-[#4B90FF]"
+                  )}
+                >
+                  {mins === 0 ? '+0' : `+${mins}'`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Goals */}
+          <div>
+            <PanelLabel hint="tap to record goal with scorer">Goals</PanelLabel>
             <div className="grid grid-cols-2 gap-3">
-              <Pad tone="blue" size="lg" onClick={() => handleFootballGoal('teamA')} disabled={isBusy}>
+              <Pad tone="blue" size="lg" onClick={() => handleOpenFootballModal('goal', 'teamA')} disabled={isBusy}>
                 + GOAL <span className="opacity-70">{teamAInfo.shortName}</span>
               </Pad>
-              <Pad tone="coral" size="lg" onClick={() => handleFootballGoal('teamB')} disabled={isBusy}>
+              <Pad tone="coral" size="lg" onClick={() => handleOpenFootballModal('goal', 'teamB')} disabled={isBusy}>
                 + GOAL <span className="opacity-70">{teamBInfo.shortName}</span>
               </Pad>
             </div>
@@ -840,72 +1323,59 @@ const ScoringConsole: React.FC = () => {
             </div>
           </div>
 
+          {/* Disciplinary & Lineup */}
           <div>
-            <PanelLabel>Disciplinary & Play</PanelLabel>
-            <div className="grid grid-cols-4 gap-2">
+            <PanelLabel hint="cards & subs">Disciplinary & Lineup</PanelLabel>
+            <div className="grid grid-cols-3 gap-2">
               <Pad
                 tone="yellow"
                 size="sm"
                 disabled={isBusy}
-                onClick={() =>
-                  recordEvent({
-                    type: 'yellow_card',
-                    team: 'teamA',
-                    teamName: teamAInfo.name,
-                    description: `🟨 Yellow Card · ${teamAInfo.shortName}`,
-                    newScore: (liveMatch?.score || {}) as Record<string, unknown>,
-                  })
-                }
+                onClick={() => handleOpenFootballModal('yellow_card', 'teamA')}
               >
-                🟨 {teamAInfo.shortName}
-              </Pad>
-              <Pad
-                tone="yellow"
-                size="sm"
-                disabled={isBusy}
-                onClick={() =>
-                  recordEvent({
-                    type: 'yellow_card',
-                    team: 'teamB',
-                    teamName: teamBInfo.name,
-                    description: `🟨 Yellow Card · ${teamBInfo.shortName}`,
-                    newScore: (liveMatch?.score || {}) as Record<string, unknown>,
-                  })
-                }
-              >
-                🟨 {teamBInfo.shortName}
+                🟨 Card {teamAInfo.shortName}
               </Pad>
               <Pad
                 tone="red"
                 size="sm"
                 disabled={isBusy}
-                onClick={() =>
-                  recordEvent({
-                    type: 'red_card',
-                    team: 'teamA',
-                    teamName: teamAInfo.name,
-                    description: `🟥 Red Card · ${teamAInfo.shortName}`,
-                    newScore: (liveMatch?.score || {}) as Record<string, unknown>,
-                  })
-                }
+                onClick={() => handleOpenFootballModal('red_card', 'teamA')}
               >
-                🟥 {teamAInfo.shortName}
+                🟥 Card {teamAInfo.shortName}
+              </Pad>
+              <Pad
+                tone="blue"
+                size="sm"
+                disabled={isBusy}
+                onClick={() => handleOpenFootballModal('substitution', 'teamA')}
+              >
+                🔄 Sub {teamAInfo.shortName}
+              </Pad>
+            </div>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              <Pad
+                tone="yellow"
+                size="sm"
+                disabled={isBusy}
+                onClick={() => handleOpenFootballModal('yellow_card', 'teamB')}
+              >
+                🟨 Card {teamBInfo.shortName}
               </Pad>
               <Pad
                 tone="red"
                 size="sm"
                 disabled={isBusy}
-                onClick={() =>
-                  recordEvent({
-                    type: 'red_card',
-                    team: 'teamB',
-                    teamName: teamBInfo.name,
-                    description: `🟥 Red Card · ${teamBInfo.shortName}`,
-                    newScore: (liveMatch?.score || {}) as Record<string, unknown>,
-                  })
-                }
+                onClick={() => handleOpenFootballModal('red_card', 'teamB')}
               >
-                🟥 {teamBInfo.shortName}
+                🟥 Card {teamBInfo.shortName}
+              </Pad>
+              <Pad
+                tone="coral"
+                size="sm"
+                disabled={isBusy}
+                onClick={() => handleOpenFootballModal('substitution', 'teamB')}
+              >
+                🔄 Sub {teamBInfo.shortName}
               </Pad>
             </div>
           </div>
@@ -913,7 +1383,182 @@ const ScoringConsole: React.FC = () => {
       );
     }
 
-    if (s.includes('volleyball') || s.includes('badminton') || s.includes('table-tennis') || s.includes('hand-tennis')) {
+    if (s.includes('volleyball')) {
+      const currentSet = Number(liveMatch?.liveState?.currentSet || 1);
+      const targetPoints = Number(liveMatch?.liveState?.targetPoints || 25);
+      const bestOf = Number(liveMatch?.liveState?.bestOf || 3);
+      const isDeciding = currentSet >= bestOf;
+      const setsWonA = Number(liveMatch?.liveState?.setsWon?.teamA ?? 0);
+      const setsWonB = Number(liveMatch?.liveState?.setsWon?.teamB ?? 0);
+      const curPtsA = Number(liveMatch?.liveState?.currentSetScore?.teamA ?? liveMatch?.score?.teamA ?? 0);
+      const curPtsB = Number(liveMatch?.liveState?.currentSetScore?.teamB ?? liveMatch?.score?.teamB ?? 0);
+      const completedSets = (liveMatch?.liveState?.completedSets as Array<{ set: number; teamA: number; teamB: number; winner: string }>) || [];
+
+      return (
+        <div className="space-y-5">
+          {/* Volleyball Match HUD */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#1E2A45] bg-[#101A2E] p-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-black text-[#D9A441] text-sm uppercase">
+                SET {currentSet} {isDeciding && '(Deciding Set)'}
+              </span>
+              <span className="text-[#8FA0BC]">· Target: {targetPoints} pts (Win by 2)</span>
+            </div>
+            <div className="flex items-center gap-3 font-mono font-bold">
+              <span className="text-blue-400">{teamAInfo.shortName}: {setsWonA} sets</span>
+              <span className="text-[#5E6E86]">—</span>
+              <span className="text-[#FF4D3D]">{teamBInfo.shortName}: {setsWonB} sets</span>
+            </div>
+          </div>
+
+          {/* Current Set Big Score Readout */}
+          <div className="flex items-center justify-center gap-6 rounded-xl border border-[#1A2440] bg-[#070D18] py-4">
+            <div className="text-center">
+              <span className="block text-xs font-black uppercase tracking-wider text-blue-400">{teamAInfo.shortName}</span>
+              <span className="text-4xl font-mono font-black text-white tabular-nums">{curPtsA}</span>
+            </div>
+            <span className="text-2xl font-black text-[#3B4D6B]">:</span>
+            <div className="text-center">
+              <span className="block text-xs font-black uppercase tracking-wider text-[#FF4D3D]">{teamBInfo.shortName}</span>
+              <span className="text-4xl font-mono font-black text-white tabular-nums">{curPtsB}</span>
+            </div>
+          </div>
+
+          {/* 1-Tap Scoring Pads */}
+          <div>
+            <PanelLabel hint="single tap scores point">Rally Winner (+ Point)</PanelLabel>
+            <div className="grid grid-cols-2 gap-3">
+              <Pad
+                tone="blue"
+                size="lg"
+                onClick={() => handleVolleyballPoint('teamA')}
+                disabled={isBusy || liveMatch?.status === 'completed'}
+              >
+                + POINT <span className="opacity-70">{teamAInfo.shortName}</span>
+              </Pad>
+              <Pad
+                tone="coral"
+                size="lg"
+                onClick={() => handleVolleyballPoint('teamB')}
+                disabled={isBusy || liveMatch?.status === 'completed'}
+              >
+                + POINT <span className="opacity-70">{teamBInfo.shortName}</span>
+              </Pad>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-3">
+              <Pad
+                tone="slate"
+                size="sm"
+                onClick={() => handleVolleyballRemovePoint('teamA')}
+                disabled={isBusy || curPtsA === 0 || liveMatch?.status === 'completed'}
+              >
+                − Point {teamAInfo.shortName}
+              </Pad>
+              <Pad
+                tone="slate"
+                size="sm"
+                onClick={() => handleVolleyballRemovePoint('teamB')}
+                disabled={isBusy || curPtsB === 0 || liveMatch?.status === 'completed'}
+              >
+                − Point {teamBInfo.shortName}
+              </Pad>
+            </div>
+          </div>
+
+          {/* Optional Player Attribution (Non-blocking) */}
+          <div className="rounded-lg border border-[#1A2440] bg-[#0E1726]/60 p-3">
+            <PanelLabel hint="optional — point can be recorded without player">Player Attribution (Optional)</PanelLabel>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <input
+                  type="text"
+                  placeholder={`${teamAInfo.shortName} Player (Optional)`}
+                  value={volleyballPlayerA}
+                  onChange={(e) => setVolleyballPlayerA(e.target.value)}
+                  className="w-full rounded border border-[#1E2A45] bg-[#101A2E] px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder={`${teamBInfo.shortName} Player (Optional)`}
+                  value={volleyballPlayerB}
+                  onChange={(e) => setVolleyballPlayerB(e.target.value)}
+                  className="w-full rounded border border-[#1E2A45] bg-[#101A2E] px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:border-[#FF4D3D] focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Utility Actions (Timeouts & Manual End Set) */}
+          <div>
+            <PanelLabel hint="timeouts and set controls">Match Controls</PanelLabel>
+            <div className="grid grid-cols-3 gap-2">
+              <Pad
+                tone="gold"
+                onClick={handleVolleyballEndSet}
+                disabled={isBusy || liveMatch?.status === 'completed'}
+              >
+                🏆 End Set
+              </Pad>
+              <Pad
+                tone="yellow"
+                size="sm"
+                disabled={isBusy}
+                onClick={() =>
+                  recordEvent({
+                    type: 'timeout',
+                    team: 'teamA',
+                    teamName: teamAInfo.name,
+                    description: `Timeout called by ${teamAInfo.shortName}`,
+                    newScore: (liveMatch?.score || {}) as Record<string, unknown>,
+                  })
+                }
+              >
+                ⏱️ TO {teamAInfo.shortName}
+              </Pad>
+              <Pad
+                tone="yellow"
+                size="sm"
+                disabled={isBusy}
+                onClick={() =>
+                  recordEvent({
+                    type: 'timeout',
+                    team: 'teamB',
+                    teamName: teamBInfo.name,
+                    description: `Timeout called by ${teamBInfo.shortName}`,
+                    newScore: (liveMatch?.score || {}) as Record<string, unknown>,
+                  })
+                }
+              >
+                ⏱️ TO {teamBInfo.shortName}
+              </Pad>
+            </div>
+          </div>
+
+          {/* Completed Sets History Pills */}
+          {completedSets.length > 0 && (
+            <div className="rounded-lg border border-[#1E2A45] bg-[#101A2E] p-3">
+              <span className="block text-[10px] font-black uppercase tracking-wider text-[#8FA0BC] mb-2">
+                Completed Sets History
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {completedSets.map((s, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2.5 py-1 rounded bg-[#070D18] border border-[#1A2440] font-mono text-xs text-slate-300"
+                  >
+                    Set {s.set}: <strong className="text-white">{s.teamA}–{s.teamB}</strong>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (s.includes('badminton') || s.includes('table-tennis') || s.includes('hand-tennis')) {
       return (
         <div className="space-y-5">
           <div>
@@ -1447,6 +2092,479 @@ const ScoringConsole: React.FC = () => {
                 </button>
                 <Pad tone="red" size="sm" onClick={handleEndMatch} className="min-h-[42px] px-5">
                   Confirm End Match
+                </Pad>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Football Action Dialog */}
+      <AnimatePresence>
+        {footballModal && (
+          <motion.div
+            className="fixed inset-0 z-[98] flex items-center justify-center bg-[#05070C]/85 p-6 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 20, opacity: 0 }}
+              className="w-full max-w-md border border-[#1E2A45] bg-[#0B1220] p-6 rounded-xl shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-[#1E2A45] pb-3">
+                <h3 className="text-base font-black uppercase tracking-[0.14em] text-[#EEF2F7]">
+                  {footballModal.type === 'goal' && `⚽ Record Goal · ${footballModal.team === 'teamA' ? teamAInfo.name : teamBInfo.name}`}
+                  {footballModal.type === 'yellow_card' && `🟨 Yellow Card · ${footballModal.team === 'teamA' ? teamAInfo.name : teamBInfo.name}`}
+                  {footballModal.type === 'red_card' && `🟥 Red Card · ${footballModal.team === 'teamA' ? teamAInfo.name : teamBInfo.name}`}
+                  {footballModal.type === 'substitution' && `🔄 Substitution · ${footballModal.team === 'teamA' ? teamAInfo.name : teamBInfo.name}`}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setFootballModal(null)}
+                  className="text-[#8FA0BC] hover:text-[#EEF2F7]"
+                >
+                  <FiX className="h-5 w-5" />
+                </button>
+              </div>
+
+              {footballModal.type === 'goal' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1">
+                      Scorer (Optional)
+                    </label>
+                    {(footballModal.team === 'teamA' ? teamAPlayers : teamBPlayers).length > 0 ? (
+                      <select
+                        value={selectedPlayer}
+                        onChange={(e) => setSelectedPlayer(e.target.value)}
+                        className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none"
+                      >
+                        <option value="">-- Select or type below --</option>
+                        {(footballModal.team === 'teamA' ? teamAPlayers : teamBPlayers).map((p) => (
+                          <option key={p.id} value={p.name}>
+                            #{p.jerseyNumber} {p.name} ({p.position})
+                          </option>
+                        ))}
+                      </select>
+                    ) : null}
+                    <input
+                      type="text"
+                      placeholder="Type player name..."
+                      value={selectedPlayer}
+                      onChange={(e) => setSelectedPlayer(e.target.value)}
+                      className="mt-1.5 w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none placeholder-[#5E6E86]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1">
+                      Assist (Optional)
+                    </label>
+                    {(footballModal.team === 'teamA' ? teamAPlayers : teamBPlayers).length > 0 ? (
+                      <select
+                        value={assistPlayer}
+                        onChange={(e) => setAssistPlayer(e.target.value)}
+                        className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none"
+                      >
+                        <option value="">-- Select or type below --</option>
+                        {(footballModal.team === 'teamA' ? teamAPlayers : teamBPlayers).map((p) => (
+                          <option key={p.id} value={p.name}>
+                            #{p.jerseyNumber} {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : null}
+                    <input
+                      type="text"
+                      placeholder="Type assist player name..."
+                      value={assistPlayer}
+                      onChange={(e) => setAssistPlayer(e.target.value)}
+                      className="mt-1.5 w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none placeholder-[#5E6E86]"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {(footballModal.type === 'yellow_card' || footballModal.type === 'red_card') && (
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1">
+                    Carded Player
+                  </label>
+                  {(footballModal.team === 'teamA' ? teamAPlayers : teamBPlayers).length > 0 ? (
+                    <select
+                      value={selectedPlayer}
+                      onChange={(e) => setSelectedPlayer(e.target.value)}
+                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none"
+                    >
+                      <option value="">-- Select or type below --</option>
+                      {(footballModal.team === 'teamA' ? teamAPlayers : teamBPlayers).map((p) => (
+                        <option key={p.id} value={p.name}>
+                          #{p.jerseyNumber} {p.name} ({p.position})
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
+                  <input
+                    type="text"
+                    placeholder="Type player name..."
+                    value={selectedPlayer}
+                    onChange={(e) => setSelectedPlayer(e.target.value)}
+                    className="mt-1.5 w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none placeholder-[#5E6E86]"
+                  />
+                </div>
+              )}
+
+              {footballModal.type === 'substitution' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1">
+                      Player Leaving Pitch (OFF)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Player OFF name..."
+                      value={subPlayerOff}
+                      onChange={(e) => setSubPlayerOff(e.target.value)}
+                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none placeholder-[#5E6E86]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1">
+                      Player Entering Pitch (ON)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Player ON name..."
+                      value={subPlayerOn}
+                      onChange={(e) => setSubPlayerOn(e.target.value)}
+                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none placeholder-[#5E6E86]"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-[#1E2A45]">
+                <button
+                  type="button"
+                  onClick={() => setFootballModal(null)}
+                  className="border border-[#1E2A45] px-4 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-[#8FA0BC] hover:text-[#EEF2F7]"
+                >
+                  Cancel
+                </button>
+                <Pad
+                  tone={footballModal.team === 'teamA' ? 'blue' : 'coral'}
+                  size="sm"
+                  onClick={handleConfirmFootballAction}
+                  disabled={isBusy}
+                  className="px-5 min-h-[38px]"
+                >
+                  Confirm Event
+                </Pad>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cricket Wicket Modal */}
+      <AnimatePresence>
+        {cricketWicketModal && (
+          <motion.div
+            className="fixed inset-0 z-[98] flex items-center justify-center bg-[#05070C]/85 p-6 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 20, opacity: 0 }}
+              className="w-full max-w-md border border-[#1E2A45] bg-[#0B1220] p-6 rounded-xl shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-[#1E2A45] pb-3">
+                <h3 className="text-base font-black uppercase tracking-[0.14em] text-red-400 flex items-center gap-2">
+                  🎯 Record Wicket (#{currentCricket.wickets + 1})
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setCricketWicketModal(false)}
+                  className="text-[#8FA0BC] hover:text-[#EEF2F7]"
+                >
+                  <FiX className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Dismissed Batsman Selection */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1.5">
+                    Batsman Dismissed
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setWicketOutBatsman('striker')}
+                      className={cn(
+                        "p-2.5 rounded text-xs font-bold border transition-colors text-left",
+                        wicketOutBatsman === 'striker'
+                          ? "bg-red-500/20 border-red-500 text-red-400"
+                          : "bg-[#101A2E] border-[#1E2A45] text-slate-300"
+                      )}
+                    >
+                      <span className="text-[10px] block opacity-70">STRIKER *</span>
+                      <span className="truncate block">{currentCricket.strikerName || 'Striker'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setWicketOutBatsman('nonStriker')}
+                      className={cn(
+                        "p-2.5 rounded text-xs font-bold border transition-colors text-left",
+                        wicketOutBatsman === 'nonStriker'
+                          ? "bg-red-500/20 border-red-500 text-red-400"
+                          : "bg-[#101A2E] border-[#1E2A45] text-slate-300"
+                      )}
+                    >
+                      <span className="text-[10px] block opacity-70">NON-STRIKER</span>
+                      <span className="truncate block">{currentCricket.nonStrikerName || 'Non-striker'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Dismissal Mode */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1.5">
+                    Dismissal Type
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { id: 'caught', label: 'Caught' },
+                      { id: 'bowled', label: 'Bowled' },
+                      { id: 'lbw', label: 'LBW' },
+                      { id: 'run_out', label: 'Run Out' },
+                      { id: 'stumped', label: 'Stumped' },
+                      { id: 'hit_wicket', label: 'Hit Wicket' },
+                    ].map((mode) => (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => setWicketDismissalType(mode.id as any)}
+                        className={cn(
+                          "py-2 px-1 text-[11px] font-bold uppercase rounded border transition-colors text-center",
+                          wicketDismissalType === mode.id
+                            ? "bg-amber-400 text-black border-amber-300 shadow-sm"
+                            : "bg-[#101A2E] border-[#1E2A45] text-slate-300 hover:bg-white/5"
+                        )}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Fielder Input (for Caught, Run out, Stumped) */}
+                {(wicketDismissalType === 'caught' || wicketDismissalType === 'run_out' || wicketDismissalType === 'stumped') && (
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1">
+                      {wicketDismissalType === 'caught' ? 'Catcher / Fielder' : wicketDismissalType === 'stumped' ? 'Wicketkeeper' : 'Fielder (Throw / Run out)'}
+                    </label>
+                    {bowlingPlayers.length > 0 && (
+                      <select
+                        value={wicketFielder}
+                        onChange={(e) => setWicketFielder(e.target.value)}
+                        className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded mb-1 outline-none"
+                      >
+                        <option value="">-- Select from fielding squad --</option>
+                        {bowlingPlayers.map((p) => (
+                          <option key={p.id} value={p.name}>#{p.jerseyNumber} {p.name}</option>
+                        ))}
+                      </select>
+                    )}
+                    <input
+                      type="text"
+                      placeholder="Type fielder name..."
+                      value={wicketFielder}
+                      onChange={(e) => setWicketFielder(e.target.value)}
+                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded outline-none placeholder-[#5E6E86]"
+                    />
+                  </div>
+                )}
+
+                {/* Incoming Batsman */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1">
+                    Next Batsman In (Optional)
+                  </label>
+                  {battingPlayers.length > 0 && (
+                    <select
+                      value={wicketNextBatsman}
+                      onChange={(e) => setWicketNextBatsman(e.target.value)}
+                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded mb-1 outline-none"
+                    >
+                      <option value="">-- Select next batsman --</option>
+                      {battingPlayers
+                        .filter((p) => p.name !== currentCricket.strikerName && p.name !== currentCricket.nonStrikerName)
+                        .map((p) => (
+                          <option key={p.id} value={p.name}>#{p.jerseyNumber} {p.name}</option>
+                        ))}
+                    </select>
+                  )}
+                  <input
+                    type="text"
+                    placeholder="Type incoming batsman name..."
+                    value={wicketNextBatsman}
+                    onChange={(e) => setWicketNextBatsman(e.target.value)}
+                    className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded outline-none placeholder-[#5E6E86]"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-[#1E2A45]">
+                <button
+                  type="button"
+                  onClick={() => setCricketWicketModal(false)}
+                  className="border border-[#1E2A45] px-4 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-[#8FA0BC] hover:text-[#EEF2F7]"
+                >
+                  Cancel
+                </button>
+                <Pad
+                  tone="red"
+                  size="sm"
+                  onClick={handleConfirmWicket}
+                  disabled={isBusy}
+                  className="px-5 min-h-[38px]"
+                >
+                  Confirm Wicket
+                </Pad>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cricket Lineup Modal */}
+      <AnimatePresence>
+        {lineupModal && (
+          <motion.div
+            className="fixed inset-0 z-[98] flex items-center justify-center bg-[#05070C]/85 p-6 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 20, opacity: 0 }}
+              className="w-full max-w-md border border-[#1E2A45] bg-[#0B1220] p-6 rounded-xl shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-[#1E2A45] pb-3">
+                <h3 className="text-base font-black uppercase tracking-[0.14em] text-[#EEF2F7]">
+                  ✎ Set Crease & Bowling Lineup
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setLineupModal(false)}
+                  className="text-[#8FA0BC] hover:text-[#EEF2F7]"
+                >
+                  <FiX className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-emerald-400 mb-1">
+                    Striker (Facing Delivery)
+                  </label>
+                  {battingPlayers.length > 0 && (
+                    <select
+                      value={lineupStriker}
+                      onChange={(e) => setLineupStriker(e.target.value)}
+                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded mb-1 outline-none"
+                    >
+                      <option value="">-- Select Striker --</option>
+                      {battingPlayers.map((p) => (
+                        <option key={p.id} value={p.name}>#{p.jerseyNumber} {p.name}</option>
+                      ))}
+                    </select>
+                  )}
+                  <input
+                    type="text"
+                    placeholder="Striker name..."
+                    value={lineupStriker}
+                    onChange={(e) => setLineupStriker(e.target.value)}
+                    className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded outline-none placeholder-[#5E6E86]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
+                    Non-Striker (Runner's End)
+                  </label>
+                  {battingPlayers.length > 0 && (
+                    <select
+                      value={lineupNonStriker}
+                      onChange={(e) => setLineupNonStriker(e.target.value)}
+                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded mb-1 outline-none"
+                    >
+                      <option value="">-- Select Non-Striker --</option>
+                      {battingPlayers.map((p) => (
+                        <option key={p.id} value={p.name}>#{p.jerseyNumber} {p.name}</option>
+                      ))}
+                    </select>
+                  )}
+                  <input
+                    type="text"
+                    placeholder="Non-striker name..."
+                    value={lineupNonStriker}
+                    onChange={(e) => setLineupNonStriker(e.target.value)}
+                    className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded outline-none placeholder-[#5E6E86]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-rose-400 mb-1">
+                    Current Bowler
+                  </label>
+                  {bowlingPlayers.length > 0 && (
+                    <select
+                      value={lineupBowler}
+                      onChange={(e) => setLineupBowler(e.target.value)}
+                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded mb-1 outline-none"
+                    >
+                      <option value="">-- Select Bowler --</option>
+                      {bowlingPlayers.map((p) => (
+                        <option key={p.id} value={p.name}>#{p.jerseyNumber} {p.name}</option>
+                      ))}
+                    </select>
+                  )}
+                  <input
+                    type="text"
+                    placeholder="Bowler name..."
+                    value={lineupBowler}
+                    onChange={(e) => setLineupBowler(e.target.value)}
+                    className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded outline-none placeholder-[#5E6E86]"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-[#1E2A45]">
+                <button
+                  type="button"
+                  onClick={() => setLineupModal(false)}
+                  className="border border-[#1E2A45] px-4 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-[#8FA0BC] hover:text-[#EEF2F7]"
+                >
+                  Cancel
+                </button>
+                <Pad
+                  tone="blue"
+                  size="sm"
+                  onClick={handleSaveLineup}
+                  disabled={isBusy}
+                  className="px-5 min-h-[38px]"
+                >
+                  Save Lineup
                 </Pad>
               </div>
             </motion.div>

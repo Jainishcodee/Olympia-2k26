@@ -88,7 +88,9 @@ const AdminDashboard: React.FC = () => {
   const reviews = useCollection<{ id: string; rating?: number }>('reviews');
   const reactions = useCollection<{ id: string }>('reactions');
   const fixtures = useCollection<Fixture>('fixtures', { sortBy: 'scheduledAt' });
-  const events = useCollection<MatchEvent>('matchEvents', { max: 8 });
+  // Events live in subcollections (matches/{id}/events), not a root collection.
+  // Recent event counts are derived from match data instead.
+  const events = { data: [] as MatchEvent[], isLoading: false, error: null };
   const activity = useCollection<AuditEntry>('auditLogs', {
     sortBy: 'timestamp',
     direction: 'desc',

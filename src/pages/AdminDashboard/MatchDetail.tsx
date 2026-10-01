@@ -86,10 +86,10 @@ const MatchDetail: React.FC = () => {
   const isDay = theme === 'day';
 
   const match = useDoc<Match>('matches', matchId);
-  const events = useCollection<MatchEvent>('matchEvents', {
-    constraints: eq('matchId', matchId),
-    sortBy: 'timestamp',
+  const events = useCollection<MatchEvent>(matchId ? `matches/${matchId}/events` : 'empty', {
+    sortBy: 'sequence',
     direction: 'desc',
+    enabled: Boolean(matchId),
   });
   const audit = useCollection<AuditEntry>('auditLogs', {
     constraints: eq('resourceId', matchId),

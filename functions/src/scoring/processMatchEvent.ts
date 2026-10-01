@@ -1,6 +1,12 @@
 import * as functions from 'firebase-functions/v2';
 import * as admin from 'firebase-admin';
 
+/**
+ * DEPRECATED / LEGACY: Canonical scoring is handled atomically via `scoringService.ts`
+ * inside Firestore transactions on `matches/{matchId}` and `matches/{matchId}/events/{eventId}`.
+ * This function listened to the legacy root `matchEvents` collection and is kept inert to avoid
+ * conflicting with sport-specific atomic score calculations.
+ */
 export const processMatchEvent = functions.firestore.onDocumentWritten('matchEvents/{eventId}', async (event) => {
   const change = event.data;
   if (!change) return;

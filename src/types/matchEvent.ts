@@ -26,6 +26,8 @@ export type EventType =
   | 'leg_bye'
   | 'point'
   | 'point_removed'
+  | 'set_started'
+  | 'set_completed'
   | 'set_won'
   | 'game_won'
   | 'round_won'
@@ -36,7 +38,17 @@ export type EventType =
   | 'match_start'
   | 'match_pause'
   | 'match_resume'
+  | 'half_time'
+  | 'second_half'
   | 'match_end'
+  | 'full_time'
+  | 'ball'
+  | 'over_completed'
+  | 'innings_start'
+  | 'innings_end'
+  | 'innings_completed'
+  | 'drinks_break'
+  | 'break'
   | 'substitution_in'
   | 'substitution_out'
   | 'correction'
@@ -50,6 +62,7 @@ export interface SportPositioning {
   /** Football / timed match positioning */
   period?: number;
   matchSecond?: number;
+  addedTime?: number;
   /** Volleyball / Tennis / Hand tennis */
   set?: number;
   rally?: number;

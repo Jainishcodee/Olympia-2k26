@@ -25,64 +25,7 @@ interface SportLeaderboardPreview {
   }[];
 }
 
-const DEFAULT_SPORTS_PREVIEWS: SportLeaderboardPreview[] = [
-  {
-    sportId: 'football',
-    sportName: 'Football',
-    icon: '⚽',
-    status: 'live',
-    leader: 'Thunderbolts FC',
-    entries: [
-      { rank: 1, name: 'Arjun Mehta', team: 'Thunderbolts FC', points: 1420, wins: 12, losses: 2 },
-      { rank: 2, name: 'Vikram Joshi', team: 'Phoenix United', points: 1280, wins: 10, losses: 3 },
-      { rank: 3, name: 'Kabir Singh', team: 'Thunderbolts FC', points: 1150, wins: 9, losses: 3 },
-      { rank: 4, name: 'Aditya Sharma', team: 'Phoenix United', points: 1040, wins: 8, losses: 4 },
-      { rank: 5, name: 'Rajesh Nair', team: 'Iron Wolves', points: 960, wins: 7, losses: 4 },
-    ],
-  },
-  {
-    sportId: 'cricket',
-    sportName: 'Cricket',
-    icon: '🏏',
-    status: 'standings',
-    leader: 'Storm Breakers XI',
-    entries: [
-      { rank: 1, name: 'Rahul Dravid Jr', team: 'Storm Breakers XI', points: 1340, wins: 11, losses: 2 },
-      { rank: 2, name: 'Ankit Rajput', team: 'Golden Warriors', points: 1220, wins: 10, losses: 3 },
-      { rank: 3, name: 'Suresh Raina Jr', team: 'Golden Warriors', points: 1130, wins: 9, losses: 4 },
-      { rank: 4, name: 'Pradeep Sangwan', team: 'Storm Breakers XI', points: 1010, wins: 8, losses: 3 },
-      { rank: 5, name: 'Deepak Chahar Jr', team: 'Golden Warriors', points: 940, wins: 7, losses: 4 },
-    ],
-  },
-  {
-    sportId: 'volleyball',
-    sportName: 'Volleyball',
-    icon: '🏐',
-    status: 'standings',
-    leader: 'Spike Masters',
-    entries: [
-      { rank: 1, name: 'Akash Reddy', team: 'Spike Masters', points: 1280, wins: 11, losses: 4 },
-      { rank: 2, name: 'Harsh Pandey', team: 'Block Titans', points: 1190, wins: 10, losses: 4 },
-      { rank: 3, name: 'Sameer Khan', team: 'Block Titans', points: 1080, wins: 8, losses: 4 },
-      { rank: 4, name: 'Yash Malhotra', team: 'Spike Masters', points: 990, wins: 7, losses: 5 },
-      { rank: 5, name: 'Rohan Sharma', team: 'Spike Masters', points: 920, wins: 7, losses: 5 },
-    ],
-  },
-  {
-    sportId: 'lan-games',
-    sportName: 'LAN Games',
-    icon: '🎮',
-    status: 'standings',
-    leader: 'Cyber Phantoms',
-    entries: [
-      { rank: 1, name: 'CyberX', team: 'Cyber Phantoms', points: 1290, wins: 12, losses: 3 },
-      { rank: 2, name: 'N3onBl4de', team: 'Neon Strikers', points: 1180, wins: 10, losses: 4 },
-      { rank: 3, name: 'PhantomGhost', team: 'Cyber Phantoms', points: 1090, wins: 9, losses: 4 },
-      { rank: 4, name: 'HyperNova', team: 'Neon Strikers', points: 980, wins: 8, losses: 5 },
-      { rank: 5, name: 'VortexAce', team: 'Cyber Phantoms', points: 910, wins: 7, losses: 5 },
-    ],
-  },
-];
+const DEFAULT_SPORTS_PREVIEWS: SportLeaderboardPreview[] = [];
 
 export const ArenaLeaderboardPreview: React.FC = () => {
   const { theme } = useTheme();
@@ -103,16 +46,24 @@ export const ArenaLeaderboardPreview: React.FC = () => {
 
   // Build live preview datasets per sport
   const previews = useMemo(() => {
-    return DEFAULT_SPORTS_PREVIEWS.map((sp) => {
-      const isLiveMatch = matches.data.some(
-        (m) => m.sportId === sp.sportId && m.status === 'live',
-      );
-      return {
-        ...sp,
-        status: isLiveMatch ? ('live' as const) : sp.status,
-      };
-    });
-  }, [matches.data]);
+    // Build previews from real Firestore sports data
+    if (sports.data.length > 0) {
+      return sports.data.map((s) => {
+        const isLiveMatch = matches.data.some(
+          (m) => m.sportId === s.id && m.status === 'live',
+        );
+        return {
+          sportId: s.id,
+          sportName: s.name,
+          icon: s.icon || '🏆',
+          status: isLiveMatch ? ('live' as const) : ('standings' as const),
+          leader: '—',
+          entries: [],
+        } as SportLeaderboardPreview;
+      });
+    }
+    return DEFAULT_SPORTS_PREVIEWS;
+  }, [sports.data, matches.data]);
 
   const currentPreview = useMemo(() => {
     return previews.find((p) => p.sportId === activeSportId) || previews[0];

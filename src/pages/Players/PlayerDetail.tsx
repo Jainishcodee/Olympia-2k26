@@ -17,34 +17,29 @@ export const PlayerDetail: React.FC = () => {
   const { data: allTeams } = useCollection<Team>('teams');
   const { data: allSports } = useCollection<Sport>('sports');
 
-  const fallbackPlayer: Player = {
-    id: playerId || '1',
-    name: 'Marcus Vance',
-    photo: '',
-    jerseyNumber: 23,
-    teamId: '1',
-    sportId: 'basketball',
-    position: 'Power Forward',
-    role: 'captain',
-    gender: 'male',
-    bio: 'Lead scorer and defensive anchor for Olympia 2K26. Known for high basketball IQ, clutch 3-pointers, and relentless court leadership.',
-    active: true,
-    stats: {
-      matchesPlayed: 12,
-      goals: 0,
-      assists: 65,
-      runs: 0,
-      wickets: 0,
-      points: 284,
-      wins: 10,
-      losses: 2,
-      rating: 4.9,
-    },
-    createdAt: {} as any,
-    updatedAt: {} as any,
-  };
+  const player = allPlayers?.find(p => p.id === playerId);
 
-  const player = allPlayers?.find(p => p.id === playerId) || fallbackPlayer;
+  if (isLoading) {
+    return (
+      <div className={cn('min-h-screen pt-28 pb-16', isDay ? 'bg-[#F7F6F1] text-[#071426]' : 'bg-[#080A0D] text-white')}>
+        <div className="max-w-xl mx-auto text-center py-20">
+          <p className={cn('text-sm font-semibold', isDay ? 'text-[#071426]/60' : 'text-white/50')}>Loading athlete profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!player) {
+    return (
+      <div className={cn('min-h-screen pt-28 pb-16', isDay ? 'bg-[#F7F6F1] text-[#071426]' : 'bg-[#080A0D] text-white')}>
+        <div className="max-w-xl mx-auto text-center py-20">
+          <h2 className="text-2xl font-black uppercase tracking-tight mb-2">Player Not Found</h2>
+          <p className={cn('text-sm', isDay ? 'text-[#071426]/60' : 'text-white/50')}>No player found with id "{playerId}".</p>
+          <Link to="/players" className="mt-4 inline-block text-sm font-bold text-blue-500 hover:underline">← Back to athletes</Link>
+        </div>
+      </div>
+    );
+  }
   const team = allTeams?.find(t => t.id === player.teamId);
   const sport = allSports?.find(s => s.id === player.sportId);
   const playerTeamName = team?.name || 'Thunderbolts';

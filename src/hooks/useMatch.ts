@@ -45,7 +45,7 @@ export function useMatch(matchId: string) {
         });
 
         const eventsRef = collection(currentDb, `matches/${matchId}/events`);
-        const q = query(eventsRef, orderBy('timestamp', 'desc'));
+        const q = query(eventsRef, orderBy('sequence', 'desc'));
         unsubscribeEvents = onSnapshot(q, (snapshot) => {
           const eventsData = snapshot.docs.map(d => docToData<MatchEvent>(d));
           setEvents(eventsData);

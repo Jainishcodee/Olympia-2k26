@@ -827,3 +827,293 @@ App runs at `http://localhost:5173`.
 
 ### 24c. Build Verification
 - Verified with `tsc -b && vite build` — **0 errors**, production build compiled cleanly in 1.24s.
+
+---
+
+## 🛡️ Phase 41: Phase 1 — Data Foundation + Live Scoring Safety
+
+> **Completed on October 1, 2026**
+
+### 41a. Canonical Match Architecture & Atomic Concurrency (`scoringService.ts`)
+- **Atomic Transactions (`runTransaction`):**
+  - Replaced non-atomic `getDoc -> addDoc -> updateDoc` sequences in `recordMatchEvent`, `undoLastActiveEvent`, and `correctMatchEvent` with Firestore `runTransaction`.
+  - Guarantees strictly monotonic event sequence numbers (`nextSequence = currentSequence + 1`) under concurrent multi-admin scoring with zero duplicate sequence numbers or overwritten scores.
+  - Event payload creation (`matches/{matchId}/events/{eventId}`) and current match state (`matches/{matchId}`) commit atomically within the same transaction.
+  - Replaced `serverTimestamp()` with deterministic `Timestamp.now()` inside transaction scopes to conform to Firestore SDK constraints.
+- **Undo Concurrency Protection:**
+  - `undoLastActiveEvent` now queries latest active candidates, then re-verifies inside the transaction that the target event has not been undone concurrently by another operator (`if (targetSnap.data()?.undone) throw new Error(...)`).
+  - Restores prior event snapshot score and liveState atomically or falls back safely to initial match state.
+- **Auditable Event Corrections:**
+  - `correctMatchEvent` atomically invalidates the original event with audit metadata (`undone: true`, `correctionNote`, `correctedByEventSequence`), appends a correction replacement event (`isCorrection: true`, `replacesSequence`), and commits the new authoritative match state in a single transaction.
+
+### 41b. Match Editor Data Loss Elimination (`MatchEditor.tsx`)
+- **Metadata-Only Updates for Existing Matches:**
+  - Separated match metadata (`sportId`, `tournamentId`, `matchNumber`, `round`, `teamAId`, `teamBId`, `participants`, `venueId`, `scheduledAt`, `displayMode`, `featured`, `featuredPriority`, `allowReactions`, `allowVoting`, `allowRatings`, `allowReviews`, `isHidden`) from live scoring state.
+  - Fixed catastrophic bug where editing a match reset live scores to `0-0`, status to `scheduled`, and wiped `liveState`, `startedAt`, `pausedAt`, and `endedAt`.
+  - On `isEdit`, `MatchEditor.tsx` now commits a strictly isolated `metadataPayload` via `updateMatch(matchId, metadataPayload)`, leaving active game state completely untouched.
+
+### 41c. Security Rules Hardening (`firebase/firestore.rules`)
+- **Subcollection Coverage:** Added rule for canonical event timeline `matches/{matchId}/events/{eventId}` (`allow read: if true; allow write: if isAdmin();`).
+- **Leaderboards & Settings:** Added rules for `leaderboards/{sportId}` and `settings/{settingId}` (`allow read: if true; allow write: if isAdmin();`).
+- **Dead Rule Removal:** Removed dead top-level `matchEvents` collection rule.
+- **Aggregate Security:** Restricted `delete` permissions on `match_voting/{matchId}` and `match_reactions/{matchId}` strictly to `isAdmin()`.
+
+### 41d. Match Clock & Real-Time State Recovery (`ScoringConsole.tsx`, `useMatch.ts`)
+- **Timestamp-Derived Clock:** Converted `ScoringConsole.tsx` from an ephemeral local `setInterval` counter to deriving elapsed time from `liveMatch.startedAt` and `liveState.pausedDurationMs`. Clock state now persists across page refreshes and multi-admin sessions.
+- **Canonical Subcollection Subscriptions:**
+  - Updated `useMatch.ts` and `MatchDetail.tsx` to subscribe to `matches/{matchId}/events` ordered by monotonic `sequence` desc.
+  - Replaced dead root `matchEvents` query in `AdminDashboard.tsx` with a safe static fallback.
+
+### 41e. Fake & Fallback Data Elimination
+- **`ArenaLeaderboardPreview.tsx`:** Cleared hardcoded fake players/teams (`DEFAULT_SPORTS_PREVIEWS = []`); dynamic previews now build strictly from real Firestore sports and matches.
+- **`Results.tsx`:** Removed fictitious `fallbackCompletedMatches`; displays real completed match results with an official empty state when no matches have concluded.
+- **`PlayerDetail.tsx` & `TeamDetail.tsx`:** Removed hardcoded fallback athletes ("Marcus Vance") and fallback teams ("Thunderbolts"); replaced with loading states and verified "Athlete / Team Not Found" UI boundaries.
+- **`MatchStats.tsx`:** Replaced hardcoded football possession/shots defaults with an empty array; renders only when authentic telemetry is provided.
+- **`ScoringConsole.tsx`:** Replaced hardcoded fake scorers array with an empty array `[]`.
+
+### 41f. Concurrency Audit & Score Delta Engine (`scoringService.ts`)
+- **Eliminated Lost Score Updates during Transaction Retries:**
+  - Audited `recordMatchEvent` for stale absolute score overwrite hazards.
+  - Implemented `ScoreDelta` interface and automatic delta inference (`inferScoreDelta`) for goals, points, wickets, runs, and sets.
+  - The transaction now derives the final score and liveState by applying deltas directly against the **fresh transaction snapshot**, completely preventing simultaneous score updates (e.g. Goal for Team A and Goal for Team B submitted at 0-0) from overwriting each other on retry.
+  - Updated all sport handlers in `ScoringConsole.tsx` (`handleFootballGoal`, `handleFootballRemoveGoal`, `handleCricketRuns`, `handleCricketWicket`, `handleAddPoint`, `handleEndSet`, `handleSimplePoint`) to pass `scoreDelta`.
+
+### 41g. Verification & Automated Test Suite
+- **Vitest Unit Test Suite:** `src/test/phase1-scoring-safety.test.ts` covers:
+  - Sport-specific positioning string formatting (Cricket, Football, Volleyball, Badminton, LAN Games, Carrom).
+  - Monotonic sequence incrementing and atomic dual-write commit inside `runTransaction`.
+  - Undo rollback and rejection of concurrent duplicate undo operations.
+  - Auditable correction event creation and historical invalidation.
+  - **Simultaneous Football Goals:** Two admins simultaneously submit Goal for Team A and Goal for Team B from 0-0; verifies both goals are committed (1-1) at sequences #41 and #42 with zero lost updates.
+  - **Simultaneous Cricket Scoring:** Concurrent Four (+4 runs, +1 ball) and Single (+1 run, +1 ball); verifies total runs (105) and balls (4) are preserved.
+  - **Simultaneous Volleyball Points:** Concurrent points for Team A and Team B; verifies both points increment against fresh snapshots.
+  - **Concurrent Card + Goal:** Non-scoring event submitted concurrently with a goal does not overwrite the goal.
+  - **Inferred Delta Engine:** Automatically infers +1 / -1 / boundary deltas when `scoreDelta` is omitted.
+- **Automated Test Results:** **19/19 tests passing** across 2 test files (`navigation.test.tsx` and `phase1-scoring-safety.test.ts`).
+- **Production Build:** `npm run build` succeeds cleanly with **0 TypeScript and Vite errors** in 1.37s.
+
+---
+
+## ⚽ Phase 42: Phase 2A — Football Live Scoring Engine
+
+> **Completed on October 1, 2026**
+
+### 42a. Football Lifecycle & Transactional State Machine (`scoringService.ts`, `match.ts`)
+- **Lifecycle Progression:** Implemented authoritative state transitions strictly within the canonical match transaction:
+  - `scheduled` → `live` via `match_start`: atomically initializes `startedAt: Timestamp.now()`, `period: 1`, `isHalfTime: false`.
+  - `live` → `paused` via `half_time`: sets `status: 'paused'`, `pausedAt: Timestamp.now()`, `period: 1`, `isHalfTime: true`.
+  - `paused` → `live` via `second_half`: resumes play, sets `status: 'live'`, `pausedAt: null`, `period: 2`, `isHalfTime: false`, and accumulates elapsed pause time into `liveState.pausedDurationMs`.
+  - `live` → `completed` via `match_end` / `full_time`: sets `status: 'completed'`, `endedAt: Timestamp.now()`.
+- **Match Status Guard:** Terminal match guard rejects any non-privileged scoring actions on `completed` or `cancelled` matches (`Cannot record scoring events on a completed match`).
+- **Added / Stoppage Time Positioning:** Extended `SportPositioning` with `addedTime?: number` and updated `formatSportPositioning` to format official stoppage badges (e.g. `1H 45+2'`, `2H 90+4'`).
+
+### 42b. Admin Scoring Console — Football Command Center (`ScoringConsole.tsx`)
+- **Single Source of Truth:** All football actions commit via `recordMatchEvent` using `scoreDelta` against fresh transaction snapshots, completely eliminating race conditions.
+- **Goal Attribution:** Added Goal modal with scorer selection from live team players (`useCollection<Player>('players')`), optional assist selection, and quick-score fallback.
+- **Disciplinary Actions:** Dedicated Yellow Card (`🟨`) and Red Card (`🟥`) action workflows attributing cards to specific players while safely preserving score state.
+- **Substitution Flow:** Dedicated Substitution (`🔄`) workflow capturing outgoing player (`playerOff`) and incoming player (`playerOn`) into the event audit trail (`description`, `data`).
+- **Halftime & Period Controls:** Reactive controls showing active half, one-click Half Time transition button, Second Half kickoff button, and Full Time final whistle trigger.
+- **Stoppage Time Quick Chips:** Interactive stoppage pills (`+0'`, `+1'`, `+2'`, `+3'`, `+4'`, `+5'`) dynamically binding stoppage time to subsequent event positioning.
+
+### 42c. Public Spectator Sync & Telemetry (`MatchDetail.tsx`, `ScoreDisplay.tsx`, `MatchStats.tsx`, `MatchTimeline.tsx`)
+- **Real-Time Running Clock:** Integrated `useMatchClock` on public `MatchDetail.tsx` with `startedAt`, `pausedAt`, and `pausedDurationMs` compensation. Clock calculates true elapsed time without drift across second-half restarts and reloads.
+- **Pill & Status Indicators:** `ScoreDisplay.tsx` displays context-aware badges:
+  - `live`: Red pulsing beacon with live running match clock (`LIVE BROADCAST`).
+  - `paused`: Amber beacon indicating `HALF TIME / PAUSED`.
+  - `completed`: Emerald beacon indicating `FINAL RESULT`.
+  - `scheduled`: Electric blue beacon indicating `SCHEDULED MATCH`.
+- **Authentic Telemetry Derivation (`MatchStats.tsx`):**
+  - Replaced all fake/mock telemetry with `deriveFootballStats(liveEvents)`.
+  - Accurately aggregates Goals, Yellow Cards, Red Cards, and Substitutions directly from active Firestore events.
+  - Transparently flags unmonitored metrics (Possession, Shots, Shots on Target, Corners, Fouls) as `status: 'not_tracked'` with `—` placeholders, eliminating misleading mock bar charts.
+- **Event Timeline Feed (`MatchTimeline.tsx`):**
+  - Fully bound to canonical Firestore events ordered by monotonic sequence.
+  - Rendered with sport-specific icon badges (`⚽ GOAL`, `🟨 YELLOW CARD`, `🟥 RED CARD`, `🔄 SUBSTITUTION`, `⏱️ HALF TIME`, `⏱️ 2ND HALF`, `🟢 KICKOFF`, `🏁 FULL TIME`), team color indicators, and score snapshots.
+
+### 42d. Verification & Automated Test Suite (`phase2a-football.test.ts`)
+- **Comprehensive 18-Scenario Suite:** Created `src/test/phase2a-football.test.ts` covering:
+  1. Match Start: scheduled → live, `startedAt`, period 1, `MATCH_START` event.
+  2. Goal Team A: +1 score increment, player attribution, positioning `1H 23'`.
+  3. Goal Team B: +1 score increment to 1-1.
+  4. Yellow Card: preserves score (1-1), records disciplinary event.
+  5. Red Card: preserves score (1-1), records disciplinary event.
+  6. Half Time: sets `paused`, `isHalfTime: true`, `period: 1`, preserves score, formats `1H 45+2'`.
+  7. Second Half: sets `live`, `isHalfTime: false`, `period: 2`, clears `pausedAt`.
+  8. Substitution: records `playerOff` and `playerOn`, preserves score.
+  9. Full Time: sets `completed`, records `endedAt`, formats `2H 90+4'`.
+  10. Goal Concurrency: Two admins simultaneously submitting Goal A and Goal B from 0-0 commit to 1-1 with monotonic sequence #41 and #42.
+  11. Card + Goal Concurrency: Concurrent yellow card and goal commit safely without overwriting.
+  12. Undo Goal: cleanly rolls back score from 1-1 → 1-0 → 0-0.
+  13. Undo Non-Scoring Event: undoing yellow card leaves score completely untouched.
+  14. Event Correction: auditable invalidation of disputed goal and replacement event creation.
+  15. Completed Match Guard: rejects new scoring events on completed matches.
+  16. Timeline Monotonic Ordering: verifies formatting of `1H 1'`, `1H 45+3'`, `2H 85'`, `2H 90+5'`.
+  17. Telemetry Derivation: derived stats accurate, undone events excluded, untracked marked.
+  18. Paused Duration Accumulation: calculates `pausedDurationMs` across halves.
+- **Automated Test Results:** **37/37 tests passing** across 3 test files.
+- **TypeScript Check:** `npx tsc --noEmit` passed with **0 errors**.
+- **Production Build:** `npm run build` compiled cleanly with **0 errors**.
+
+---
+
+## 🏏 PHASE 2B: CRICKET LIVE SCORING ENGINE (COMPLETED & VERIFIED)
+
+**Status:** COMPLETE & VERIFIED · **Test Suite:** 25/25 Passing Tests (`phase2b-cricket.test.ts`) · **Full Test Suite:** 62/62 Passing Tests across all suites · **TypeScript:** 0 Errors · **Build:** Clean Production Build
+
+### 43a. Canonical Cricket State Engine (`scoringService.ts`, `match.ts`, `matchEvent.ts`)
+- **Authoritative Cricket State Schema (`LiveState`):** Extended match document `liveState` with typed cricket attributes: `innings` (1 or 2), `battingTeam`, `totalRuns`, `overs`, `over`, `ball`, `legalBalls`, `wickets`, `extras`, `extrasDetail` (`wides`, `noBalls`, `byes`, `legByes`), `maxOvers`, `targetRuns`, `requiredRuns`, `ballsRemaining`, `strikerName`, `strikerRuns`, `strikerBalls`, `nonStrikerName`, `nonStrikerRuns`, `nonStrikerBalls`, `currentBowlerName`, `bowlerRunsConceded`, `bowlerWickets`, `bowlerOvers`, `bowlerBalls`, `firstInnings` snapshot (`team`, `runs`, `wickets`, `overs`, `balls`), `inningsStatus`, `resultText`, `winnerTeam`, `winnerTeamId`.
+- **Olympia 10-Run Super Bonus:** Fully integrated the special 10-run score (`ten` in `EventType`, inferred delta `{ runs: 10, balls: 1 }`, boundary/bonus derivation, striker personal run allocation, and FX layer).
+- **Delivery Rules & Legal Ball Progression:**
+  - `single`, `double`, `triple`, `four`, `six`, `ten`, `dot`: increment runs and advance legal ball counter (0.1 to 0.5 to 1.0). When ball reaches 6, automatically rolls over to next over and resets ball to 0.
+  - `wide` & `no_ball`: illegal deliveries increment batting score and extras, but legal balls count does NOT increment.
+  - `bye` & `leg_bye`: legal deliveries advance ball counter and increment extras/team score, but batter personal runs do NOT increase.
+  - `wicket`: increments wickets (0-10), counts legal ball, and resets striker/non-striker on incoming batsman.
+- **Dynamic Strike Rotation:**
+  - Odd runs (1, 3, 5): batsmen cross ends on the pitch, automatically rotating strike.
+  - Even runs (0, 2, 4, 6, 10): striker retains strike.
+  - Over Completion (6th delivery): ends change automatically. If the 6th delivery was even/dot, ends change switches the striker; if the 6th delivery was odd, crossing + ends change leaves original striker on strike.
+  - Manual Strike Swap: `swapStriker: true` action allows operators to immediately swap strike at any time.
+- **Innings Transitions & Automatic Chase Adjudication:**
+  - `innings_end` / `innings_completed`: Freezes 1st innings score snapshot into `firstInnings`, calculates `targetRuns = 1st Innings Runs + 1` and `requiredRuns = targetRuns`, pauses match.
+  - `innings_start` (Innings 2): Swaps batting team to Team B (or opposing team), atomically resets active innings counters (`totalRuns: 0`, `wickets: 0`, `overs: 0`, `balls: 0`, `extras: 0`), activates live target chase tracking.
+  - Automatic Chase Victory: When `currentRuns >= targetRuns` in Innings 2, calculates margin (`10 - wickets` wickets), generates `resultText`, sets `winnerTeam` and `winnerTeamId`, and atomically transitions match status to `completed`.
+  - Automatic Defending Victory: When all 10 wickets fall in Innings 2 before target is reached, calculates run margin (`(target - 1) - currentRuns`), generates `resultText`, sets defending team as winner, and completes match.
+
+### 43b. Admin Scoring Console — Cricket Command Center (`ScoringConsole.tsx`)
+- **Fast Action Delivery Pad:** Tactile scoring grid for rapid operator entry: `Dot (0)`, `+1`, `+2`, `+3`, `Four (4)`, `Six (6)`, and `+10 Super Bonus`.
+- **Wickets & Dismissals Workflow:** Comprehensive dismissal dialog capturing dismissal mode (`Caught`, `Bowled`, `LBW`, `Run Out`, `Stumped`, `Hit Wicket`), out batsman toggle (`Striker *` vs `Non-Striker`), fielder attribution from fielding squad, and incoming batsman selection.
+- **Extras Pad:** One-tap entry for `Wide +1`, `No Ball +1`, `Bye +1`, and `Leg Bye +1`.
+- **Crease & Bowling Attack HUD:** Live operator display showing:
+  - Active Striker (with `*`), personal runs, and balls faced.
+  - Non-Striker, personal runs, and balls faced.
+  - Current Bowler, wickets taken, runs conceded, and overs bowled.
+  - `⇄ Swap Strike` quick button.
+  - `✎ Set Lineup` modal to assign striker, non-striker, and bowler from squads.
+- **Innings Control:** "End 1st Innings" and "Start 2nd Innings" transitions with live chase indicators.
+
+### 43c. Public Spectator Experience & Derivation (`MatchDetail.tsx`, `ScoreDisplay.tsx`, `MatchStats.tsx`, `MatchTimeline.tsx`)
+- **Authentic Cricket Scoreboard Plate (`ScoreDisplay.tsx`):**
+  - Displays team-by-team cricket scores (e.g. `167/4 (20.0 ov)` for Team A, `84/2 (9.3 ov)` for Team B).
+  - Shows batting status (`Yet to bat` or live overs faced).
+  - Second Innings Chase Banner: displays `Target: 176` and `Need 92 runs in 63 balls`.
+  - Final Result Banner: displays `🏆 Team B won by 8 wickets` in championship gold.
+  - On-crease telemetry chip: displays active striker, non-striker, and bowler.
+- **Derived Cricket Telemetry (`MatchStats.tsx`):**
+  - `deriveCricketStats(events, liveMatch)` derives 100% authentic metrics: Runs Scored, Wickets Lost, Overs Faced, Fours (4s), Sixes (6s), Super Tens (10s), Extras Conceded, Dot Balls Faced.
+  - Flags unmonitored metrics (`Control %`, `Catch Efficiency`) as `not_tracked` (`—`).
+- **Cricket Event Timeline (`MatchTimeline.tsx`):**
+  - Badges for all cricket actions: `🏏 FOUR`, `🔥 SIX`, `⭐ TEN`, `🎯 WICKET`, `⚪ DOT BALL`, `🏏 RUNS`, `⚠️ EXTRA`, `⏱️ OVER END`, `🏏 INNINGS START`, `🏁 INNINGS END`, `🥤 DRINKS BREAK`.
+
+### 43d. Verification & Test Suite (`phase2b-cricket.test.ts`)
+- **25 Comprehensive Test Scenarios:**
+  1. `match_start` initializes Innings 1, 0/0 score, 0.0 overs, status live.
+  2. 1 run (single) increments batting score, advances ball (0.1), rotates strike.
+  3. 2 runs (double) retains strike for active batsman, advances ball.
+  4. 4 runs (four) adds 4 runs, advances ball, retains strike.
+  5. 6 runs (six) adds 6 runs, advances ball, retains strike.
+  6. 10 runs (Olympia 10-run bonus) adds 10 runs to team and batter, advances ball, retains strike.
+  7. Wide delivery adds 1 run and 1 extra, legal balls do NOT increment.
+  8. No ball adds 1 run and 1 extra, legal balls do NOT increment.
+  9. Bye adds 1 extra, counts legal ball, batter personal runs unchanged.
+  10. Leg bye adds 1 extra, counts legal ball, batter personal runs unchanged.
+  11. Wicket increments wickets, counts legal ball, assigns new batsman.
+  12. Legal ball counting rolls over on ball 6 to increment overs and reset ball to 0.
+  13. Over completion rotates ends so strike automatically swaps on even/dot 6th delivery.
+  14. Manual strike swap (`swapStriker`) explicitly swaps striker and non-striker.
+  15. `over_completed` action resets ball and legalBalls counters to 0.
+  16. `drinks_break` records positioning without mutating scores or overs.
+  17. Innings 1 completion (`innings_end`) stores `firstInnings` snapshot and derives `targetRuns`.
+  18. Second innings start (`innings_start`) swaps batting team to Team B and resets live counters.
+  19. Innings 2 scoring updates Team B score without modifying Team A score.
+  20. Innings 2 target chase victory automatically concludes match with correct wicket margin.
+  21. Innings 2 defending victory automatically concludes match when all 10 wickets fall.
+  22. Concurrent scoring simulation resolves simultaneous deliveries without lost runs.
+  23. Undo last active event rolls back runs, balls, sequence, and restores prior snapshot.
+  24. Completed match guard blocks scoring on concluded match unless privileged.
+  25. `deriveCricketStats` calculates runs, wickets, overs, 4s, 6s, 10s, extras, and untracked metrics.
+- **Test Results:** **62/62 tests passing** across 4 test suites.
+- **TypeScript:** `npx tsc --noEmit` passed with **0 errors**.
+- **Production Build:** `npm run build` compiled cleanly with **0 errors**.
+
+---
+
+## 🏐 Phase 2C: Volleyball Live Scoring Engine
+
+### 44a. Core Volleyball Engine & Transactional Derivation (`scoringService.ts`)
+- **Single Canonical Architecture:** Strictly preserved `matches/{matchId}` and `matches/{matchId}/events/{eventId}` with zero secondary volleyball collections.
+- **Match Start Initialization:** `match_start` initializes `currentSet: 1`, `currentSetScore: { teamA: 0, teamB: 0 }`, `setsWon: { teamA: 0, teamB: 0 }`, `targetPoints: 25`, `winByTwo: true`, `setsRequiredToWin: 2` (Best of 3) or `3` (Best of 5), `completedSets: []`, and status `live`.
+- **Win-By-Two & Deuce Mechanics:**
+  - Evaluates `myScore >= targetPoints && (!winByTwo || (myScore - oppScore >= 2))`.
+  - Seamlessly handles deuces: at 24–24, play continues until a 2-point gap (e.g. 26–24).
+- **Deciding Set Rules:**
+  - Automatically identifies deciding sets (Set 3 in Best of 3, Set 5 in Best of 5).
+  - Dynamically lowers target to 15 points while maintaining win-by-2 margin (e.g., 14–14 continues to 16–14).
+- **Automated Set Transitions:**
+  - Upon set victory, archives set score into `completedSets: [{ setNumber, scoreA, scoreB, winner }]` and `score.details.sets`.
+  - Increments `setsWon` for the winning team.
+  - Automatically resets active set points to `0–0` and advances `currentSet`.
+- **Automated Match Victory:**
+  - When `setsWon[team] >= setsRequiredToWin`, automatically completes the match.
+  - Sets `status: 'completed'`, `winnerTeam`, and derives authentic `resultText` (e.g., "Team A won 2 - 0" or "Team B won 2 - 1").
+- **Transactional State Snapshots & Rollback:**
+  - Every point mutation snapshots full match state inside the event document.
+  - `undoLastActiveEvent` and `correctMatchEvent` reliably roll back points, sets, and match completion status.
+
+### 44b. Admin Scoring Console — Fast Action Volleyball Pad (`ScoringConsole.tsx`)
+- **Instant 1-Tap Scoring:**
+  - Prominent high-contrast scoring buttons: `+ POINT Team A` and `+ POINT Team B`.
+  - Fast single-tap point subtraction: `- Point Team A` and `- Point Team B`.
+- **Zero-Block UX:** No mandatory modals or forms interrupting the operator watching live play.
+- **Optional Player Attribution:**
+  - Fast inline text/dropdown field for scorer attribution without blocking score submission.
+- **Match HUD:**
+  - Displays Set number, target points, win-by-two status, sets won pill tally, and previous completed set scores.
+- **Operational Controls:**
+  - `⏱️ Team A Timeout` and `⏱️ Team B Timeout` tracking.
+  - Manual set start / set completion controls if operator override is needed.
+
+### 44c. Spectator Experience & Authentic Telemetry (`ScoreDisplay.tsx`, `MatchDetail.tsx`, `MatchStats.tsx`, `MatchTimeline.tsx`)
+- **Volleyball Scoreboard Plate (`ScoreDisplay.tsx`):**
+  - Displays large active set score (`24 – 22`).
+  - Sets Won indicator chips (`A: 1  |  B: 1`).
+  - Active Set HUD pill with current target and win-by-2 reminder.
+  - Completed Sets history bar showing previous scores (e.g., `Set 1: 25–20`, `Set 2: 22–25`).
+  - Championship gold match victory banner on match completion.
+- **Non-Obscuring Spectator Moments (`MatchDetail.tsx`):**
+  - Lightweight `framer-motion` floating notification pill announcing live points, set wins, and match victories.
+  - Auto-dismisses in 3 seconds without obscuring the scoreboard plate or navigation.
+- **Authentic Telemetry Derivation (`MatchStats.tsx`):**
+  - `deriveVolleyballStats(events, liveMatch)` derives 100% authentic metrics: Sets Won, Current Set Points, Total Match Points, and Point Rallies Won.
+  - Untracked metrics (`Attack Percentage`, `Blocks`, `Aces`, `Digs`, `Serve Efficiency`, `Reception Quality`) are marked with `status: 'not_tracked'` and displayed as `—`.
+- **Event Timeline (`MatchTimeline.tsx`):**
+  - Distinct event badges: `🏐 POINT`, `❌ POINT CANCELLED`, `🏐 SET START`, `🏆 SET COMPLETE`, `⏱️ TIMEOUT`.
+
+### 44d. Automated Test Suite & Verification (`phase2c-volleyball.test.ts`)
+- **20 Comprehensive Test Scenarios:**
+  1. `match_start` initializes Set 1, 0–0 score, 0–0 sets, target 25.
+  2. Single point increments score and updates positioning rally.
+  3. Opposing points increment independently without data loss.
+  4. Concurrent points for same team resolve transactionally without lost points.
+  5. Concurrent points for opposing teams resolve transactionally without lost points.
+  6. Score at 24–24 (deuce) does NOT end set when reaching 25–24.
+  7. Reaching 26–24 satisfies win-by-two and automatically completes set.
+  8. Set 3 in Best-of-3 uses 15 target points and enforces win-by-2 (e.g. 16–14).
+  9. Automatic set transition archives completed set and resets score to 0–0.
+  10. Best of 3 match completes when a team reaches 2 sets won.
+  11. Best of 5 match requires 3 sets won to complete.
+  12. Point removal decrements score without falling below 0.
+  13. Undo rolls back point and restores prior state snapshot.
+  14. Undo rolls back completed set transition and restores active set score.
+  15. Event correction updates point attribution and preserves sequence.
+  16. Optional player attribution records scorer metadata without blocking.
+  17. Event stream preserves strict chronological sequence numbers.
+  18. Concluded match guard prevents further scoring actions.
+  19. `deriveVolleyballStats` derives real metrics and marks unmonitored metrics as `not_tracked`.
+  20. Public match document mirrors live state for instant real-time sync.
+- **Test Results:** **82/82 tests passing** across 5 test suites.
+- **TypeScript:** `npx tsc --noEmit` passed with **0 errors**.
+- **Production Build:** `npm run build` compiled cleanly with **0 errors**.
+
+
+
+
