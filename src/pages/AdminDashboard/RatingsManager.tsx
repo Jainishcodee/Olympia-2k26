@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useCollection } from '@/hooks/useCollection';
+import { useCollection, useCollectionGroup } from '@/hooks/useCollection';
 import { useTheme } from '@/contexts/ThemeContext';
 import {
   AdminHeader,
@@ -93,7 +93,7 @@ interface PlayerRow {
 
 const RatingsManager: React.FC = () => {
   const { isDay } = useTheme();
-  const ratings = useCollection<Rating>('ratings', { sortBy: 'createdAt', direction: 'desc' });
+  const ratings = useCollectionGroup<Rating>('ratings', { sortBy: 'createdAt', direction: 'desc' });
   const matches = useCollection<Match>('matches', { sortBy: 'scheduledAt', direction: 'desc' });
   const players = useCollection<Player>('players', { sortBy: 'name' });
   const sports = useCollection<Sport>('sports');
@@ -112,7 +112,7 @@ const RatingsManager: React.FC = () => {
     const grouped = new Map<string, PlayerRow>();
 
     ratings.data.forEach((rating) => {
-      const score = Number(rating.score);
+      const score = Number(rating.score ?? (rating as any).rating);
       if (!Number.isFinite(score)) return;
 
       let row = grouped.get(rating.playerId);

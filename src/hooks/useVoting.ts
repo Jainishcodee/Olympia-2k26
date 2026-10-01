@@ -1,46 +1,82 @@
 import { useState, useEffect, useCallback } from 'react';
-import { doc, onSnapshot, setDoc, increment } from 'firebase/firestore';
-import { db } from '@/config/firebase';
-import { useAuth } from '@/contexts/AuthContext';
+import { subscribeToVotes, castVote as castVoteService } from '@/services/voting/votingService';
+import { VoteAggregate } from '@/types';
 
-export function useVoting(matchId: string) {
-  const [aggregates, setAggregates] = useState<Record<string, number>>({});
+export interface UseVotingReturn {
+  aggregates: Record<string, number> & {
+    teamACounts: number;
+    teamBCounts: number;
+    total: number;
+    pctA: number;
+    pctB: number;
+  };
+  userVote: string | null;
+  castVote: (optionId: string) => Promise<void>;
+  isLoading: boolean;
+}
+
+export function useVoting(matchId: string, teamAKey: string = 'A', teamBKey: string = 'B'): UseVotingReturn {
+  const [aggregates, setAggregates] = useState<Record<string, number> & {
+    teamACounts: number;
+    teamBCounts: number;
+    total: number;
+    pctA: number;
+    pctB: number;
+  }>({
+    teamACounts: 0,
+    teamBCounts: 0,
+    total: 0,
+    pctA: 50,
+    pctB: 50,
+    A: 0,
+    B: 0,
+  });
   const [userVote, setUserVote] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
 
   useEffect(() => {
-    if (!db || !matchId) {
+    if (!matchId) {
       setIsLoading(false);
       return;
     }
-    
-    const docRef = doc(db, 'match_voting', matchId);
-    const unsubscribe = onSnapshot(docRef, (snap) => {
-      if (snap.exists()) {
-        setAggregates(snap.data() as Record<string, number>);
-      } else {
-        setAggregates({});
-      }
+
+    setIsLoading(true);
+    const unsubscribe = subscribeToVotes(matchId, teamAKey, teamBKey, (data) => {
+      const { teamACounts, teamBCounts, total } = data.aggregates;
+      const pctA = total === 0 ? 50 : Math.round((teamACounts / total) * 100);
+      const pctB = total === 0 ? 50 : 100 - pctA;
+
+      setAggregates({
+        teamACounts,
+        teamBCounts,
+        total,
+        pctA,
+        pctB,
+        A: teamACounts,
+        B: teamBCounts,
+        [teamAKey]: teamACounts,
+        [teamBKey]: teamBCounts,
+      });
+
+      setUserVote(data.userVote);
       setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [matchId]);
+  }, [matchId, teamAKey, teamBKey]);
 
-  const castVote = useCallback(async (optionId: string) => {
-    if (!db || !matchId || !user || userVote === optionId) return;
-    
-    try {
-      const voteRef = doc(db, 'match_voting', matchId);
-      await setDoc(voteRef, {
-        [optionId]: increment(1)
-      }, { merge: true });
-      setUserVote(optionId);
-    } catch (error) {
-      console.error("Failed to cast vote", error);
-    }
-  }, [matchId, user, userVote]);
+  const castVote = useCallback(
+    async (optionId: string) => {
+      if (!matchId) return;
+      try {
+        await castVoteService(matchId, optionId);
+        setUserVote(optionId);
+      } catch (error) {
+        console.error('Failed to cast vote', error);
+      }
+    },
+    [matchId]
+  );
 
   return { aggregates, userVote, castVote, isLoading };
 }

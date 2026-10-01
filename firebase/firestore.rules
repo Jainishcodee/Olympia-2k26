@@ -51,25 +51,6 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
-    match /matches/{matchId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    // Match events subcollection (the canonical event timeline)
-    match /matches/{matchId}/events/{eventId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    // Leaderboards
-    match /leaderboards/{sportId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    // Settings
-    match /settings/{settingId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
     match /fixtures/{fixtureId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -78,43 +59,88 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
-
-    // Reactions
-    match /reactions/{reactionId} {
+    match /leaderboards/{sportId} {
       allow read: if true;
-      allow create: if isAuthenticated()
-                   && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAdmin();
+      allow write: if isAdmin();
+    }
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // Ratings
-    match /ratings/{ratingId} {
+    // Authoritative Match Document
+    match /matches/{matchId} {
       allow read: if true;
-      allow create, update: if isAuthenticated() 
-                            && request.resource.data.userId == request.auth.uid
-                            && request.resource.data.rating >= 1
-                            && request.resource.data.rating <= 5;
+      allow write: if isAdmin();
+
+      // Canonical match events stream
+      match /events/{eventId} {
+        allow read: if true;
+        allow write: if isAdmin();
+
+        // Event-specific spectator reactions
+        match /reactions/{uid} {
+          allow read: if true;
+          allow create, update: if isAuthenticated();
+          allow delete: if isAdmin();
+        }
+      }
+
+      // Canonical match predictions / voting (1 user = 1 vote)
+      match /votes/{uid} {
+        allow read: if true;
+        allow create, update: if isAuthenticated();
+        allow delete: if isAdmin();
+      }
+
+      // Canonical match spectator reactions
+      match /reactions/{uid} {
+        allow read: if true;
+        allow create, update: if isAuthenticated();
+        allow delete: if isAdmin();
+      }
+
+      // Canonical match reviews
+      match /reviews/{uid} {
+        allow read: if true;
+        allow create, update: if isAuthenticated();
+        allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      }
+
+      // Canonical player ratings for this match
+      match /players/{playerId}/ratings/{uid} {
+        allow read: if true;
+        allow create, update: if isAuthenticated();
+        allow delete: if isAdmin();
+      }
+    }
+
+    // Collection Group & Global Fallback Rules for Fan Engagement
+    match /{path=**}/votes/{voteId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated();
       allow delete: if isAdmin();
     }
 
-    // Reviews
-    match /reviews/{reviewId} {
+    match /{path=**}/reactions/{reactionId} {
       allow read: if true;
-      allow create, update: if isAuthenticated() 
-                            && request.resource.data.userId == request.auth.uid
-                            && request.resource.data.text.size() <= 1000;
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /{path=**}/reviews/{reviewId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated();
       allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
-    // Votes
-    match /votes/{voteId} {
+    match /{path=**}/ratings/{ratingId} {
       allow read: if true;
-      allow create, update: if isAuthenticated() 
-                            && request.resource.data.userId == request.auth.uid;
+      allow create, update: if isAuthenticated();
       allow delete: if isAdmin();
     }
 
-    // Match Voting & Reactions aggregates
+    // Legacy transitional compatibility paths
     match /match_voting/{matchId} {
       allow read: if true;
       allow create, update: if isAuthenticated();
@@ -126,7 +152,7 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Users
+    // Users collection
     match /users/{userId} {
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
     }

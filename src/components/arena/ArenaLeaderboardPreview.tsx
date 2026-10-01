@@ -5,7 +5,7 @@ import { Container } from '../ui/Container';
 import { SectionTitle } from '../ui/SectionTitle';
 import { useCollection } from '@/hooks/useCollection';
 import { useTheme } from '@/contexts/ThemeContext';
-import { TiltCard, RollingScore, Magnetic, SplitText } from '@/components/motion';
+import { TiltCard, RollingScore, Magnetic } from '@/components/motion';
 import type { Player, Team, Match, Sport } from '@/types';
 
 interface SportLeaderboardPreview {
@@ -25,7 +25,26 @@ interface SportLeaderboardPreview {
   }[];
 }
 
-const DEFAULT_SPORTS_PREVIEWS: SportLeaderboardPreview[] = [];
+const DEFAULT_SPORTS_PREVIEWS: SportLeaderboardPreview[] = [
+  { sportId: 'football', sportName: 'Football', icon: '⚽', status: 'standings', leader: '—', entries: [] },
+  { sportId: 'cricket', sportName: 'Cricket', icon: '🏏', status: 'standings', leader: '—', entries: [] },
+  { sportId: 'volleyball', sportName: 'Volleyball', icon: '🏐', status: 'standings', leader: '—', entries: [] },
+  { sportId: 'badminton', sportName: 'Badminton', icon: '🏸', status: 'standings', leader: '—', entries: [] },
+  { sportId: 'table-tennis', sportName: 'Table Tennis', icon: '🏓', status: 'standings', leader: '—', entries: [] },
+  { sportId: 'chess', sportName: 'Chess', icon: '♟️', status: 'standings', leader: '—', entries: [] },
+  { sportId: 'carrom', sportName: 'Carrom', icon: '🎯', status: 'standings', leader: '—', entries: [] },
+  { sportId: 'counter-strike', sportName: 'Counter-Strike', icon: '🔫', status: 'standings', leader: '—', entries: [] },
+  { sportId: 'smash-karts', sportName: 'Smash Karts', icon: '🏎️', status: 'standings', leader: '—', entries: [] },
+];
+
+const FALLBACK_PREVIEW: SportLeaderboardPreview = {
+  sportId: 'football',
+  sportName: 'Football',
+  icon: '⚽',
+  status: 'standings',
+  leader: '—',
+  entries: [],
+};
 
 export const ArenaLeaderboardPreview: React.FC = () => {
   const { theme } = useTheme();
@@ -46,27 +65,52 @@ export const ArenaLeaderboardPreview: React.FC = () => {
 
   // Build live preview datasets per sport
   const previews = useMemo(() => {
-    // Build previews from real Firestore sports data
-    if (sports.data.length > 0) {
-      return sports.data.map((s) => {
-        const isLiveMatch = matches.data.some(
-          (m) => m.sportId === s.id && m.status === 'live',
-        );
-        return {
+    const sportsList = sports.data.length > 0
+      ? sports.data.map((s) => ({
           sportId: s.id,
           sportName: s.name,
           icon: s.icon || '🏆',
-          status: isLiveMatch ? ('live' as const) : ('standings' as const),
+          status: 'standings' as const,
           leader: '—',
           entries: [],
-        } as SportLeaderboardPreview;
-      });
-    }
-    return DEFAULT_SPORTS_PREVIEWS;
-  }, [sports.data, matches.data]);
+        }))
+      : DEFAULT_SPORTS_PREVIEWS;
+
+    const completedMatches = matches.data.filter((m) => m.status === 'completed');
+
+    return sportsList.map((s) => {
+      const isLiveMatch = matches.data.some(
+        (m) => m.sportId === s.sportId && m.status === 'live',
+      );
+
+      const sportTeams = teams.data.filter((t) => t.sportId === s.sportId);
+      const entries = sportTeams.slice(0, 5).map((t: Team, idx: number) => ({
+        rank: idx + 1,
+        name: t.name,
+        team: t.shortName || t.name,
+        points: Number(t.points ?? (t.wins ? t.wins * 3 : 0)),
+        wins: Number(t.wins ?? 0),
+        losses: Number(t.losses ?? 0),
+        photo: t.logo,
+      }));
+
+      const leader = entries[0]?.name || '—';
+
+      return {
+        ...s,
+        status: isLiveMatch ? ('live' as const) : ('standings' as const),
+        leader,
+        entries,
+      };
+    });
+  }, [sports.data, matches.data, teams.data]);
 
   const currentPreview = useMemo(() => {
-    return previews.find((p) => p.sportId === activeSportId) || previews[0];
+    return (
+      previews.find((p) => p.sportId === activeSportId) ||
+      previews[0] ||
+      FALLBACK_PREVIEW
+    );
   }, [previews, activeSportId]);
 
   return (
@@ -109,7 +153,7 @@ export const ArenaLeaderboardPreview: React.FC = () => {
         {/* Sport Navigation Switcher */}
         <div className="flex items-center gap-3 overflow-x-auto pb-4 hide-scrollbar mb-8 -mx-4 px-4 sm:mx-0 sm:px-0">
           {previews.map((sp) => {
-            const isSelected = activeSportId === sp.sportId;
+            const isSelected = (currentPreview.sportId === sp.sportId);
             const isLive = sp.status === 'live';
 
             return (
@@ -191,79 +235,99 @@ export const ArenaLeaderboardPreview: React.FC = () => {
                 transition={{ duration: 0.3 }}
                 className="flex flex-col space-y-3"
               >
-                {currentPreview.entries.map((entry, index) => {
-                  const isFirst = entry.rank === 1;
-                  const isSecond = entry.rank === 2;
-                  const isThird = entry.rank === 3;
-
-                  return (
-                    <div
-                      key={`${currentPreview.sportId}-${entry.rank}`}
-                      className={`p-4 rounded-2xl flex items-center justify-between border transition-colors ${
-                        isFirst
-                          ? isDay
-                            ? 'bg-gradient-to-r from-[#FFFDF8] via-white to-[#FAF6EC] border-[#D9A441]/40 shadow-sm'
-                            : 'bg-gradient-to-r from-[#18150D] via-[#071426] to-[#0B1A30] border-[#D9A441]/40'
-                          : isDay
-                            ? 'bg-white/60 border-[#071426]/5 hover:bg-white'
-                            : 'bg-white/[0.02] border-white/5 hover:bg-white/5'
-                      }`}
+                {currentPreview.entries.length === 0 ? (
+                  <div
+                    className={`py-12 px-6 rounded-2xl text-center border ${
+                      isDay
+                        ? 'bg-black/[0.02] border-black/5 text-[#071426]/50'
+                        : 'bg-white/[0.02] border-white/5 text-white/40'
+                    }`}
+                  >
+                    <p className="text-sm font-semibold mb-2">
+                      No completed match standings yet for {currentPreview.sportName}.
+                    </p>
+                    <Link
+                      to="/leaderboard"
+                      className="text-xs font-bold text-[#155EEF] dark:text-[#D9A441] hover:underline"
                     >
-                      {/* Rank & Name */}
-                      <div className="flex items-center gap-4 min-w-0">
-                        <span
-                          className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm shrink-0 ${
-                            isFirst
-                              ? 'bg-gradient-to-br from-[#FFD21F] to-[#D9A441] text-[#071426] shadow-[0_0_15px_rgba(217,164,65,0.4)]'
-                              : isSecond
-                                ? 'bg-[#155EEF] text-white'
-                                : isThird
-                                  ? 'bg-[#FF6A00] text-white'
-                                  : isDay
-                                    ? 'bg-[#071426]/5 text-[#071426]/60'
-                                    : 'bg-white/5 text-white/60'
-                          }`}
-                        >
-                          {entry.rank}
-                        </span>
+                      View Tournament Leaderboard →
+                    </Link>
+                  </div>
+                ) : (
+                  currentPreview.entries.map((entry) => {
+                    const isFirst = entry.rank === 1;
+                    const isSecond = entry.rank === 2;
+                    const isThird = entry.rank === 3;
 
-                        <div className="min-w-0">
-                          <h4
-                            className={`font-black uppercase text-sm md:text-base truncate ${
-                              isDay ? 'text-[#071426]' : 'text-white'
+                    return (
+                      <div
+                        key={`${currentPreview.sportId}-${entry.rank}`}
+                        className={`p-4 rounded-2xl flex items-center justify-between border transition-colors ${
+                          isFirst
+                            ? isDay
+                              ? 'bg-gradient-to-r from-[#FFFDF8] via-white to-[#FAF6EC] border-[#D9A441]/40 shadow-sm'
+                              : 'bg-gradient-to-r from-[#18150D] via-[#071426] to-[#0B1A30] border-[#D9A441]/40'
+                            : isDay
+                              ? 'bg-white/60 border-[#071426]/5 hover:bg-white'
+                              : 'bg-white/[0.02] border-white/5 hover:bg-white/5'
+                        }`}
+                      >
+                        {/* Rank & Name */}
+                        <div className="flex items-center gap-4 min-w-0">
+                          <span
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm shrink-0 ${
+                              isFirst
+                                ? 'bg-gradient-to-br from-[#FFD21F] to-[#D9A441] text-[#071426] shadow-[0_0_15px_rgba(217,164,65,0.4)]'
+                                : isSecond
+                                  ? 'bg-[#155EEF] text-white'
+                                  : isThird
+                                    ? 'bg-[#FF6A00] text-white'
+                                    : isDay
+                                      ? 'bg-[#071426]/5 text-[#071426]/60'
+                                      : 'bg-white/5 text-white/60'
                             }`}
                           >
-                            {entry.name}
-                          </h4>
-                          <p
-                            className={`text-xs font-bold truncate ${
-                              isDay ? 'text-[#071426]/50' : 'text-white/50'
-                            }`}
-                          >
-                            {entry.team}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Stats & Points */}
-                      <div className="flex items-center gap-6 shrink-0">
-                        <span
-                          className={`text-xs font-bold hidden sm:inline-block ${
-                            isDay ? 'text-[#071426]/60' : 'text-white/60'
-                          }`}
-                        >
-                          {entry.wins}W - {entry.losses}L
-                        </span>
-
-                        <div className="text-right min-w-[70px]">
-                          <span className="text-base sm:text-lg font-black text-[#D9A441] tabular-nums">
-                            <RollingScore value={entry.points} suffix=" PTS" />
+                            {entry.rank}
                           </span>
+
+                          <div className="min-w-0">
+                            <h4
+                              className={`font-black uppercase text-sm md:text-base truncate ${
+                                isDay ? 'text-[#071426]' : 'text-white'
+                              }`}
+                            >
+                              {entry.name}
+                            </h4>
+                            <p
+                              className={`text-xs font-bold truncate ${
+                                isDay ? 'text-[#071426]/50' : 'text-white/50'
+                              }`}
+                            >
+                              {entry.team}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Stats & Points */}
+                        <div className="flex items-center gap-6 shrink-0">
+                          <span
+                            className={`text-xs font-bold hidden sm:inline-block ${
+                              isDay ? 'text-[#071426]/60' : 'text-white/60'
+                            }`}
+                          >
+                            {entry.wins}W - {entry.losses}L
+                          </span>
+
+                          <div className="text-right min-w-[70px]">
+                            <span className="text-base sm:text-lg font-black text-[#D9A441] tabular-nums">
+                              <RollingScore value={entry.points} suffix=" PTS" />
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </motion.div>
             </AnimatePresence>
           </div>

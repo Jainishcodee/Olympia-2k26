@@ -1,69 +1,106 @@
 import {
+  collection,
   doc,
   setDoc,
-  getDoc,
   onSnapshot,
   serverTimestamp,
-  Unsubscribe
+  Unsubscribe,
 } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured } from '@/config/firebase';
-import { Rating, RatingAggregate } from '@/types';
+import { ensureEngagementAuthUid } from '@/services/voting/votingService';
+import { RatingAggregate } from '@/types';
 
-export const ratePlayer = async (matchId: string, playerId: string, score: number): Promise<void> => {
-  if (!isFirebaseConfigured || !db || !auth?.currentUser) throw new Error('Firebase not configured or user not authenticated');
-  
-  const uid = auth.currentUser.uid;
+/**
+ * Persists user player rating to matches/{matchId}/players/{playerId}/ratings/{uid}
+ */
+export const ratePlayer = async (
+  matchId: string,
+  playerId: string,
+  score: number
+): Promise<void> => {
+  if (!isFirebaseConfigured || !db || !matchId || !playerId) return;
+
+  const uid = await ensureEngagementAuthUid();
   const ratingRef = doc(db, `matches/${matchId}/players/${playerId}/ratings`, uid);
-  
-  await setDoc(ratingRef, {
-    score,
-    updatedAt: serverTimestamp()
-  }, { merge: true });
+  const clampedScore = Math.max(1, Math.min(5, Math.round(score)));
+
+  await setDoc(
+    ratingRef,
+    {
+      matchId,
+      playerId,
+      userId: uid,
+      score: clampedScore,
+      rating: clampedScore,
+      updatedAt: serverTimestamp(),
+      createdAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
 };
 
-export const getUserRating = async (matchId: string, playerId: string): Promise<Rating | null> => {
-  if (!isFirebaseConfigured || !db || !auth?.currentUser) return null;
-  try {
-    const uid = auth.currentUser.uid;
-    const ratingRef = doc(db, `matches/${matchId}/players/${playerId}/ratings`, uid);
-    const snapshot = await getDoc(ratingRef);
-    
-    if (snapshot.exists()) {
-      return { id: snapshot.id, ...snapshot.data() } as Rating;
-    }
-    return null;
-  } catch (error) {
-    console.error('Error getting user rating', error);
-    return null;
+/**
+ * Subscribes in real-time to authoritative ratings at matches/{matchId}/players/{playerId}/ratings
+ */
+export const subscribeToPlayerRatings = (
+  matchId: string,
+  playerId: string,
+  callback: (data: {
+    average: number;
+    count: number;
+    userRating: number | null;
+  }) => void
+): Unsubscribe => {
+  if (!isFirebaseConfigured || !db || !matchId || !playerId) {
+    callback({ average: 0, count: 0, userRating: null });
+    return () => {};
   }
+
+  const ratingsCol = collection(db, `matches/${matchId}/players/${playerId}/ratings`);
+  return onSnapshot(
+    ratingsCol,
+    (snapshot) => {
+      const currentUid = auth?.currentUser?.uid || localStorage.getItem('olympia_guest_uid');
+      let count = 0;
+      let sum = 0;
+      let userRating: number | null = null;
+
+      snapshot.docs.forEach((d) => {
+        const raw = d.data();
+        const score = Number(raw.score ?? raw.rating ?? 0);
+        if (score >= 1 && score <= 5) {
+          count++;
+          sum += score;
+        }
+
+        if (d.id === currentUid || raw.userId === currentUid) {
+          userRating = score;
+        }
+      });
+
+      const average = count > 0 ? Number((sum / count).toFixed(1)) : 0;
+      callback({ average, count, userRating });
+    },
+    (err) => {
+      console.warn('Player ratings subscription fallback', err);
+      callback({ average: 0, count: 0, userRating: null });
+    }
+  );
 };
 
-export const getPlayerRatings = async (matchId: string, playerId: string): Promise<RatingAggregate> => {
-  const fallback: RatingAggregate = { averageRating: 0, totalRatings: 0, average: 0, count: 0, matchId, playerId };
-  if (!isFirebaseConfigured || !db) return fallback;
-  try {
-    const aggRef = doc(db, `matches/${matchId}/players/${playerId}/aggregates`, 'ratings');
-    const snapshot = await getDoc(aggRef);
-    if (snapshot.exists()) {
-      return { ...fallback, ...snapshot.data() } as RatingAggregate;
-    }
-    return fallback;
-  } catch (error) {
-    console.error('Error getting player ratings', error);
-    return fallback;
-  }
-};
-
-export const subscribeToRatings = (matchId: string, playerId: string, callback: (aggregates: RatingAggregate) => void): Unsubscribe => {
-  const fallback: RatingAggregate = { averageRating: 0, totalRatings: 0, average: 0, count: 0, matchId, playerId };
-  if (!isFirebaseConfigured || !db) return () => {};
-  
-  const aggRef = doc(db, `matches/${matchId}/players/${playerId}/aggregates`, 'ratings');
-  return onSnapshot(aggRef, (snapshot) => {
-    if (snapshot.exists()) {
-      callback({ ...fallback, ...snapshot.data() } as RatingAggregate);
-    } else {
-      callback(fallback);
-    }
+export const subscribeToRatings = (
+  matchId: string,
+  playerId: string,
+  callback: (aggregates: RatingAggregate) => void
+): Unsubscribe => {
+  return subscribeToPlayerRatings(matchId, playerId, ({ average, count }) => {
+    callback({
+      averageRating: average,
+      totalRatings: count,
+      average,
+      count,
+      matchId,
+      playerId,
+    });
   });
 };

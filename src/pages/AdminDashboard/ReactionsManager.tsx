@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useCollection } from '@/hooks/useCollection';
+import { useCollection, useCollectionGroup } from '@/hooks/useCollection';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { updateMatch } from '@/services/matches/matchService';
@@ -76,7 +76,7 @@ const ReactionsManager: React.FC = () => {
   const { isDay } = useTheme();
   const { log } = useAuditLog();
 
-  const reactions = useCollection<Reaction>('reactions');
+  const reactions = useCollectionGroup<Reaction>('reactions');
   const matches = useCollection<Match>('matches', { sortBy: 'scheduledAt', direction: 'desc' });
   const sports = useCollection<Sport>('sports');
 

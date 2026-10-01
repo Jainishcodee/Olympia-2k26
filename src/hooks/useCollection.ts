@@ -182,11 +182,12 @@ export function useCollectionGroup<T extends { id: string }>(
         query(collectionGroup(db, name), ...constraints),
         (snapshot) => {
           let next = snapshot.docs.map(
-            (d) => ({
-              id: d.id,
-              matchId: d.data().matchId || d.ref.parent?.parent?.id,
-              ...d.data(),
-            }) as T,
+            (d) =>
+              ({
+                id: d.id,
+                matchId: d.data().matchId || d.ref.parent?.parent?.id,
+                ...d.data(),
+              } as unknown as T),
           );
           if (sortBy) {
             next = [...next].sort((a, b) => {

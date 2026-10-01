@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useCollection } from '@/hooks/useCollection';
+import { useCollection, useCollectionGroup } from '@/hooks/useCollection';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import {
   ActionIcon,
@@ -93,7 +93,7 @@ const ReviewsManager: React.FC = () => {
   const { isDay } = useTheme();
   const { log } = useAuditLog();
 
-  const reviews = useCollection<ReviewDoc>('reviews', { sortBy: 'createdAt', direction: 'desc' });
+  const reviews = useCollectionGroup<ReviewDoc>('reviews', { sortBy: 'createdAt', direction: 'desc' });
   const matches = useCollection<Match>('matches');
 
   const [search, setSearch] = useState('');
@@ -149,8 +149,12 @@ const ReviewsManager: React.FC = () => {
   /* ------------------------------------------------------------- writes */
   const persist = async (review: ReviewDoc, hidden: boolean) => {
     if (!db) throw new Error('Firebase is not configured.');
-    await updateDoc(doc(db, 'reviews', review.id), {
+    const ref = review.matchId
+      ? doc(db, `matches/${review.matchId}/reviews`, review.id)
+      : doc(db, 'reviews', review.id);
+    await updateDoc(ref, {
       hidden,
+      status: hidden ? 'hidden' : 'approved',
       updatedAt: serverTimestamp(),
     });
     await log(hidden ? 'REVIEW_HIDDEN' : 'REVIEW_RESTORED', 'review', review.id, {
@@ -176,7 +180,10 @@ const ReviewsManager: React.FC = () => {
     if (!deletePending || !db) return;
     setBusy(true);
     try {
-      await deleteDoc(doc(db, 'reviews', deletePending.id));
+      const ref = deletePending.matchId
+        ? doc(db, `matches/${deletePending.matchId}/reviews`, deletePending.id)
+        : doc(db, 'reviews', deletePending.id);
+      await deleteDoc(ref);
       await log('REVIEW_HIDDEN', 'review', deletePending.id, {
         label: `Permanently deleted: ${excerpt(deletePending.content, 48)}`,
       });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Container } from '@/components/ui/Container';
@@ -7,11 +7,15 @@ import { MatchTimeline } from '@/components/matches/MatchTimeline';
 import { MatchStats, deriveFootballStats, deriveCricketStats, deriveVolleyballStats } from '@/components/matches/MatchStats';
 import { ReactionBar } from '@/components/reactions/ReactionBar';
 import { VotingPanel } from '@/components/voting/VotingPanel';
+import { ReviewSection } from '@/components/reviews/ReviewSection';
+import { PlayerRatingCard } from '@/components/ratings/PlayerRatingCard';
 import { Footer } from '@/components/arena/Footer';
 import { Badge } from '@/components/ui/Badge';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMatch } from '@/hooks/useMatch';
 import { useMatchClock } from '@/hooks/useMatchClock';
+import { useCollection } from '@/hooks/useCollection';
+import type { Player } from '@/types/player';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -53,6 +57,31 @@ export const MatchDetail: React.FC = () => {
   const isTableTennis = sId.includes('table-tennis') || sId.includes('table_tennis');
   const isRacquet = isBadminton || isTableTennis;
   const isHalfTime = Boolean((liveMatch?.liveState as Record<string, unknown>)?.isHalfTime);
+
+  const allPlayers = useCollection<Player>('players');
+  const matchPlayers = useMemo(() => {
+    if (!liveMatch) return [];
+    const fromTeams = allPlayers.data.filter(
+      (p) => (liveMatch.teamAId && p.teamId === liveMatch.teamAId) || (liveMatch.teamBId && p.teamId === liveMatch.teamBId)
+    );
+    if (fromTeams.length > 0) return fromTeams.slice(0, 6);
+
+    // Fallback to participant entries so visitors can rate match athletes directly
+    return [
+      {
+        id: liveMatch.participantA?.id || liveMatch.teamAId || 'athlete_a',
+        name: teamAName,
+        photo: (liveMatch.participantA as any)?.photo || '',
+        teamId: liveMatch.teamAId || 'teamA',
+      },
+      {
+        id: liveMatch.participantB?.id || liveMatch.teamBId || 'athlete_b',
+        name: teamBName,
+        photo: (liveMatch.participantB as any)?.photo || '',
+        teamId: liveMatch.teamBId || 'teamB',
+      },
+    ];
+  }, [allPlayers.data, liveMatch, teamAName, teamBName]);
 
   // Spectator experience: Live moments triggered automatically by canonical events
   useEffect(() => {
@@ -185,7 +214,7 @@ export const MatchDetail: React.FC = () => {
             </div>
 
             <div className="w-full md:w-auto flex justify-start md:justify-end">
-              <ReactionBar />
+              <ReactionBar matchId={matchId} />
             </div>
           </div>
         </Container>
@@ -204,13 +233,62 @@ export const MatchDetail: React.FC = () => {
         <Container className="py-10 sm:py-16 px-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
             <div className="lg:col-span-2 space-y-6 sm:space-y-8">
-              <VotingPanel teamA={teamAName} teamB={teamBName} />
-              <MatchTimeline events={mappedEvents} />
+              <VotingPanel
+                matchId={matchId}
+                teamA={teamAName}
+                teamB={teamBName}
+                teamAId={liveMatch?.teamAId}
+                teamBId={liveMatch?.teamBId}
+                allowVoting={liveMatch?.allowVoting !== false}
+              />
+              <MatchTimeline events={mappedEvents} matchId={matchId} />
             </div>
             <div className="space-y-6 sm:space-y-8">
               <MatchStats stats={stats} />
+
+              {/* Player Ratings */}
+              {matchId && matchPlayers.length > 0 && (
+                <div
+                  className={cn(
+                    "p-5 rounded-2xl border backdrop-blur-xl shadow-xl transition-all space-y-4",
+                    isDay
+                      ? "bg-white/80 border-[#071426]/10 text-[#071426]"
+                      : "bg-[#071426]/90 border-white/10 text-white"
+                  )}
+                >
+                  <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: isDay ? 'rgba(7,20,38,0.08)' : 'rgba(255,255,255,0.1)' }}>
+                    <h3 className="text-sm font-black uppercase tracking-wider flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#D9A441]" />
+                      Player Ratings
+                    </h3>
+                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-50">
+                      Spectator Poll
+                    </span>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {matchPlayers.map((p) => (
+                      <PlayerRatingCard
+                        key={p.id}
+                        matchId={matchId}
+                        playerId={p.id}
+                        playerName={p.name}
+                        playerPhoto={p.photo}
+                        teamColor={p.teamId === liveMatch?.teamAId ? '#1264FF' : '#FF4D3D'}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Match Reviews */}
+          {matchId && (
+            <div className="mt-10 sm:mt-14 border-t pt-8" style={{ borderColor: isDay ? 'rgba(7,20,38,0.08)' : 'rgba(255,255,255,0.1)' }}>
+              <ReviewSection matchId={matchId} />
+            </div>
+          )}
         </Container>
       </div>
 

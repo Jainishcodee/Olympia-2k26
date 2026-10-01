@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useEventReactions } from '@/hooks/useReactions';
 import { cn } from '@/utils/cn';
 
 export interface TimelineEvent {
@@ -122,8 +123,63 @@ const getEventBadge = (type: string) => {
   return { icon: '•', label: 'MATCH EVENT', color: 'text-slate-400 bg-slate-500/15 border-slate-500/30' };
 };
 
-export const MatchTimeline: React.FC<{ events?: TimelineEvent[]; className?: string }> = ({ 
+const EVENT_EMOJIS = [
+  { id: 'fire', icon: '🔥' },
+  { id: 'heart', icon: '❤️' },
+  { id: 'clap', icon: '👏' },
+  { id: 'laugh', icon: '😂' },
+];
+
+const EventReactionBar: React.FC<{ matchId: string; eventId: string; isDay: boolean }> = ({
+  matchId,
+  eventId,
+  isDay,
+}) => {
+  const { counts, userReaction, react } = useEventReactions(matchId, eventId);
+
+  return (
+    <div className={cn("flex items-center gap-1.5 mt-2.5 pt-2 border-t", isDay ? "border-black/5" : "border-white/5")}>
+      {EVENT_EMOJIS.map((e) => {
+        const count = counts[e.id] || 0;
+        const isSelected = userReaction === e.id;
+        return (
+          <button
+            key={e.id}
+            type="button"
+            onClick={(ev) => {
+              ev.stopPropagation();
+              react(e.id);
+            }}
+            className={cn(
+              "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold transition-all border",
+              isSelected
+                ? "bg-[#D9A441]/20 border-[#D9A441] text-[#D9A441] scale-105"
+                : count > 0
+                  ? isDay
+                    ? "bg-black/5 border-black/10 text-[#071426] hover:bg-black/10"
+                    : "bg-white/10 border-white/10 text-white hover:bg-white/15"
+                  : isDay
+                    ? "bg-transparent border-transparent opacity-40 hover:opacity-100 hover:bg-black/5 text-[#071426]"
+                    : "bg-transparent border-transparent opacity-40 hover:opacity-100 hover:bg-white/5 text-white"
+            )}
+            title={`React with ${e.icon}`}
+          >
+            <span>{e.icon}</span>
+            {count > 0 && <span className="tabular-nums font-mono text-[10px]">{count}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+export const MatchTimeline: React.FC<{
+  events?: TimelineEvent[];
+  matchId?: string;
+  className?: string;
+}> = ({ 
   events = [], 
+  matchId,
   className 
 }) => {
   const { theme } = useTheme();
@@ -238,6 +294,10 @@ export const MatchTimeline: React.FC<{ events?: TimelineEvent[]; className?: str
                     <div className="mt-1.5 text-[11px] font-mono font-bold text-[#D9A441]">
                       Score: {event.scoreText}
                     </div>
+                  )}
+
+                  {matchId && (
+                    <EventReactionBar matchId={matchId} eventId={event.id} isDay={isDay} />
                   )}
                 </div>
               </motion.div>

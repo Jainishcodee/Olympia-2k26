@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FloatingReaction } from './FloatingReaction';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useReactions } from '@/hooks/useReactions';
 import { cn } from '@/utils/cn';
 
 const REACTIONS = [
@@ -13,25 +14,22 @@ const REACTIONS = [
   { emoji: '🏆', id: 'trophy', label: 'Trophy' },
 ];
 
-export const ReactionBar: React.FC<{ className?: string }> = ({ className }) => {
+export const ReactionBar: React.FC<{ matchId?: string; className?: string }> = ({
+  matchId,
+  className,
+}) => {
   const { theme } = useTheme();
   const isDay = theme === 'day';
 
-  // Initialized to 0 as requested by the user
-  const [counts, setCounts] = useState<Record<string, number>>({
-    fire: 0,
-    clap: 0,
-    zap: 0,
-    heart: 0,
-    wow: 0,
-    trophy: 0,
-  });
+  const { aggregates, addReaction } = useReactions(matchId || '');
   const [floating, setFloating] = useState<{ id: number; emoji: string; x: number }[]>([]);
 
   const handleReact = (id: string, emoji: string, event: React.MouseEvent) => {
-    setCounts(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+    if (matchId) {
+      addReaction(id);
+    }
 
-    // Create floating element
+    // Create floating animation element
     const rect = (event.target as HTMLElement).getBoundingClientRect();
     const newFloat = {
       id: Date.now() + Math.random(),
@@ -39,9 +37,9 @@ export const ReactionBar: React.FC<{ className?: string }> = ({ className }) => 
       x: rect.left + rect.width / 2 - 10,
     };
 
-    setFloating(prev => [...prev, newFloat]);
+    setFloating((prev) => [...prev, newFloat]);
     setTimeout(() => {
-      setFloating(prev => prev.filter(f => f.id !== newFloat.id));
+      setFloating((prev) => prev.filter((f) => f.id !== newFloat.id));
     }, 2000);
   };
 
@@ -55,32 +53,37 @@ export const ReactionBar: React.FC<{ className?: string }> = ({ className }) => 
         className
       )}
     >
-      {REACTIONS.map(reaction => (
-        <motion.button
-          key={reaction.id}
-          whileHover={{ scale: 1.25 }}
-          whileTap={{ scale: 0.85 }}
-          onClick={(e) => handleReact(reaction.id, reaction.emoji, e)}
-          className="flex flex-col items-center group relative focus:outline-none"
-          title={reaction.label}
-        >
-          <span className="text-xl sm:text-2xl md:text-3xl mb-0.5 filter grayscale group-hover:grayscale-0 active:grayscale-0 transition-all select-none">
-            {reaction.emoji}
-          </span>
-          <span
-            className={cn(
-              "text-[10px] font-black tabular-nums transition-colors",
-              isDay ? "text-[#071426]/50 group-hover:text-[#155EEF]" : "text-white/50 group-hover:text-[#FFD21F]"
-            )}
+      {REACTIONS.map((reaction) => {
+        const count = aggregates[reaction.id] || 0;
+        return (
+          <motion.button
+            key={reaction.id}
+            whileHover={{ scale: 1.25 }}
+            whileTap={{ scale: 0.85 }}
+            onClick={(e) => handleReact(reaction.id, reaction.emoji, e)}
+            className="flex flex-col items-center group relative focus:outline-none"
+            title={reaction.label}
           >
-            {counts[reaction.id]}
-          </span>
-        </motion.button>
-      ))}
+            <span className="text-xl sm:text-2xl md:text-3xl mb-0.5 filter grayscale group-hover:grayscale-0 active:grayscale-0 transition-all select-none">
+              {reaction.emoji}
+            </span>
+            <span
+              className={cn(
+                "text-[10px] font-black tabular-nums transition-colors",
+                isDay
+                  ? "text-[#071426]/50 group-hover:text-[#155EEF]"
+                  : "text-white/50 group-hover:text-[#FFD21F]"
+              )}
+            >
+              {count}
+            </span>
+          </motion.button>
+        );
+      })}
 
       {/* Floating layer */}
       <AnimatePresence>
-        {floating.map(f => (
+        {floating.map((f) => (
           <FloatingReaction key={f.id} emoji={f.emoji} startX={f.x} />
         ))}
       </AnimatePresence>

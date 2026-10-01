@@ -1,52 +1,113 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { doc, onSnapshot, setDoc, increment } from 'firebase/firestore';
-import { db } from '@/config/firebase';
-import { useAuth } from '@/contexts/AuthContext';
+import {
+  addMatchReaction,
+  subscribeToReactions,
+  addEventReaction,
+  subscribeToEventReactions,
+} from '@/services/reactions/reactionService';
 
 export function useReactions(matchId: string) {
-  const [aggregates, setAggregates] = useState<Record<string, number>>({});
+  const [aggregates, setAggregates] = useState<Record<string, number>>({
+    fire: 0,
+    clap: 0,
+    lightning: 0,
+    heart: 0,
+    wow: 0,
+    trophy: 0,
+  });
+  const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
   const lastReactionTime = useRef<number>(0);
 
   useEffect(() => {
-    if (!db || !matchId) {
+    if (!matchId) {
       setIsLoading(false);
       return;
     }
 
-    const docRef = doc(db, 'match_reactions', matchId);
-    const unsubscribe = onSnapshot(docRef, (snap) => {
-      if (snap.exists()) {
-        setAggregates(snap.data() as Record<string, number>);
-      } else {
-        setAggregates({});
-      }
+    const unsubscribe = subscribeToReactions(matchId, (data) => {
+      setAggregates(data.counts);
+      setTotal(data.total);
       setIsLoading(false);
     });
 
     return () => unsubscribe();
   }, [matchId]);
 
-  const addReaction = useCallback(async (type: string) => {
-    if (!db || !matchId || !user) return;
-    
-    const now = Date.now();
-    if (now - lastReactionTime.current < 1000) {
-      // Rate limit: max 1 reaction per second
+  const addReaction = useCallback(
+    async (type: string) => {
+      if (!matchId) return;
+
+      const now = Date.now();
+      if (now - lastReactionTime.current < 400) {
+        // Rate limit: 400ms
+        return;
+      }
+      lastReactionTime.current = now;
+
+      // Optimistic local update
+      setAggregates((prev) => ({
+        ...prev,
+        [type]: (prev[type] || 0) + 1,
+      }));
+      setTotal((prev) => prev + 1);
+
+      try {
+        await addMatchReaction(matchId, type);
+      } catch (error) {
+        console.error('Failed to add reaction', error);
+      }
+    },
+    [matchId]
+  );
+
+  return { aggregates, total, addReaction, isLoading };
+}
+
+export function useEventReactions(matchId: string, eventId: string) {
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [userReaction, setUserReaction] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const lastReactionTime = useRef<number>(0);
+
+  useEffect(() => {
+    if (!matchId || !eventId) {
+      setIsLoading(false);
       return;
     }
-    lastReactionTime.current = now;
 
-    try {
-      const docRef = doc(db, 'match_reactions', matchId);
-      await setDoc(docRef, {
-        [type]: increment(1)
-      }, { merge: true });
-    } catch (error) {
-      console.error("Failed to add reaction", error);
-    }
-  }, [matchId, user]);
+    const unsubscribe = subscribeToEventReactions(matchId, eventId, (c, uReaction) => {
+      setCounts(c);
+      setUserReaction(uReaction);
+      setIsLoading(false);
+    });
 
-  return { aggregates, addReaction, isLoading };
+    return () => unsubscribe();
+  }, [matchId, eventId]);
+
+  const react = useCallback(
+    async (type: string) => {
+      if (!matchId || !eventId) return;
+
+      const now = Date.now();
+      if (now - lastReactionTime.current < 400) return;
+      lastReactionTime.current = now;
+
+      // Optimistic local update
+      setCounts((prev) => ({
+        ...prev,
+        [type]: (prev[type] || 0) + 1,
+      }));
+      setUserReaction(type);
+
+      try {
+        await addEventReaction(matchId, eventId, type);
+      } catch (error) {
+        console.error('Failed to add event reaction', error);
+      }
+    },
+    [matchId, eventId]
+  );
+
+  return { counts, userReaction, react, isLoading };
 }

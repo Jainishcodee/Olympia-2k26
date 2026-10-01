@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useCollection } from '@/hooks/useCollection';
+import { useCollection, useCollectionGroup } from '@/hooks/useCollection';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { updateMatch } from '@/services/matches/matchService';
@@ -62,7 +62,7 @@ const VotesManager: React.FC = () => {
   const { isDay } = useTheme();
   const { log } = useAuditLog();
 
-  const votes = useCollection<VoteDoc>('votes');
+  const votes = useCollectionGroup<VoteDoc>('votes');
   const matches = useCollection<Match>('matches', { sortBy: 'scheduledAt', direction: 'desc' });
   const teams = useCollection<Team>('teams');
 
@@ -94,8 +94,8 @@ const VotesManager: React.FC = () => {
 
       const chosen = vote.selectedTeam || vote.teamId || '';
       const match = matchById.get(vote.matchId);
-      const isA = Boolean(chosen) && (chosen === match?.teamAId || chosen === match?.participantA?.id);
-      const isB = Boolean(chosen) && (chosen === match?.teamBId || chosen === match?.participantB?.id);
+      const isA = Boolean(chosen) && (chosen === 'A' || chosen === 'teamA' || chosen === match?.teamAId || chosen === match?.participantA?.id);
+      const isB = Boolean(chosen) && (chosen === 'B' || chosen === 'teamB' || chosen === match?.teamBId || chosen === match?.participantB?.id);
       if (isA) entry.a += 1;
       else if (isB) entry.b += 1;
       else entry.other += 1;
