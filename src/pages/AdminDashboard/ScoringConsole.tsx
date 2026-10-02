@@ -133,6 +133,9 @@ const ScoringConsole: React.FC = () => {
   const [subPlayerOff, setSubPlayerOff] = useState('');
   const [subPlayerOn, setSubPlayerOn] = useState('');
   const [footballAddedTime, setFootballAddedTime] = useState<number>(0);
+  const [isPenaltyGoal, setIsPenaltyGoal] = useState(false);
+  const [footballShootingTeam, setFootballShootingTeam] = useState<'teamA' | 'teamB'>('teamA');
+  const [footballShootoutKicker, setFootballShootoutKicker] = useState('');
   const [volleyballPlayerA, setVolleyballPlayerA] = useState('');
   const [volleyballPlayerB, setVolleyballPlayerB] = useState('');
 
@@ -541,6 +544,7 @@ const ScoringConsole: React.FC = () => {
     setAssistPlayer('');
     setSubPlayerOff('');
     setSubPlayerOn('');
+    setIsPenaltyGoal(false);
     setFootballModal({ type, team });
   };
 
@@ -561,8 +565,9 @@ const ScoringConsole: React.FC = () => {
       const newScore = { ...currentScore, [team]: newTeamScore };
       creditTeam(team);
 
+      const penText = isPenaltyGoal ? ' (Penalty)' : '';
       const scorerText = selectedPlayer ? ` (${selectedPlayer})` : '';
-      const assistText = assistPlayer ? ` [Assist: ${assistPlayer}]` : '';
+      const assistText = assistPlayer && !isPenaltyGoal ? ` [Assist: ${assistPlayer}]` : '';
 
       await recordEvent({
         type: 'goal',
@@ -571,15 +576,16 @@ const ScoringConsole: React.FC = () => {
         playerName: selectedPlayer || undefined,
         data: {
           scorer: selectedPlayer || undefined,
-          assist: assistPlayer || undefined,
+          assist: isPenaltyGoal ? undefined : (assistPlayer || undefined),
+          isPenalty: isPenaltyGoal,
         },
-        description: `⚽ GOAL! ${side.name}${scorerText}${assistText}`,
+        description: `⚽ GOAL!${penText} ${side.name}${scorerText}${assistText}`,
         scoreDelta: { [team]: 1 },
         newScore,
         newLiveState: { ...liveMatch?.liveState, clock: elapsedTime, period },
         positioning,
         fxKind: 'goal',
-        fxTitle: 'GOAL!',
+        fxTitle: isPenaltyGoal ? 'PENALTY GOAL!' : 'GOAL!',
         fxSub: selectedPlayer ? `${selectedPlayer} · ${side.shortName}` : side.name,
       });
     } else if (type === 'yellow_card') {
@@ -685,6 +691,138 @@ const ScoringConsole: React.FC = () => {
       fxTitle: 'GOAL RULED OUT',
       fxSub: side.name,
     });
+  };
+
+  const handleFootballStartShootout = async () => {
+    if (!matchId) return;
+    const positioning: SportPositioning = {
+      isShootout: true,
+      period: 'shootout',
+      penaltyRound: 1,
+    };
+    await recordEvent({
+      type: 'penalty_shootout_start',
+      description: '⚽ Penalty Shootout decider underway!',
+      positioning,
+      newLiveState: {
+        isShootout: true,
+        period: 'shootout',
+        isHalfTime: false,
+        penalties: {
+          teamA: 0,
+          teamB: 0,
+          round: 1,
+          currentTeam: 'teamA',
+          kicks: [],
+        },
+      },
+      fxKind: 'neutral',
+      fxTitle: 'PENALTY SHOOTOUT',
+      fxSub: `${teamAInfo.shortName} vs ${teamBInfo.shortName}`,
+      accent: '#D9A441',
+    });
+    setFootballShootingTeam('teamA');
+    setFootballShootoutKicker('');
+    toast('Penalty Shootout initiated!', { icon: '⚽' });
+  };
+
+  const handleFootballRecordPenaltyKick = async (team: 'teamA' | 'teamB', scored: boolean) => {
+    if (!matchId) return;
+    const side = team === 'teamA' ? teamAInfo : teamBInfo;
+    const penalties = (liveMatch?.liveState?.penalties || { teamA: 0, teamB: 0, round: 1, kicks: [] }) as Record<string, any>;
+    const kicks = Array.isArray(penalties.kicks) ? penalties.kicks : [];
+    const kickNumber = kicks.length + 1;
+    const roundNumber = Math.ceil(kickNumber / 2);
+    const kickerName = footballShootoutKicker || '';
+
+    const positioning: SportPositioning = {
+      isShootout: true,
+      period: 'shootout',
+      penaltyRound: roundNumber,
+      penaltyKickNumber: kickNumber,
+    };
+
+    if (scored) {
+      await recordEvent({
+        type: 'penalty_scored',
+        team,
+        teamName: side.name,
+        playerName: kickerName || undefined,
+        data: {
+          playerName: kickerName || undefined,
+          kickNumber,
+          round: roundNumber,
+          scored: true,
+        },
+        description: `⚽ PENALTY SCORED! ${side.shortName}${kickerName ? ` (${kickerName})` : ''} · Round ${roundNumber}`,
+        positioning,
+        fxKind: 'goal',
+        fxTitle: 'PENALTY SCORED!',
+        fxSub: kickerName ? `${kickerName} · ${side.shortName}` : side.name,
+      });
+      toast.success(`${side.shortName} scored penalty!`);
+    } else {
+      await recordEvent({
+        type: 'penalty_missed',
+        team,
+        teamName: side.name,
+        playerName: kickerName || undefined,
+        data: {
+          playerName: kickerName || undefined,
+          kickNumber,
+          round: roundNumber,
+          scored: false,
+        },
+        description: `❌ PENALTY MISSED! ${side.shortName}${kickerName ? ` (${kickerName})` : ''} · Round ${roundNumber}`,
+        positioning,
+        fxKind: 'neutral',
+        fxTitle: 'PENALTY MISSED',
+        fxSub: kickerName ? `${kickerName} · ${side.shortName}` : side.name,
+      });
+      toast.error(`${side.shortName} penalty missed / saved`);
+    }
+
+    const nextTeam = team === 'teamA' ? 'teamB' : 'teamA';
+    setFootballShootingTeam(nextTeam);
+    setFootballShootoutKicker('');
+  };
+
+  const handleFootballEndShootout = async () => {
+    if (!matchId) return;
+    const penalties = (liveMatch?.liveState?.penalties || { teamA: 0, teamB: 0 }) as Record<string, any>;
+    const penA = Number(penalties.teamA || 0);
+    const penB = Number(penalties.teamB || 0);
+    const winner: 'teamA' | 'teamB' | undefined = penA > penB ? 'teamA' : penB > penA ? 'teamB' : undefined;
+    const winnerSide = winner === 'teamA' ? teamAInfo : winner === 'teamB' ? teamBInfo : null;
+
+    await recordEvent({
+      type: 'penalty_shootout_end',
+      team: winner || '',
+      teamName: winnerSide?.name || '',
+      description: winnerSide
+        ? `🏁 Penalty Shootout finished: ${winnerSide.name} won (${penA} - ${penB})`
+        : `🏁 Penalty Shootout finished: Tied (${penA} - ${penB})`,
+      positioning: { isShootout: true, period: 'shootout' },
+      fxKind: 'neutral',
+      fxTitle: 'SHOOTOUT DECIDED',
+      fxSub: winnerSide ? `${winnerSide.name} WIN!` : 'Shootout complete',
+      accent: '#10B981',
+    });
+    toast.success('Penalty Shootout ended. Match marked completed!');
+  };
+
+  const handleFootballExitShootout = async () => {
+    if (!matchId) return;
+    await recordEvent({
+      type: 'second_half',
+      description: 'Returned to regular match play from shootout',
+      positioning: { period: 2, matchSecond: seconds },
+      newLiveState: {
+        isShootout: false,
+        period: 2,
+      },
+    });
+    toast('Exited Shootout mode');
   };
 
   /* 2. Cricket Engine */
@@ -1507,13 +1645,224 @@ const ScoringConsole: React.FC = () => {
       const isPeriod1 = (liveMatch?.liveState?.period || 1) === 1;
       const isPeriod2 = (liveMatch?.liveState?.period || 1) === 2;
       const isHT = Boolean(liveMatch?.liveState?.isHalfTime);
+      const isShootout = Boolean(liveMatch?.liveState?.isShootout || (liveMatch?.liveState as any)?.period === 'shootout');
+      const penalties = (liveMatch?.liveState?.penalties || (liveMatch?.score?.details as any)?.penalties || { teamA: 0, teamB: 0, kicks: [] }) as Record<string, any>;
+      const penA = Number(penalties.teamA || 0);
+      const penB = Number(penalties.teamB || 0);
+      const regularScoreA = Number(liveMatch?.score?.teamA ?? 0);
+      const regularScoreB = Number(liveMatch?.score?.teamB ?? 0);
+      const kicks: Array<{ id: string; team: 'teamA' | 'teamB'; scored: boolean; playerName?: string; kickNumber: number; round: number }> = Array.isArray(penalties.kicks) ? penalties.kicks : [];
+      const kicksA = kicks.filter((k) => k.team === 'teamA');
+      const kicksB = kicks.filter((k) => k.team === 'teamB');
+      const activeShootoutTeam = footballShootingTeam;
+      const activeSide = activeShootoutTeam === 'teamA' ? teamAInfo : teamBInfo;
+      const activePlayers = activeShootoutTeam === 'teamA' ? teamAPlayers : teamBPlayers;
+      const totalRounds = Math.max(5, kicksA.length, kicksB.length, Math.ceil(kicks.length / 2) || 1);
+
+      if (isShootout) {
+        return (
+          <div className="space-y-6">
+            {/* Shootout Header Plate */}
+            <div className="rounded-xl border p-4 bg-slate-900/90 border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse" />
+                  <span className="text-xs font-black uppercase tracking-wider text-amber-400">
+                    Penalty Shootout (Decider)
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-slate-400">
+                  Round {penalties.round || Math.ceil((kicks.length + 1) / 2)} · {totalRounds > 5 ? 'Sudden Death' : 'Best of 5'}
+                </span>
+              </div>
+
+              {/* Shootout scoreboard */}
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-2 border-y border-slate-800">
+                <div className="text-right">
+                  <span className="text-xs font-bold text-slate-400 block">{teamAInfo.name}</span>
+                  <span className="text-2xl sm:text-3xl font-black text-blue-400 tabular-nums">{penA}</span>
+                </div>
+                <div className="text-center px-3 py-1 rounded bg-slate-800/80 border border-slate-700">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">FT: {regularScoreA} - {regularScoreB}</span>
+                  <span className="text-xs font-black uppercase tracking-wider text-amber-400">PENS</span>
+                </div>
+                <div className="text-left">
+                  <span className="text-xs font-bold text-slate-400 block">{teamBInfo.name}</span>
+                  <span className="text-2xl sm:text-3xl font-black text-rose-400 tabular-nums">{penB}</span>
+                </div>
+              </div>
+
+              {/* Visual Kicks Indicators for Team A and Team B */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Team A Kicks */}
+                <div className="p-2.5 rounded-lg border border-slate-800/80 bg-slate-950/60">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-bold text-slate-300">{teamAInfo.shortName} Kicks</span>
+                    <span className="text-[11px] font-black text-blue-400 tabular-nums">{penA} Scored</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {Array.from({ length: totalRounds }).map((_, i) => {
+                      const k = kicksA[i];
+                      return (
+                        <div
+                          key={`kickA-${i}`}
+                          className={cn(
+                            "h-7 min-w-[28px] px-1.5 rounded flex items-center justify-center text-xs font-black border transition-all",
+                            !k && "border-slate-800 bg-slate-900 text-slate-600",
+                            k && k.scored && "border-emerald-500/50 bg-emerald-500/20 text-emerald-400",
+                            k && !k.scored && "border-rose-500/50 bg-rose-500/20 text-rose-400"
+                          )}
+                          title={k ? `${k.playerName || 'Player'} (${k.scored ? 'Scored' : 'Missed'})` : `Kick ${i + 1} Pending`}
+                        >
+                          {!k ? `${i + 1}` : k.scored ? '✓' : '✗'}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Team B Kicks */}
+                <div className="p-2.5 rounded-lg border border-slate-800/80 bg-slate-950/60">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-bold text-slate-300">{teamBInfo.shortName} Kicks</span>
+                    <span className="text-[11px] font-black text-rose-400 tabular-nums">{penB} Scored</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {Array.from({ length: totalRounds }).map((_, i) => {
+                      const k = kicksB[i];
+                      return (
+                        <div
+                          key={`kickB-${i}`}
+                          className={cn(
+                            "h-7 min-w-[28px] px-1.5 rounded flex items-center justify-center text-xs font-black border transition-all",
+                            !k && "border-slate-800 bg-slate-900 text-slate-600",
+                            k && k.scored && "border-emerald-500/50 bg-emerald-500/20 text-emerald-400",
+                            k && !k.scored && "border-rose-500/50 bg-rose-500/20 text-rose-400"
+                          )}
+                          title={k ? `${k.playerName || 'Player'} (${k.scored ? 'Scored' : 'Missed'})` : `Kick ${i + 1} Pending`}
+                        >
+                          {!k ? `${i + 1}` : k.scored ? '✓' : '✗'}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Active Turn & Kicker Selector */}
+            <div>
+              <PanelLabel hint="select taking team & player">Shooting Turn & Penalty Taker</PanelLabel>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setFootballShootingTeam('teamA')}
+                  className={cn(
+                    "p-2.5 rounded-lg text-xs font-black uppercase tracking-wider border transition-all cursor-pointer",
+                    activeShootoutTeam === 'teamA'
+                      ? "border-blue-500 bg-blue-500/20 text-blue-300 ring-1 ring-blue-500"
+                      : "border-slate-800 bg-slate-900 text-slate-400 hover:text-white"
+                  )}
+                >
+                  Shooting: {teamAInfo.name}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFootballShootingTeam('teamB')}
+                  className={cn(
+                    "p-2.5 rounded-lg text-xs font-black uppercase tracking-wider border transition-all cursor-pointer",
+                    activeShootoutTeam === 'teamB'
+                      ? "border-rose-500 bg-rose-500/20 text-rose-300 ring-1 ring-rose-500"
+                      : "border-slate-800 bg-slate-900 text-slate-400 hover:text-white"
+                  )}
+                >
+                  Shooting: {teamBInfo.name}
+                </button>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Penalty Taker ({activeSide.name})
+                </label>
+                {activePlayers.length > 0 ? (
+                  <select
+                    value={footballShootoutKicker}
+                    onChange={(e) => setFootballShootoutKicker(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 text-slate-100 text-xs p-2.5 rounded-lg focus:border-blue-500 outline-none"
+                  >
+                    <option value="">-- Select penalty kicker --</option>
+                    {activePlayers.map((p) => (
+                      <option key={p.id} value={p.name}>
+                        #{p.jerseyNumber} {p.name} ({p.position || 'Player'})
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
+                <input
+                  type="text"
+                  placeholder="Or enter kicker name..."
+                  value={footballShootoutKicker}
+                  onChange={(e) => setFootballShootoutKicker(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 text-slate-100 text-xs p-2.5 rounded-lg focus:border-blue-500 outline-none placeholder-slate-600"
+                />
+              </div>
+            </div>
+
+            {/* Penalty Kick Actions */}
+            <div>
+              <PanelLabel hint={`record shot for ${activeSide.shortName}`}>Penalty Shot Result</PanelLabel>
+              <div className="grid grid-cols-2 gap-3">
+                <Pad
+                  tone="green"
+                  size="lg"
+                  disabled={isBusy}
+                  onClick={() => handleFootballRecordPenaltyKick(activeShootoutTeam, true)}
+                >
+                  ⚽ SCORED (+1) · {activeSide.shortName}
+                </Pad>
+                <Pad
+                  tone="red"
+                  size="lg"
+                  disabled={isBusy}
+                  onClick={() => handleFootballRecordPenaltyKick(activeShootoutTeam, false)}
+                >
+                  ❌ MISSED / SAVED · {activeSide.shortName}
+                </Pad>
+              </div>
+            </div>
+
+            {/* Shootout Management */}
+            <div>
+              <PanelLabel hint="lifecycle & reversal">Shootout Management</PanelLabel>
+              <div className="flex flex-wrap items-center gap-2">
+                <Pad
+                  tone="yellow"
+                  size="sm"
+                  onClick={handleFootballEndShootout}
+                  disabled={isBusy}
+                >
+                  🏁 Conclude Shootout & Finalize Match
+                </Pad>
+                <Pad
+                  tone="slate"
+                  size="sm"
+                  onClick={handleFootballExitShootout}
+                  disabled={isBusy}
+                >
+                  ↩ Return to Match Play
+                </Pad>
+              </div>
+            </div>
+          </div>
+        );
+      }
 
       return (
         <div className="space-y-6">
           {/* Match Halves & Lifecycle */}
           <div>
             <PanelLabel hint="match halves">Period & Halves</PanelLabel>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {isPeriod1 && !isHT && isMatchLive && !isPaused ? (
                 <Pad tone="yellow" onClick={handleFootballHalfTime} disabled={isBusy}>
                   ⏱️ Half Time
@@ -1536,7 +1885,15 @@ const ScoringConsole: React.FC = () => {
                 🏁 Full Time
               </Pad>
 
-              <div className="flex items-center justify-center border border-[#1E2A45] bg-[#101A2E] text-[11px] font-black uppercase tracking-wider text-[#8FA0BC] px-3 py-2">
+              <Pad
+                tone="blue"
+                onClick={handleFootballStartShootout}
+                disabled={isBusy || liveMatch?.status === 'completed'}
+              >
+                ⚽ Shootout {regularScoreA === regularScoreB ? '(Tied)' : ''}
+              </Pad>
+
+              <div className="flex items-center justify-center border border-slate-200 dark:border-[#1E2A45] bg-slate-100 dark:bg-[#101A2E] text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-[#8FA0BC] px-3 py-2 rounded-lg">
                 {isHT ? 'Half Time' : isPeriod2 ? '2nd Half (2H)' : '1st Half (1H)'}
               </div>
             </div>
@@ -2936,6 +3293,19 @@ const ScoringConsole: React.FC = () => {
                       onChange={(e) => setAssistPlayer(e.target.value)}
                       className="mt-1.5 w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none placeholder-[#5E6E86]"
                     />
+                  </div>
+
+                  <div className="pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-[#EEF2F7]">
+                      <input
+                        type="checkbox"
+                        checked={isPenaltyGoal}
+                        onChange={(e) => setIsPenaltyGoal(e.target.checked)}
+                        className="rounded border-[#1E2A45] bg-[#101A2E] text-blue-500 focus:ring-0 w-4 h-4"
+                      />
+                      <span className="font-semibold text-slate-300">Penalty Kick (In-Play)</span>
+                      <span className="text-[10px] text-amber-400 font-mono">⚽ (PEN)</span>
+                    </label>
                   </div>
                 </div>
               )}

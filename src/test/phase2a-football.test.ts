@@ -575,4 +575,181 @@ describe('Phase 2A: Football Live Scoring Engine', () => {
     expect(mockMatchData.liveState.period).toBe(2);
     expect(mockMatchData.liveState.pausedDurationMs).toBeGreaterThanOrEqual(900000);
   });
+
+  // 19. Formatting Shootout Positioning
+  it('19. Formatting Shootout Positioning: formats penalty shootout positioning labels', () => {
+    expect(formatSportPositioning('football', { isShootout: true })).toBe('PEN');
+    expect(formatSportPositioning('football', { isShootout: true, penaltyKickNumber: 4 })).toBe('PEN · Kick 4');
+    expect(formatSportPositioning('football', { isShootout: true, penaltyRound: 2 })).toBe('PEN · R2');
+  });
+
+  // 20. Penalty Shootout Full Flow
+  it('20. Penalty Shootout Flow: starts shootout, tracks kicks, updates rounds, and completes match with winner', async () => {
+    mockMatchData.status = 'live';
+    mockMatchData.score = { teamA: 0, teamB: 0, details: {} };
+    mockMatchData.liveState = { period: 2, clock: '90:00' };
+    mockMatchData.lastSequence = 20;
+
+    // 1. Start Shootout
+    await recordMatchEvent({
+      matchId: 'football-match-1',
+      sportId: 'football',
+      type: 'penalty_shootout_start',
+      description: '⚽ Penalty Shootout Started',
+    });
+
+    expect(mockMatchData.status).toBe('live');
+    expect(mockMatchData.liveState.period).toBe('shootout');
+    expect(mockMatchData.liveState.isShootout).toBe(true);
+    expect(mockMatchData.liveState.penalties).toBeDefined();
+    expect(mockMatchData.liveState.penalties.teamA).toBe(0);
+    expect(mockMatchData.liveState.penalties.teamB).toBe(0);
+    expect(mockMatchData.liveState.penalties.round).toBe(1);
+    expect(mockMatchData.liveState.penalties.currentTeam).toBe('teamA');
+    expect(mockMatchData.liveState.penalties.kicks).toHaveLength(0);
+
+    // 2. Team A Kick 1 - Scored
+    await recordMatchEvent({
+      matchId: 'football-match-1',
+      sportId: 'football',
+      type: 'penalty_scored',
+      team: 'teamA',
+      playerName: 'Kane',
+      description: '⚽ Team A penalty scored by Kane',
+    });
+
+    expect(mockMatchData.liveState.penalties.teamA).toBe(1);
+    expect(mockMatchData.liveState.penalties.teamB).toBe(0);
+    expect(mockMatchData.liveState.penalties.currentTeam).toBe('teamB');
+    expect(mockMatchData.liveState.penalties.kicks).toHaveLength(1);
+    expect(mockMatchData.liveState.penalties.kicks[0].scored).toBe(true);
+    expect(mockMatchData.liveState.penalties.kicks[0].playerName).toBe('Kane');
+
+    // 3. Team B Kick 1 - Missed
+    await recordMatchEvent({
+      matchId: 'football-match-1',
+      sportId: 'football',
+      type: 'penalty_missed',
+      team: 'teamB',
+      playerName: 'Mbappe',
+      description: '❌ Team B penalty missed by Mbappe',
+    });
+
+    expect(mockMatchData.liveState.penalties.teamA).toBe(1);
+    expect(mockMatchData.liveState.penalties.teamB).toBe(0);
+    expect(mockMatchData.liveState.penalties.round).toBe(2);
+    expect(mockMatchData.liveState.penalties.currentTeam).toBe('teamA');
+    expect(mockMatchData.liveState.penalties.kicks).toHaveLength(2);
+    expect(mockMatchData.liveState.penalties.kicks[1].scored).toBe(false);
+
+    // 4. Team A Kick 2 - Scored
+    await recordMatchEvent({
+      matchId: 'football-match-1',
+      sportId: 'football',
+      type: 'penalty_scored',
+      team: 'teamA',
+      playerName: 'Saka',
+      description: '⚽ Team A penalty scored by Saka',
+    });
+
+    expect(mockMatchData.liveState.penalties.teamA).toBe(2);
+    expect(mockMatchData.liveState.penalties.teamB).toBe(0);
+    expect(mockMatchData.liveState.penalties.currentTeam).toBe('teamB');
+
+    // 5. Team B Kick 2 - Scored
+    await recordMatchEvent({
+      matchId: 'football-match-1',
+      sportId: 'football',
+      type: 'penalty_scored',
+      team: 'teamB',
+      playerName: 'Griezmann',
+      description: '⚽ Team B penalty scored by Griezmann',
+    });
+
+    expect(mockMatchData.liveState.penalties.teamA).toBe(2);
+    expect(mockMatchData.liveState.penalties.teamB).toBe(1);
+    expect(mockMatchData.liveState.penalties.round).toBe(3);
+    expect(mockMatchData.liveState.penalties.currentTeam).toBe('teamA');
+
+    // 6. Conclude Shootout & Finalize Match
+    await recordMatchEvent({
+      matchId: 'football-match-1',
+      sportId: 'football',
+      type: 'penalty_shootout_end',
+      team: 'teamA',
+      description: '🏁 Shootout Concluded: Team A wins on penalties',
+    });
+
+    expect(mockMatchData.status).toBe('completed');
+    expect(mockMatchData.liveState.isShootout).toBe(false);
+    expect(mockMatchData.liveState.winnerTeam).toBe('teamA');
+    expect(mockMatchData.liveState.resultText).toContain('won 2–1 on penalties');
+  });
+
+  // 21. Telemetry with Shootout Stats
+  it('21. Telemetry: derives shootout and missed penalties stats when shootout events exist', () => {
+    const events: MatchEvent[] = [
+      { id: '1', sequence: 1, matchId: 'm1', sportId: 'football', type: 'penalty_scored', team: 'teamA', description: 'Pen A', timestamp: {} as any, undone: false, createdBy: 'admin' },
+      { id: '2', sequence: 2, matchId: 'm1', sportId: 'football', type: 'penalty_scored', team: 'teamA', description: 'Pen A2', timestamp: {} as any, undone: false, createdBy: 'admin' },
+      { id: '3', sequence: 3, matchId: 'm1', sportId: 'football', type: 'penalty_scored', team: 'teamB', description: 'Pen B', timestamp: {} as any, undone: false, createdBy: 'admin' },
+      { id: '4', sequence: 4, matchId: 'm1', sportId: 'football', type: 'penalty_missed', team: 'teamB', description: 'Miss B', timestamp: {} as any, undone: false, createdBy: 'admin' },
+    ];
+
+    const stats = deriveFootballStats(events);
+    const penStat = stats.find((s) => s.label === 'Penalty Shootout');
+    expect(penStat).toEqual({ label: 'Penalty Shootout', valA: 2, valB: 1, status: 'derived' });
+
+    const missStat = stats.find((s) => s.label === 'Penalties Missed');
+    expect(missStat).toEqual({ label: 'Penalties Missed', valA: 0, valB: 1, status: 'derived' });
+  });
+
+  // 22. Undo Shootout Kick
+  it('22. Undo Shootout Kick: restores prior snapshot penalty state and score', async () => {
+    mockMatchData.status = 'live';
+    mockMatchData.score = { teamA: 0, teamB: 0, details: { penalties: { teamA: 2, teamB: 1 } } };
+    mockMatchData.liveState = {
+      isShootout: true,
+      period: 'shootout',
+      penalties: { teamA: 2, teamB: 1, round: 2, currentTeam: 'teamA' },
+    };
+    mockMatchData.lastSequence = 30;
+
+    const event1 = {
+      id: 'pen-event-1',
+      sequence: 1,
+      type: 'penalty_scored',
+      team: 'teamA',
+      undone: false,
+      snapshot: {
+        score: { teamA: 0, teamB: 0, details: { penalties: { teamA: 1, teamB: 1 } } },
+        liveState: {
+          isShootout: true,
+          period: 'shootout',
+          penalties: { teamA: 1, teamB: 1, round: 2, currentTeam: 'teamB' },
+        },
+      },
+    };
+    const event2 = {
+      id: 'pen-event-2',
+      sequence: 2,
+      type: 'penalty_scored',
+      team: 'teamA',
+      undone: false,
+      snapshot: {
+        score: { teamA: 0, teamB: 0, details: { penalties: { teamA: 2, teamB: 1 } } },
+        liveState: {
+          isShootout: true,
+          period: 'shootout',
+          penalties: { teamA: 2, teamB: 1, round: 2, currentTeam: 'teamA' },
+        },
+      },
+    };
+    mockEvents = [event2, event1];
+
+    const undoResult = await undoLastActiveEvent('football-match-1', 'admin');
+    expect(undoResult.undoneEvent.sequence).toBe(2);
+    expect(mockMatchData.liveState.penalties.teamA).toBe(1);
+    expect(mockMatchData.score.details.penalties.teamA).toBe(1);
+    expect(event2.undone).toBe(true);
+  });
 });

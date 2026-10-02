@@ -60,6 +60,22 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   const isCarrom = sId.includes('carrom');
   const isSmashKarts = sId.includes('smash') || sId.includes('kart');
   const isChess = sId.includes('chess');
+  const isFootball = sId.includes('football') || sId.includes('soccer');
+  const penalties = live.penalties as {
+    teamA?: number;
+    teamB?: number;
+    round?: number;
+    currentTeam?: string;
+    kicks?: Array<{
+      id: string;
+      kickNumber: number;
+      round: number;
+      team: 'teamA' | 'teamB';
+      playerName?: string;
+      scored: boolean;
+    }>;
+  } | undefined;
+  const isShootout = Boolean(live.isShootout || penalties);
 
   return (
     <div
@@ -178,6 +194,13 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                 </span>
               </div>
             )}
+            {isFootball && penalties && (
+              <div className="mt-1.5 sm:mt-2 text-center">
+                <span className="inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+                  Pens: {penalties.teamA ?? 0}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Central Score */}
@@ -242,6 +265,12 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             {isChess && (
               <div className="mt-1.5 sm:mt-2 text-[11px] sm:text-sm font-black uppercase tracking-wider text-yellow-400 text-center">
                 Move {String(live.move ?? 1)}{live.lastMove ? ` · Last: ${String(live.lastMove)}` : ''}
+              </div>
+            )}
+            {isFootball && penalties && (
+              <div className="mt-1.5 sm:mt-2 text-[11px] sm:text-sm font-black uppercase tracking-wider text-amber-400 text-center">
+                ⚽ Penalties · {penalties.teamA ?? 0} - {penalties.teamB ?? 0}
+                {live.isShootout && penalties.round ? ` (Round ${penalties.round})` : ''}
               </div>
             )}
           </div>
@@ -313,6 +342,13 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               <div className="mt-1.5 sm:mt-2 text-center">
                 <span className="inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-[#FF4D3D]/15 border border-[#FF4D3D]/30 text-[#FF4D3D]">
                   {scoreB} Elims
+                </span>
+              </div>
+            )}
+            {isFootball && penalties && (
+              <div className="mt-1.5 sm:mt-2 text-center">
+                <span className="inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+                  Pens: {penalties.teamB ?? 0}
                 </span>
               </div>
             )}
@@ -470,6 +506,82 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             {live.resultText && (
               <div className="py-2.5 px-4 rounded-xl bg-[#D9A441]/15 border border-[#D9A441]/40 text-[#D9A441] font-black text-sm sm:text-base uppercase tracking-wider text-center shadow-lg">
                 ♔ {String(live.resultText)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Football Additional Context (Shootout status, Result) */}
+        {isFootball && (
+          <div className="w-full max-w-2xl mt-6 space-y-3">
+            {live.resultText && (
+              <div className="py-2.5 px-4 rounded-xl bg-[#D9A441]/15 border border-[#D9A441]/40 text-[#D9A441] font-black text-sm sm:text-base uppercase tracking-wider text-center shadow-lg">
+                🏆 {String(live.resultText)}
+              </div>
+            )}
+            {penalties && (
+              <div className={cn(
+                "p-4 rounded-2xl border backdrop-blur-md shadow-xl",
+                isDay
+                  ? "bg-white/80 border-[#071426]/10 text-[#071426]"
+                  : "bg-black/50 border-white/10 text-white"
+              )}>
+                <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-amber-500 flex items-center gap-1.5">
+                    ⚽ Penalty Shootout {live.isShootout ? '(LIVE)' : '(Final)'}
+                  </span>
+                  <span className="text-xs font-mono font-black">
+                    {penalties.teamA ?? 0} – {penalties.teamB ?? 0}
+                  </span>
+                </div>
+                {/* Visual kick dots for both teams */}
+                {Array.isArray(penalties.kicks) && penalties.kicks.length > 0 && (
+                  <div className="space-y-2 text-xs">
+                    {(['teamA', 'teamB'] as const).map((tKey) => {
+                      const tName = tKey === 'teamA' ? teamA : teamB;
+                      const teamKicks = (penalties.kicks || []).filter((k) => k.team === tKey);
+                      return (
+                        <div key={tKey} className="flex items-center justify-between gap-2">
+                          <span className={cn(
+                            "font-bold truncate w-28 sm:w-36 text-left",
+                            isDay ? "text-slate-700" : "text-slate-300"
+                          )}>
+                            {tName}
+                          </span>
+                          <div className="flex items-center gap-1.5 flex-1 justify-end">
+                            {Array.from({ length: Math.max(5, teamKicks.length) }).map((_, idx) => {
+                              const kick = teamKicks[idx];
+                              if (!kick) {
+                                return (
+                                  <span
+                                    key={idx}
+                                    className={cn(
+                                      "w-4 h-4 rounded-full border inline-block",
+                                      isDay ? "border-slate-300 bg-slate-100" : "border-white/20 bg-white/5"
+                                    )}
+                                    title={`Kick ${idx + 1}: Pending`}
+                                  />
+                                );
+                              }
+                              return (
+                                <span
+                                  key={idx}
+                                  className={cn(
+                                    "w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold text-white",
+                                    kick.scored ? "bg-emerald-500 shadow-sm shadow-emerald-500/50" : "bg-rose-500 shadow-sm shadow-rose-500/50"
+                                  )}
+                                  title={`${kick.playerName || 'Player'}: ${kick.scored ? 'Scored' : 'Missed'}`}
+                                >
+                                  {kick.scored ? '✓' : '✗'}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>

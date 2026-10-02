@@ -11,6 +11,11 @@ export type EventType =
   | 'shot'
   | 'foul'
   | 'penalty'
+  | 'penalty_shootout_start'
+  | 'penalty_kick'
+  | 'penalty_scored'
+  | 'penalty_missed'
+  | 'penalty_shootout_end'
   | 'run'
   | 'dot'
   | 'single'
@@ -60,9 +65,12 @@ export interface SportPositioning {
   over?: number;
   ball?: number;
   /** Football / timed match positioning */
-  period?: number;
+  period?: number | string;
   matchSecond?: number;
   addedTime?: number;
+  isShootout?: boolean;
+  penaltyRound?: number;
+  penaltyKickNumber?: number;
   /** Volleyball / Tennis / Hand tennis */
   set?: number;
   rally?: number;

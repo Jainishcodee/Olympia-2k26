@@ -40,6 +40,10 @@ export const formatSportPositioning = (
   }
 
   if (s.includes('football') || s.includes('soccer')) {
+    if (p.isShootout || p.period === 'shootout' || p.period === 3 || p.shootout || p.penaltyRound !== undefined || p.penaltyKickNumber !== undefined) {
+      const kick = p.penaltyKickNumber !== undefined ? `Kick ${p.penaltyKickNumber}` : p.penaltyRound !== undefined ? `R${p.penaltyRound}` : '';
+      return ['PEN', kick].filter(Boolean).join(' · ') || 'PEN Shootout';
+    }
     const period = p.period === 1 ? '1H' : p.period === 2 ? '2H' : p.period ? `P${p.period}` : '';
     let time = clock || (p.matchSecond !== undefined ? `${Math.floor(p.matchSecond / 60)}'` : '');
     if (p.addedTime !== undefined && p.addedTime > 0) {
@@ -264,6 +268,8 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
       input.type === 'match_resume' ||
       input.type === 'half_time' ||
       input.type === 'second_half' ||
+      input.type === 'penalty_shootout_start' ||
+      input.type === 'penalty_shootout_end' ||
       input.type === 'innings_start' ||
       input.type === 'innings_end' ||
       input.type === 'innings_completed' ||
@@ -379,6 +385,70 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
     } else if (input.type === 'second_half') {
       computedLiveState.period = 2;
       computedLiveState.isHalfTime = false;
+    } else if (input.type === 'penalty_shootout_start') {
+      computedLiveState.period = 'shootout';
+      computedLiveState.isShootout = true;
+      computedLiveState.isHalfTime = false;
+      const initialPenalties = {
+        teamA: 0,
+        teamB: 0,
+        round: 1,
+        currentTeam: 'teamA',
+        kicks: [],
+      };
+      computedLiveState.penalties = initialPenalties;
+    } else if (input.type === 'penalty_scored' || input.type === 'penalty_missed') {
+      computedLiveState.period = 'shootout';
+      computedLiveState.isShootout = true;
+      computedLiveState.isHalfTime = false;
+      const curPenalties = (computedLiveState.penalties || (currentScore.details as any)?.penalties || {
+        teamA: 0,
+        teamB: 0,
+        round: 1,
+        currentTeam: 'teamA',
+        kicks: [],
+      }) as Record<string, any>;
+      const isScored = input.type === 'penalty_scored';
+      const kickTeam: 'teamA' | 'teamB' = input.team === 'teamB' ? 'teamB' : 'teamA';
+      const newTeamPens = isScored ? Number(curPenalties[kickTeam] || 0) + 1 : Number(curPenalties[kickTeam] || 0);
+      const existingKicks = Array.isArray(curPenalties.kicks) ? [...curPenalties.kicks] : [];
+      const kickNumber = existingKicks.length + 1;
+      const roundNumber = Math.ceil(kickNumber / 2);
+      const kickRecord = {
+        id: `pen-${kickNumber}`,
+        kickNumber,
+        round: roundNumber,
+        team: kickTeam,
+        playerName: input.playerName || (input.data as any)?.playerName || '',
+        scored: isScored,
+        timestamp: Date.now(),
+      };
+      const updatedKicks = [...existingKicks, kickRecord];
+      const nextTeam = kickTeam === 'teamA' ? 'teamB' : 'teamA';
+      const nextRound = nextTeam === 'teamA' ? roundNumber + 1 : roundNumber;
+
+      computedLiveState.penalties = {
+        ...curPenalties,
+        [kickTeam]: newTeamPens,
+        round: nextRound,
+        currentTeam: nextTeam,
+        kicks: updatedKicks,
+      };
+    } else if (input.type === 'penalty_shootout_end') {
+      computedLiveState.isShootout = false;
+      const curPens = (computedLiveState.penalties || (currentScore.details as any)?.penalties || { teamA: 0, teamB: 0 }) as Record<string, any>;
+      const penA = Number(curPens.teamA || 0);
+      const penB = Number(curPens.teamB || 0);
+      const winner = input.team === 'teamA' || penA > penB ? 'teamA' : input.team === 'teamB' || penB > penA ? 'teamB' : undefined;
+      if (winner) {
+        computedLiveState.winnerTeam = winner;
+        computedLiveState.winnerTeamId = winner === 'teamA' ? matchData.teamAId : matchData.teamBId;
+        const winnerLabel = winner === 'teamA' ? (matchData.participantA?.name || 'Team A') : (matchData.participantB?.name || 'Team B');
+        computedLiveState.resultText = `${winnerLabel} won ${penA}–${penB} on penalties (FT ${currentScore.teamA}–${currentScore.teamB})`;
+      } else {
+        computedLiveState.resultText = `Penalties tied (${penA}–${penB}) [FT ${currentScore.teamA}–${currentScore.teamB}]`;
+      }
+      computedLiveState.matchStatus = 'completed';
     } else if (input.type === 'innings_start') {
       const innNum = Number(input.data?.innings ?? input.positioning?.innings ?? (Number(currentLiveState.innings || 1) + 1));
       computedLiveState.innings = innNum;
@@ -1017,6 +1087,18 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
           teamA: 0,
           teamB: 0,
         };
+      } else if (input.type === 'penalty_scored' || input.type === 'penalty_missed' || input.type === 'penalty_shootout_start' || input.type === 'penalty_shootout_end') {
+        const pens = (computedLiveState.penalties || (currentScore.details as any)?.penalties || { teamA: 0, teamB: 0 }) as Record<string, any>;
+        computedScore = {
+          ...currentScore,
+          details: {
+            ...((currentScore.details as Record<string, unknown>) || {}),
+            penalties: {
+              teamA: Number(pens.teamA || 0),
+              teamB: Number(pens.teamB || 0),
+            },
+          },
+        };
       } else {
         // Non-scoring action: score remains the fresh score
         computedScore = currentScore;
@@ -1073,6 +1155,10 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
       targetStatus = 'paused';
     } else if (input.type === 'second_half') {
       targetStatus = 'live';
+    } else if (input.type === 'penalty_shootout_start' || input.type === 'penalty_scored' || input.type === 'penalty_missed') {
+      targetStatus = 'live';
+    } else if (input.type === 'penalty_shootout_end') {
+      targetStatus = 'completed';
     } else if (input.type === 'innings_start') {
       targetStatus = 'live';
     } else if (input.type === 'innings_end' || input.type === 'innings_completed') {

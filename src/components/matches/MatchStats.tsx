@@ -16,7 +16,7 @@ export interface StatItem {
  * Derives authentic football telemetry from canonical match events.
  * Clearly separates DERIVED from NOT_TRACKED metrics.
  */
-export const deriveFootballStats = (events: MatchEvent[]): StatItem[] => {
+export const deriveFootballStats = (events: MatchEvent[], liveMatch?: Match): StatItem[] => {
   const activeEvents = (events || []).filter((e) => !e.undone);
   const isTeamA = (team?: string) => team === 'teamA' || team === 'A';
   const isTeamB = (team?: string) => team === 'teamB' || team === 'B';
@@ -33,8 +33,29 @@ export const deriveFootballStats = (events: MatchEvent[]): StatItem[] => {
   const subsA = activeEvents.filter((e) => e.type === 'substitution' && isTeamA(e.team)).length;
   const subsB = activeEvents.filter((e) => e.type === 'substitution' && isTeamB(e.team)).length;
 
-  return [
+  const pensScoredA = activeEvents.filter((e) => e.type === 'penalty_scored' && isTeamA(e.team)).length;
+  const pensScoredB = activeEvents.filter((e) => e.type === 'penalty_scored' && isTeamB(e.team)).length;
+
+  const pensMissedA = activeEvents.filter((e) => e.type === 'penalty_missed' && isTeamA(e.team)).length;
+  const pensMissedB = activeEvents.filter((e) => e.type === 'penalty_missed' && isTeamB(e.team)).length;
+
+  const hasShootout = pensScoredA + pensScoredB + pensMissedA + pensMissedB > 0 ||
+    Boolean(liveMatch?.liveState?.isShootout || (liveMatch?.liveState as any)?.penalties);
+
+  const baseStats: StatItem[] = [
     { label: 'Goals', valA: goalsA, valB: goalsB, status: 'derived' },
+  ];
+
+  if (hasShootout) {
+    const penStateA = (liveMatch?.liveState as any)?.penalties?.teamA ?? pensScoredA;
+    const penStateB = (liveMatch?.liveState as any)?.penalties?.teamB ?? pensScoredB;
+    baseStats.push({ label: 'Penalty Shootout', valA: penStateA, valB: penStateB, status: 'derived' });
+    if (pensMissedA + pensMissedB > 0) {
+      baseStats.push({ label: 'Penalties Missed', valA: pensMissedA, valB: pensMissedB, status: 'derived' });
+    }
+  }
+
+  baseStats.push(
     { label: 'Yellow Cards', valA: yellowCardsA, valB: yellowCardsB, status: 'derived' },
     { label: 'Red Cards', valA: redCardsA, valB: redCardsB, status: 'derived' },
     { label: 'Substitutions', valA: subsA, valB: subsB, status: 'derived' },
@@ -43,7 +64,9 @@ export const deriveFootballStats = (events: MatchEvent[]): StatItem[] => {
     { label: 'Shots on Target', valA: '—', valB: '—', status: 'not_tracked' },
     { label: 'Corners', valA: '—', valB: '—', status: 'not_tracked' },
     { label: 'Fouls', valA: '—', valB: '—', status: 'not_tracked' },
-  ];
+  );
+
+  return baseStats;
 };
 
 /**

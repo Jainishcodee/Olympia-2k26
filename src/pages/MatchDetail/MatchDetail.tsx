@@ -246,6 +246,53 @@ export const MatchDetail: React.FC = () => {
             sub: latest.description || 'Disciplinary card',
             accent: latest.type === 'red_card' ? '#FF4D3D' : '#FFD21F',
           });
+        } else if (latest.type === 'penalty_shootout_start') {
+          fireFX({
+            kind: 'set',
+            title: 'PENALTY SHOOTOUT!',
+            sub: 'Scores tied at full time — deciding on penalties!',
+            accent: '#D9A441',
+          });
+          setMoment({
+            icon: '⚽',
+            title: 'PENALTY SHOOTOUT',
+            subtitle: 'Sudden death penalty kicks!',
+          });
+        } else if (latest.type === 'penalty_scored') {
+          fireFX({
+            kind: 'goal',
+            title: 'PENALTY SCORED!',
+            sub: latest.description || `${sideName} penalty converted!`,
+            score: scoreTxt,
+            team: teamKey,
+            accent: '#10B981',
+          });
+          setMoment({
+            icon: '🟢',
+            title: 'PENALTY SCORED!',
+            subtitle: latest.description || `${sideName} scored!`,
+          });
+        } else if (latest.type === 'penalty_missed') {
+          fireFX({
+            kind: 'card',
+            title: 'PENALTY MISSED!',
+            sub: latest.description || `${sideName} penalty saved / missed!`,
+            score: scoreTxt,
+            team: teamKey,
+            accent: '#EF4444',
+          });
+          setMoment({
+            icon: '🔴',
+            title: 'PENALTY MISSED / SAVED!',
+            subtitle: latest.description || `${sideName} missed!`,
+          });
+        } else if (latest.type === 'penalty_shootout_end') {
+          setShowFinalCelebration(true);
+          setMoment({
+            icon: '🏆',
+            title: 'SHOOTOUT VICTORY!',
+            subtitle: (liveMatch?.liveState as Record<string, unknown>)?.resultText as string || `${teamAName} vs ${teamBName}`,
+          });
         } else if (latest.type === 'match_start') {
           setShowCountdown(true);
         } else if (latest.type === 'match_end' || liveMatch?.status === 'completed') {
@@ -275,7 +322,11 @@ export const MatchDetail: React.FC = () => {
   } else if (status === 'scheduled') {
     displayTime = 'SCHEDULED';
   } else if (status === 'live') {
-    displayTime = liveClock || (liveMatch?.liveState as Record<string, unknown>)?.clock as string || '00:00';
+    if ((liveMatch?.liveState as Record<string, unknown>)?.isShootout) {
+      displayTime = 'PENALTIES';
+    } else {
+      displayTime = liveClock || (liveMatch?.liveState as Record<string, unknown>)?.clock as string || '00:00';
+    }
   }
 
   const mappedEvents = useMemo(() => {
@@ -297,7 +348,7 @@ export const MatchDetail: React.FC = () => {
   }, [liveEvents]);
 
   const stats = isFootball 
-    ? deriveFootballStats(liveEvents) 
+    ? deriveFootballStats(liveEvents, liveMatch || undefined) 
     : isCricket 
       ? deriveCricketStats(liveEvents, liveMatch || undefined)
       : isVolleyball || isRacquet
