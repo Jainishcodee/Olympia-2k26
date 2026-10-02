@@ -3268,32 +3268,32 @@ const ScoringConsole: React.FC = () => {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1">
-                      Assist (Optional)
-                    </label>
-                    {(footballModal.team === 'teamA' ? teamAPlayers : teamBPlayers).length > 0 ? (
-                      <select
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1">
+                        Assist (Optional)
+                      </label>
+                      {(footballModal.team === 'teamA' ? teamAPlayers : teamBPlayers).length > 0 ? (
+                        <select
+                          value={assistPlayer}
+                          onChange={(e) => setAssistPlayer(e.target.value)}
+                          className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none"
+                        >
+                          <option value="">-- None / No Assist --</option>
+                          {(footballModal.team === 'teamA' ? teamAPlayers : teamBPlayers).map((p) => (
+                            <option key={p.id} value={p.name}>
+                              #{p.jerseyNumber} {p.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : null}
+                      <input
+                        type="text"
+                        placeholder="Type assist player name (leave blank if none)..."
                         value={assistPlayer}
                         onChange={(e) => setAssistPlayer(e.target.value)}
-                        className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none"
-                      >
-                        <option value="">-- Select or type below --</option>
-                        {(footballModal.team === 'teamA' ? teamAPlayers : teamBPlayers).map((p) => (
-                          <option key={p.id} value={p.name}>
-                            #{p.jerseyNumber} {p.name}
-                          </option>
-                        ))}
-                      </select>
-                    ) : null}
-                    <input
-                      type="text"
-                      placeholder="Type assist player name..."
-                      value={assistPlayer}
-                      onChange={(e) => setAssistPlayer(e.target.value)}
-                      className="mt-1.5 w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none placeholder-[#5E6E86]"
-                    />
-                  </div>
+                        className="mt-1.5 w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none placeholder-[#5E6E86]"
+                      />
+                    </div>
 
                   <div className="pt-1">
                     <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-[#EEF2F7]">

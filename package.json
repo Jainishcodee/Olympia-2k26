@@ -13,6 +13,7 @@
     "seed:csv": "tsx scripts/seedFromCSV.ts",
     "seed:prod": "tsx scripts/seedFromCSV.ts --prod",
     "seed:leaderboards": "node scripts/seed-leaderboards.mjs",
+    "seed:prod:complete": "node scripts/seed-production-complete.mjs",
     "set:admin": "node scripts/set-admin-claim-final.js",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
     "deploy:rules:prod": "firebase deploy --only firestore:rules,firestore:indexes -P production"
