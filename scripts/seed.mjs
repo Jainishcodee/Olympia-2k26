@@ -9,43 +9,52 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
 // 1. Load config from src/config/firebaseConfig.json or .env
+// 1. Load config from .env or fallback
 let config = {};
+const isProdArg = process.argv.includes('--prod');
+const isDevArg = process.argv.includes('--dev');
 
-const jsonConfigPath = path.join(rootDir, 'src', 'config', 'firebaseConfig.json');
-if (fs.existsSync(jsonConfigPath)) {
-  try {
-    const raw = fs.readFileSync(jsonConfigPath, 'utf8');
-    config = JSON.parse(raw);
-  } catch (e) {
-    // ignore
-  }
+let envFile = '.env';
+if (isProdArg && fs.existsSync(path.join(rootDir, '.env.production'))) {
+  envFile = '.env.production';
+} else if (isDevArg && fs.existsSync(path.join(rootDir, '.env.development'))) {
+  envFile = '.env.development';
 }
 
-// Fallback to .env file if apiKey is missing in JSON
-if (!config.apiKey || config.apiKey === '') {
-  const envPath = path.join(rootDir, '.env');
-  if (fs.existsSync(envPath)) {
-    const envContent = fs.readFileSync(envPath, 'utf8');
-    const lines = envContent.split('\n');
-    const envVars = {};
-    for (const line of lines) {
-      const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
-      if (match) {
-        let val = match[2] || '';
-        val = val.trim().replace(/^['"](.*)['"]$/, '$1');
-        envVars[match[1]] = val;
-      }
+const envPath = path.join(rootDir, envFile);
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  const lines = envContent.split('\n');
+  const envVars = {};
+  for (const line of lines) {
+    const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+    if (match) {
+      let val = match[2] || '';
+      val = val.trim().replace(/^['"](.*)['"]$/, '$1');
+      envVars[match[1]] = val;
     }
+  }
 
-    config = {
-      apiKey: envVars.VITE_FIREBASE_API_KEY || config.apiKey,
-      authDomain: envVars.VITE_FIREBASE_AUTH_DOMAIN || config.authDomain,
-      projectId: envVars.VITE_FIREBASE_PROJECT_ID || config.projectId,
-      storageBucket: envVars.VITE_FIREBASE_STORAGE_BUCKET || config.storageBucket,
-      messagingSenderId: envVars.VITE_FIREBASE_MESSAGING_SENDER_ID || config.messagingSenderId,
-      appId: envVars.VITE_FIREBASE_APP_ID || config.appId,
-      measurementId: envVars.VITE_FIREBASE_MEASUREMENT_ID || config.measurementId,
-    };
+  config = {
+    apiKey: envVars.VITE_FIREBASE_API_KEY,
+    authDomain: envVars.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: envVars.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: envVars.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: envVars.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: envVars.VITE_FIREBASE_APP_ID,
+    measurementId: envVars.VITE_FIREBASE_MEASUREMENT_ID,
+  };
+}
+
+if (!config.apiKey || config.apiKey === '') {
+  const jsonConfigPath = path.join(rootDir, 'src', 'config', 'firebaseConfig.json');
+  if (fs.existsSync(jsonConfigPath)) {
+    try {
+      const raw = fs.readFileSync(jsonConfigPath, 'utf8');
+      config = JSON.parse(raw);
+    } catch (e) {
+      // ignore
+    }
   }
 }
 

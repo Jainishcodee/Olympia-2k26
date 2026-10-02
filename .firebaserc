@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "olympia-2k26--prod",
+    "development": "olympia-2k26",
+    "production": "olympia-2k26--prod"
+  }
+}

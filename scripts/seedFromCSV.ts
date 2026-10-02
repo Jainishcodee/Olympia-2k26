@@ -42,36 +42,46 @@ import * as path from 'path';
 // ────────────────────────────────────────────────────────────
 function loadConfig() {
   const rootDir = process.cwd();
+  const isProdArg = process.argv.includes('--prod');
+  const isDevArg = process.argv.includes('--dev');
+
+  let envFile = '.env';
+  if (isProdArg && fs.existsSync(path.join(rootDir, '.env.production'))) {
+    envFile = '.env.production';
+  } else if (isDevArg && fs.existsSync(path.join(rootDir, '.env.development'))) {
+    envFile = '.env.development';
+  }
+
+  const envPath = path.join(rootDir, envFile);
   let conf: Record<string, string> = {};
 
-  const jsonPath = path.join(rootDir, 'src', 'config', 'firebaseConfig.json');
-  if (fs.existsSync(jsonPath)) {
-    try {
-      conf = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-    } catch {
-      // ignore
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    for (const line of envContent.split('\n')) {
+      const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+      if (match) {
+        const val = (match[2] || '').trim().replace(/^['"](.*)['"]$/, '$1');
+        conf[match[1]] = val;
+      }
     }
+    conf = {
+      apiKey: conf.VITE_FIREBASE_API_KEY,
+      authDomain: conf.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: conf.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: conf.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: conf.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: conf.VITE_FIREBASE_APP_ID,
+    };
   }
 
   if (!conf.apiKey || conf.apiKey === '') {
-    const envPath = path.join(rootDir, '.env');
-    if (fs.existsSync(envPath)) {
-      const envContent = fs.readFileSync(envPath, 'utf8');
-      for (const line of envContent.split('\n')) {
-        const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
-        if (match) {
-          const val = (match[2] || '').trim().replace(/^['"](.*)['"]$/, '$1');
-          conf[match[1]] = val;
-        }
+    const jsonPath = path.join(rootDir, 'src', 'config', 'firebaseConfig.json');
+    if (fs.existsSync(jsonPath)) {
+      try {
+        conf = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+      } catch {
+        // ignore
       }
-      conf = {
-        apiKey: conf.VITE_FIREBASE_API_KEY,
-        authDomain: conf.VITE_FIREBASE_AUTH_DOMAIN,
-        projectId: conf.VITE_FIREBASE_PROJECT_ID,
-        storageBucket: conf.VITE_FIREBASE_STORAGE_BUCKET,
-        messagingSenderId: conf.VITE_FIREBASE_MESSAGING_SENDER_ID,
-        appId: conf.VITE_FIREBASE_APP_ID,
-      };
     }
   }
 
@@ -573,9 +583,9 @@ async function run() {
     }
 
     // Provision admin
-    const email = 'jainish@olympia.com';
-    const pass = 'olympia123';
-    console.log(`\n👑 Provisioning Super Admin: ${email}...`);
+    const email = process.env.ADMIN_EMAIL || 'jainish@olympia.com';
+    const pass = process.env.ADMIN_INITIAL_PASSWORD || 'Olympia@2026Admin!';
+    console.log(`\n👑 Verifying Administrator: ${email}...`);
     let uid: string | null = null;
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, pass);
@@ -583,13 +593,24 @@ async function run() {
       console.log(`  ✅ Auth user created (UID: ${uid})`);
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
+        console.log(`  ℹ️ Admin account already exists in Auth (${email})`);
         try {
           const cred = await signInWithEmailAndPassword(auth, email, pass);
           uid = cred.user.uid;
-          console.log(`  ✅ Authenticated existing admin (UID: ${uid})`);
         } catch {
-          // ignore
+          // If password differs, resolve via service-account.json if present
         }
+      }
+    }
+
+    if (!uid && fs.existsSync(path.join(process.cwd(), 'service-account.json'))) {
+      try {
+        const { getAuth: getAdminAuth } = await import('firebase-admin/auth');
+        const adminUser = await getAdminAuth().getUserByEmail(email);
+        uid = adminUser.uid;
+        console.log(`  ✅ Resolved Admin Auth UID: ${uid}`);
+      } catch {
+        // ignore
       }
     }
 

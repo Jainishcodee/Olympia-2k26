@@ -7,15 +7,17 @@ initializeApp({
   credential: cert(serviceAccount)
 });
 
-const uid = 'k5uVVluH5GfsrNaSsi4xIjQ5OBA2';
+const email = process.argv[2] || 'jainish@olympia.com';
 
 getAuth()
-  .setCustomUserClaims(uid, { admin: true })
-  .then(() => {
-    console.log(`Successfully set admin claim for user: ${uid}`);
-    process.exit(0);
+  .getUserByEmail(email)
+  .then((user) => {
+    return getAuth().setCustomUserClaims(user.uid, { admin: true }).then(() => {
+      console.log(`✅ Successfully set admin claim for user: ${email} (${user.uid})`);
+      process.exit(0);
+    });
   })
   .catch((error) => {
-    console.error('Error setting custom claims:', error);
+    console.error('❌ Error setting custom claims:', error.message);
     process.exit(1);
   });

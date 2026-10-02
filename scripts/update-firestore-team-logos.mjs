@@ -13,8 +13,45 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
-const jsonPath = path.join(rootDir, 'src', 'config', 'firebaseConfig.json');
-const config = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+const isProdArg = process.argv.includes('--prod');
+const isDevArg = process.argv.includes('--dev');
+
+let envFile = '.env';
+if (isProdArg && fs.existsSync(path.join(rootDir, '.env.production'))) {
+  envFile = '.env.production';
+} else if (isDevArg && fs.existsSync(path.join(rootDir, '.env.development'))) {
+  envFile = '.env.development';
+}
+
+const envPath = path.join(rootDir, envFile);
+let config = {};
+
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  for (const line of envContent.split('\n')) {
+    const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+    if (match) {
+      let val = match[2] || '';
+      val = val.trim().replace(/^['"](.*)['"]$/, '$1');
+      config[match[1]] = val;
+    }
+  }
+  config = {
+    apiKey: config.VITE_FIREBASE_API_KEY,
+    authDomain: config.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: config.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: config.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: config.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: config.VITE_FIREBASE_APP_ID,
+  };
+}
+
+if (!config.apiKey) {
+  const jsonPath = path.join(rootDir, 'src', 'config', 'firebaseConfig.json');
+  if (fs.existsSync(jsonPath)) {
+    config = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+  }
+}
 
 const app = initializeApp(config);
 const db = getFirestore(app);

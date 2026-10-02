@@ -1,9 +1,9 @@
 {
-  "apiKey": "AIzaSyA3tBXnkSEj8VhVeWqRasF6HQu8YcY7mR8",
-  "authDomain": "olympia-2k26.firebaseapp.com",
-  "projectId": "olympia-2k26",
-  "storageBucket": "olympia-2k26.firebasestorage.app",
-  "messagingSenderId": "598904398646",
-  "appId": "1:598904398646:web:a394be12ba95b4e5548997",
+  "apiKey": "AIzaSyCH0TBIHKYVOucyaVVoRxx3j4yEUWVhpEI",
+  "authDomain": "olympia-2k26--prod.firebaseapp.com",
+  "projectId": "olympia-2k26--prod",
+  "storageBucket": "olympia-2k26--prod.firebasestorage.app",
+  "messagingSenderId": "644922690841",
+  "appId": "1:644922690841:web:52949d7226a98ac163c988",
   "measurementId": "G-ZDE3ZKCQMR"
 }

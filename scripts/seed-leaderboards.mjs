@@ -24,38 +24,48 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
 // 1. Load Firebase configuration
-const jsonPath = path.join(rootDir, 'src', 'config', 'firebaseConfig.json');
+const isProdArg = process.argv.includes('--prod');
+const isDevArg = process.argv.includes('--dev');
+
+let envFile = '.env';
+if (isProdArg && fs.existsSync(path.join(rootDir, '.env.production'))) {
+  envFile = '.env.production';
+} else if (isDevArg && fs.existsSync(path.join(rootDir, '.env.development'))) {
+  envFile = '.env.development';
+}
+
+const envPath = path.join(rootDir, envFile);
 let config = {};
 
-if (fs.existsSync(jsonPath)) {
-  try {
-    config = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-  } catch (err) {
-    console.error('Error reading firebaseConfig.json:', err.message);
+if (fs.existsSync(envPath)) {
+  const envLines = fs.readFileSync(envPath, 'utf8').split('\n');
+  const envVars = {};
+  for (const line of envLines) {
+    const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+    if (match) {
+      let val = match[2] || '';
+      if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+      envVars[match[1]] = val;
+    }
   }
+  config = {
+    apiKey: envVars.VITE_FIREBASE_API_KEY,
+    authDomain: envVars.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: envVars.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: envVars.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: envVars.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: envVars.VITE_FIREBASE_APP_ID,
+  };
 }
 
 if (!config.apiKey) {
-  const envPath = path.join(rootDir, '.env');
-  if (fs.existsSync(envPath)) {
-    const envLines = fs.readFileSync(envPath, 'utf8').split('\n');
-    const envVars = {};
-    for (const line of envLines) {
-      const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
-      if (match) {
-        let val = match[2] || '';
-        if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
-        envVars[match[1]] = val;
-      }
+  const jsonPath = path.join(rootDir, 'src', 'config', 'firebaseConfig.json');
+  if (fs.existsSync(jsonPath)) {
+    try {
+      config = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+    } catch (err) {
+      console.error('Error reading firebaseConfig.json:', err.message);
     }
-    config = {
-      apiKey: envVars.VITE_FIREBASE_API_KEY,
-      authDomain: envVars.VITE_FIREBASE_AUTH_DOMAIN,
-      projectId: envVars.VITE_FIREBASE_PROJECT_ID,
-      storageBucket: envVars.VITE_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: envVars.VITE_FIREBASE_MESSAGING_SENDER_ID,
-      appId: envVars.VITE_FIREBASE_APP_ID,
-    };
   }
 }
 
