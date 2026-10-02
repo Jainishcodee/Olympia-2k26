@@ -150,7 +150,7 @@ const PlayersManager: React.FC = () => {
         {teamParam ? (
           <span className={cn(
             'inline-flex h-9 items-center gap-2 rounded-lg border pl-2.5 pr-1.5 text-[12px] font-bold',
-            isDay ? 'border-[#1264FF]/30 bg-[#1264FF]/10 text-[#1264FF]' : 'border-[#1264FF]/40 bg-[#1264FF]/20 text-blue-300',
+            isDay ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-blue-800/80 bg-blue-950/60 text-blue-300',
           )}>
             {lockedTeamName || 'Filtered team'}
             <button
@@ -235,7 +235,7 @@ const PlayersManager: React.FC = () => {
                       ) : (
                         <span className={cn(
                           'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-black border',
-                          isDay ? 'bg-slate-100 border-slate-200 text-[#A9761B]' : 'bg-[#071426] border-white/10 text-[#D9A441]',
+                          isDay ? 'bg-slate-100 border-slate-200 text-slate-700' : 'bg-slate-800 border-slate-700 text-slate-300',
                         )}>
                           {initialsOf(player.name)}
                         </span>
@@ -245,14 +245,14 @@ const PlayersManager: React.FC = () => {
                       <Link
                         to={`/admin/players/${player.id}`}
                         className={cn(
-                          'block truncate text-[13px] font-black transition-colors',
-                          isDay ? 'text-slate-900 hover:text-[#1264FF]' : 'text-white hover:text-[#D9A441]',
+                          'block truncate text-[13px] font-bold transition-colors',
+                          isDay ? 'text-slate-900 hover:text-blue-600' : 'text-white hover:text-blue-400',
                         )}
                       >
                         {player.name}
                       </Link>
                     </td>
-                    <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[13px] font-black tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
+                    <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
                       {player.jerseyNumber ?? '—'}
                     </td>
                     <td className={cn('whitespace-nowrap px-4 py-3.5 text-[13px] font-semibold', isDay ? 'text-slate-700' : 'text-slate-300')}>
@@ -263,7 +263,7 @@ const PlayersManager: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => navigate(`/admin/teams/${player.teamId}/roster`)}
-                          className={cn('truncate text-left font-bold transition-colors cursor-pointer', isDay ? 'text-[#1264FF] hover:underline' : 'text-blue-300 hover:text-white')}
+                          className={cn('truncate text-left font-semibold transition-colors cursor-pointer', isDay ? 'text-blue-600 hover:underline' : 'text-blue-400 hover:text-white')}
                         >
                           {teamName(player.teamId)}
                         </button>

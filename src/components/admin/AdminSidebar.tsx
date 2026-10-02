@@ -139,11 +139,11 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, setIsOpen, collapsed, setCollap
                           collapsed && 'md:justify-center md:px-0',
                           isActive
                             ? isDay
-                              ? 'bg-[#1264FF]/10 text-[#1264FF] border border-[#1264FF]/30 shadow-xs font-black'
-                              : 'bg-gradient-to-r from-[#D9A441]/20 via-[#1264FF]/10 to-transparent text-[#FFD21F] border border-[#D9A441]/35 shadow-[0_0_20px_rgba(217,164,65,0.18)] font-black'
+                              ? 'bg-blue-50/80 text-blue-700 border border-blue-200/60 shadow-2xs font-semibold'
+                              : 'bg-slate-800/80 text-blue-400 border border-slate-700/60 shadow-2xs font-semibold'
                             : isDay
-                              ? 'text-slate-600 hover:bg-slate-100/90 hover:text-slate-950 border border-transparent'
-                              : 'text-slate-400 hover:bg-white/[0.05] hover:text-white border border-transparent',
+                              ? 'text-slate-600 hover:bg-slate-100/90 hover:text-slate-900 border border-transparent font-medium'
+                              : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200 border border-transparent font-medium',
                         )
                       }
                     >
@@ -152,25 +152,23 @@ const AdminSidebar: React.FC<Props> = ({ isOpen, setIsOpen, collapsed, setCollap
                           {isActive && (
                             <motion.span
                               layoutId="sidebar-active-indicator"
-                              transition={{ type: 'spring', stiffness: 480, damping: 36 }}
+                              transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                               className={cn(
-                                'absolute inset-y-1.5 left-0 w-[3.5px] rounded-r-full',
-                                isDay
-                                  ? 'bg-[#1264FF] shadow-[0_0_8px_#1264FF]'
-                                  : 'bg-[#D9A441] shadow-[0_0_10px_#D9A441]',
+                                'absolute inset-y-2 left-0 w-[3px] rounded-r-full',
+                                isDay ? 'bg-blue-600' : 'bg-blue-500',
                               )}
                             />
                           )}
                           <item.icon
                             className={cn(
-                              'h-4.5 w-4.5 shrink-0 transition-transform duration-200 group-hover:scale-110',
+                              'h-4 w-4 shrink-0 transition-transform duration-150',
                               isActive
                                 ? isDay
-                                  ? 'text-[#1264FF]'
-                                  : 'text-[#FFD21F] drop-shadow-[0_0_8px_#D9A441]'
+                                  ? 'text-blue-600'
+                                  : 'text-blue-400'
                                 : isDay
-                                  ? 'text-slate-400 group-hover:text-slate-900'
-                                  : 'text-slate-400 group-hover:text-white',
+                                  ? 'text-slate-400 group-hover:text-slate-700'
+                                  : 'text-slate-400 group-hover:text-slate-200',
                               collapsed && 'md:mr-0',
                             )}
                             aria-hidden

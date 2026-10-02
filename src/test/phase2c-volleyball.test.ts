@@ -55,7 +55,10 @@ vi.mock('firebase/firestore', () => {
       now: vi.fn(() => ({ toMillis: () => 1700000000000, seconds: 1700000000 })),
     },
     query: vi.fn((coll: any) => coll),
+    where: vi.fn(),
     orderBy: vi.fn(),
+    setDoc: vi.fn(async () => {}),
+    getDoc: vi.fn(async () => ({ exists: () => false, data: () => ({}) })),
     getDocs: vi.fn(async () => {
       const sorted = [...mockEvents].sort((a, b) => (b.sequence || 0) - (a.sequence || 0));
       return {

@@ -10,12 +10,14 @@ import { SportFilterRibbon, DISCIPLINE_LIST } from './components/SportFilterRibb
 import { SportAtmosphere } from './components/SportAtmosphere';
 import { TeamChampionshipView } from './components/TeamChampionshipView';
 import { IndividualPodiumView } from './components/IndividualPodiumView';
-import { MultiSportLeaderboardGrid } from './components/MultiSportLeaderboardGrid';
+import { MultiSportLeaderboardGrid, DisciplineLeader } from './components/MultiSportLeaderboardGrid';
 import { ChampionsArchive } from './components/ChampionsArchive';
 import { EntityProfileModal } from './components/EntityProfileModal';
 import { LeaderboardCTA } from './components/LeaderboardCTA';
 import type { LeaderboardItem } from './components/PodiumHero';
-import type { Player, Team, Sport, Match, SystemSettings } from '@/types';
+import type { Player, Team, Sport, Match, SystemSettings, Tournament } from '@/types';
+import { deriveStandingsFromCompletedMatches, resolveScoringRules, RegisteredEntity } from '@/utils/standingsRules';
+import { getTeamLogo } from '@/utils/teamLogos';
 import { cn } from '@/utils/cn';
 
 const TEAM_SPORTS = ['football', 'cricket', 'volleyball', 'hand-tennis', 'counter-strike', 'smash-karts', 'lan-games'];
@@ -33,23 +35,24 @@ export const Leaderboard: React.FC = () => {
   const teamsCol = useCollection<Team>('teams');
   const sportsCol = useCollection<Sport>('sports');
   const matchesCol = useCollection<Match>('matches');
+  const tournamentsCol = useCollection<Tournament>('tournaments');
   const leaderboardsCol = useCollection<any>('leaderboards');
   const settingsDoc = useDoc<SystemSettings>('settings', 'default');
 
   const isMasterLeaderboardHidden = settingsDoc.data?.publicLeaderboardVisible === false;
 
-  // Dynamic extra disciplines from Firestore 'leaderboards' collection (e.g. test record)
+  // Filter out any test or hidden records from the dynamic extra disciplines
   const extraDisciplines = useMemo(() => {
     const defaultIds = new Set(DISCIPLINE_LIST.map((d) => d.id));
     return leaderboardsCol.data
-      .filter((doc) => !doc.isHidden)
+      .filter((doc) => !doc.isHidden && !doc.isTestRecord && !doc.id?.includes('test') && doc.sportId !== 'test-discipline')
       .filter((doc) => !defaultIds.has(doc.sportId) && !defaultIds.has(doc.id || ''))
       .map((doc) => ({
-        id: doc.sportId || doc.id || 'test-discipline',
-        name: doc.sportName || 'Test Discipline',
-        icon: '🧪',
+        id: doc.sportId || doc.id,
+        name: doc.sportName || doc.id?.toUpperCase(),
+        icon: '🏆',
         category: (doc.category || 'team') as 'team' | 'individual',
-        description: 'Firestore Leaderboard Record',
+        description: 'Championship Standings',
       }));
   }, [leaderboardsCol.data]);
 
@@ -68,13 +71,6 @@ export const Leaderboard: React.FC = () => {
   }, [selectedSport, extraDisciplines]);
 
   const isTeamSport = currentSportMeta.category === 'team';
-
-  // Check if a dedicated 'leaderboards' document exists for active discipline
-  const customLeaderboardDoc = useMemo(() => {
-    return leaderboardsCol.data.find(
-      (doc) => (doc.sportId === selectedSport || doc.id === selectedSport) && !doc.isHidden
-    );
-  }, [leaderboardsCol.data, selectedSport]);
 
   const isSelectedSportHidden = useMemo(() => {
     const d = leaderboardsCol.data.find(
@@ -111,190 +107,150 @@ export const Leaderboard: React.FC = () => {
     return playersCol.data.filter((p) => p.sportId === selectedSport);
   }, [playersCol.data, selectedSport]);
 
+  // Registered entities for current sport (initialized with 0 matches)
+  const registeredEntities = useMemo<RegisteredEntity[]>(() => {
+    if (isTeamSport) {
+      return activeTeams.map((t) => ({
+        id: t.id,
+        name: t.name,
+        logo: t.logo,
+        shortName: t.shortName,
+      }));
+    }
+    return activePlayers.map((p) => ({
+      id: p.id,
+      name: p.name,
+      photo: p.photo,
+    }));
+  }, [isTeamSport, activeTeams, activePlayers]);
+
+  // Configurable tournament scoring rules: settings or default sport standards
+  const scoringRules = useMemo(() => {
+    const configured = settingsDoc.data?.tournamentScoringRules?.[selectedSport];
+    return resolveScoringRules(selectedSport, configured);
+  }, [settingsDoc.data, selectedSport]);
+
   // Authoritative standings derived directly from completed matches
-  const derivedMatchesStandings = useMemo(() => {
-    const sLower = selectedSport.toLowerCase();
-    const completedMatches = matchesCol.data.filter((m) => {
-      if (m.status !== 'completed') return false;
-      const mSport = (m.sportId || '').toLowerCase();
-      if (sLower === 'lan-games' || sLower === 'counter-strike') {
-        return mSport.includes('strike') || mSport.includes('cs') || mSport.includes('lan');
-      }
-      return mSport === sLower || mSport.includes(sLower) || sLower.includes(mSport);
-    });
+  const standingsRows = useMemo(() => {
+    return deriveStandingsFromCompletedMatches(
+      selectedSport,
+      matchesCol.data,
+      registeredEntities,
+      !isTeamSport,
+      scoringRules
+    );
+  }, [selectedSport, matchesCol.data, registeredEntities, isTeamSport, scoringRules]);
 
-    const isFootball = sLower.includes('football') || sLower.includes('soccer');
-
-    const entityStats = new Map<string, {
-      played: number;
-      wins: number;
-      draws: number;
-      losses: number;
-      points: number;
-      goalsFor: number;
-      goalsAgainst: number;
-    }>();
-
-    const getStats = (id: string) => {
-      if (!entityStats.has(id)) {
-        entityStats.set(id, {
-          played: 0,
-          wins: 0,
-          draws: 0,
-          losses: 0,
-          points: 0,
-          goalsFor: 0,
-          goalsAgainst: 0,
-        });
-      }
-      return entityStats.get(id)!;
-    };
-
-    for (const match of completedMatches) {
-      const idA = match.teamAId || match.participantA?.id || '';
-      const idB = match.teamBId || match.participantB?.id || '';
-      if (!idA || !idB) continue;
-
-      const stA = getStats(idA);
-      const stB = getStats(idB);
-
-      stA.played += 1;
-      stB.played += 1;
-
-      const scA = Number(match.score?.teamA ?? 0);
-      const scB = Number(match.score?.teamB ?? 0);
-
-      stA.goalsFor += scA;
-      stA.goalsAgainst += scB;
-      stB.goalsFor += scB;
-      stB.goalsAgainst += scA;
-
-      let winner: 'A' | 'B' | 'draw' = 'draw';
-      const liveWinner = (match.liveState as any)?.winnerTeam;
-      if (liveWinner === 'teamA') winner = 'A';
-      else if (liveWinner === 'teamB') winner = 'B';
-      else if (liveWinner === 'draw' || liveWinner === 'tie') winner = 'draw';
-      else if (scA > scB) winner = 'A';
-      else if (scB > scA) winner = 'B';
-
-      if (winner === 'A') {
-        stA.wins += 1;
-        stB.losses += 1;
-        stA.points += isFootball ? 3 : 2;
-      } else if (winner === 'B') {
-        stB.wins += 1;
-        stA.losses += 1;
-        stB.points += isFootball ? 3 : 2;
-      } else {
-        stA.draws += 1;
-        stB.draws += 1;
-        stA.points += 1;
-        stB.points += 1;
-      }
-    }
-
-    return entityStats;
-  }, [matchesCol.data, selectedSport]);
-
-  // Sync: prioritize explicit 'leaderboards' collection documents if published, else completed match standings
+  // Format team standings for TeamChampionshipView
   const effectiveTeams = useMemo(() => {
-    if (customLeaderboardDoc && customLeaderboardDoc.category === 'team' && customLeaderboardDoc.entries?.length) {
-      return customLeaderboardDoc.entries.map((entry: any) => ({
-        id: entry.entityId,
-        name: entry.entityName,
-        shortName: (entry.entityName || '').slice(0, 4).toUpperCase(),
-        logo: entry.logo,
-        sportId: selectedSport,
-        points: entry.points,
-        wins: entry.wins,
-        draws: entry.draws,
-        losses: entry.losses,
-        goalsFor: entry.stats?.goalsFor,
-        goalsAgainst: entry.stats?.goalsAgainst,
-        goalDifference: entry.stats?.goalDifference,
-        active: true,
-      } as unknown as Team));
-    }
+    if (!isTeamSport) return [];
+    return standingsRows.map((row) => ({
+      id: row.entityId,
+      name: row.entityName,
+      shortName: row.shortName,
+      logo: row.logo,
+      sportId: selectedSport,
+      points: row.points,
+      wins: row.wins,
+      draws: row.draws,
+      losses: row.losses,
+      matchesPlayed: row.played,
+      goalsFor: row.goalsFor,
+      goalsAgainst: row.goalsAgainst,
+      goalDifference: row.goalDifference,
+      setsWon: row.setsWon,
+      setsLost: row.setsLost,
+      roundsWon: row.roundsWon,
+      roundsLost: row.roundsLost,
+      runs: row.runs,
+      wickets: row.wickets,
+      netRunRate: row.netRunRate,
+      active: true,
+    } as unknown as Team));
+  }, [isTeamSport, standingsRows, selectedSport]);
 
-    return activeTeams.map((t) => {
-      const derived = derivedMatchesStandings.get(t.id);
-      const pts = derived ? derived.points : 0;
-      const w = derived ? derived.wins : 0;
-      const d = derived ? derived.draws : 0;
-      const l = derived ? derived.losses : 0;
-      const gf = derived ? derived.goalsFor : 0;
-      const ga = derived ? derived.goalsAgainst : 0;
-      const gd = gf - ga;
-
-      return {
-        ...t,
-        points: pts,
-        wins: w,
-        draws: d,
-        losses: l,
-        goalsFor: gf,
-        goalsAgainst: ga,
-        goalDifference: gd,
-      };
-    }).sort((a, b) => {
-      const pB = (b as any).points ?? 0;
-      const pA = (a as any).points ?? 0;
-      if (pB !== pA) return pB - pA;
-      const gdB = (b as any).goalDifference ?? 0;
-      const gdA = (a as any).goalDifference ?? 0;
-      if (gdB !== gdA) return gdB - gdA;
-      return ((b as any).wins ?? 0) - ((a as any).wins ?? 0);
-    });
-  }, [customLeaderboardDoc, activeTeams, derivedMatchesStandings, selectedSport]);
-
+  // Format individual player standings for IndividualPodiumView (Top 3 only)
   const effectivePlayers = useMemo(() => {
-    if (customLeaderboardDoc && customLeaderboardDoc.category === 'individual' && customLeaderboardDoc.entries?.length) {
-      return customLeaderboardDoc.entries.map((entry: any) => ({
-        id: entry.entityId,
-        name: entry.entityName,
-        photo: entry.logo,
-        sportId: selectedSport,
-        role: 'player' as const,
-        position: 'Contender',
-        gender: 'male' as const,
-        active: true,
-        stats: {
-          points: entry.points,
-          wins: entry.wins,
-          losses: entry.losses,
-          matchesPlayed: (entry.wins || 0) + (entry.losses || 0) || 1,
-          rating: entry.stats?.rating || 4.8,
-          goals: 0,
-          assists: 0,
-          runs: 0,
-          wickets: 0,
-        },
-      } as unknown as Player));
-    }
+    if (isTeamSport) return [];
+    return standingsRows.map((row) => ({
+      id: row.entityId,
+      name: row.entityName,
+      photo: row.logo,
+      sportId: selectedSport,
+      role: 'player' as const,
+      position: 'Contender',
+      gender: 'male' as const,
+      active: true,
+      stats: {
+        points: row.points,
+        wins: row.wins,
+        losses: row.losses,
+        matchesPlayed: row.played,
+        rating: 5.0,
+        goals: 0,
+        assists: 0,
+        runs: 0,
+        wickets: 0,
+      },
+    } as unknown as Player));
+  }, [isTeamSport, standingsRows, selectedSport]);
 
-    return activePlayers.map((p) => {
-      const derived = derivedMatchesStandings.get(p.id);
-      const pts = derived ? derived.points : 0;
-      const w = derived ? derived.wins : 0;
-      const l = derived ? derived.losses : 0;
+  // Dynamically calculate leaders across all disciplines for the summit grid
+  const disciplineLeaders = useMemo<DisciplineLeader[]>(() => {
+    return DISCIPLINE_LIST.map((disc) => {
+      const isIndiv = disc.category === 'individual';
+      const discTeams = teamsCol.data.filter((t) => {
+        if (disc.id === 'lan-games') {
+          return t.sportId === 'lan-games' || t.sportId === 'counter-strike';
+        }
+        return t.sportId === disc.id;
+      });
+      const discPlayers = playersCol.data.filter((p) => p.sportId === disc.id);
+
+      const registered = isIndiv
+        ? discPlayers.map((p) => ({ id: p.id, name: p.name, photo: p.photo }))
+        : discTeams.map((t) => ({ id: t.id, name: t.name, logo: t.logo, shortName: t.shortName }));
+
+      const rules = resolveScoringRules(disc.id, settingsDoc.data?.tournamentScoringRules?.[disc.id]);
+      const standings = deriveStandingsFromCompletedMatches(
+        disc.id,
+        matchesCol.data,
+        registered,
+        isIndiv,
+        rules
+      );
+
+      const top = standings[0];
+      if (!top) {
+        return {
+          sportId: disc.id,
+          sportName: disc.name,
+          emoji: disc.icon,
+          winnerName: disc.name,
+          team: 'Championship Contenders',
+          points: 0,
+          record: '0W · 0D · 0L',
+          status: 'leading' as const,
+          photo: '',
+        };
+      }
+
+      const photoUrl = top.logo || (isIndiv ? '' : getTeamLogo(top.entityName) || getTeamLogo(top.entityId) || '');
+      const hasPlayed = top.played > 0;
 
       return {
-        ...p,
-        stats: {
-          ...(p.stats || {}),
-          points: pts,
-          wins: w,
-          losses: l,
-          matchesPlayed: w + l,
-        },
+        sportId: disc.id,
+        sportName: disc.name,
+        emoji: disc.icon,
+        winnerName: top.entityName,
+        team: hasPlayed ? (isIndiv ? '#1 Ranked Contender' : (top.shortName || 'Leader')) : 'Seed #1 · Contender',
+        points: top.points,
+        record: hasPlayed ? `${top.wins}W · ${top.draws}D · ${top.losses}L` : '0W · 0D · 0L',
+        status: 'leading' as const,
+        photo: photoUrl,
       };
-    }).sort((a, b) => {
-      const pB = (b.stats as any)?.points ?? 0;
-      const pA = (a.stats as any)?.points ?? 0;
-      if (pB !== pA) return pB - pA;
-      return ((b.stats as any)?.wins ?? 0) - ((a.stats as any)?.wins ?? 0);
     });
-  }, [customLeaderboardDoc, activePlayers, derivedMatchesStandings, selectedSport]);
+  }, [matchesCol.data, teamsCol.data, playersCol.data, settingsDoc.data]);
 
   const totalEntries = isTeamSport ? effectiveTeams.length : effectivePlayers.length;
 
@@ -344,7 +300,7 @@ export const Leaderboard: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* 1. Header with Dynamic Sport Title & Status (NO athletes/teams toggle) */}
+            {/* 1. Header with Dynamic Sport Title & Status */}
             <LeaderboardHero
               sportName={currentSportMeta.name}
               sportCategory={currentSportMeta.category}
@@ -371,7 +327,7 @@ export const Leaderboard: React.FC = () => {
                 </p>
               </div>
             ) : (
-              /* 3. Sport World Content with Animated Transition (500–900ms) */
+              /* 3. Sport World Content with Animated Transition */
               <AnimatePresence mode="wait">
                 <motion.div
                   key={selectedSport}
@@ -381,7 +337,7 @@ export const Leaderboard: React.FC = () => {
                   transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                 >
                   {isTeamSport ? (
-                    /* Team-Based Sports: Football, Cricket, Volleyball, Hand Tennis, LAN Games */
+                    /* Team-Based Sports: Football, Cricket, Volleyball, Hand Tennis, LAN Games, Smash Karts */
                     <TeamChampionshipView
                       teams={effectiveTeams}
                       sportId={selectedSport}
@@ -401,13 +357,14 @@ export const Leaderboard: React.FC = () => {
               </AnimatePresence>
             )}
 
-            {/* 4. Discipline Summit: All 9 Disciplines At-A-Glance */}
+            {/* 4. Discipline Summit: All Disciplines At-A-Glance (Live Leaders) */}
             <MultiSportLeaderboardGrid
+              leaders={disciplineLeaders}
               onSelectDiscipline={(sportId: string) => setSelectedSport(sportId)}
             />
 
             {/* 5. Historical Champions Wall */}
-            <ChampionsArchive />
+            <ChampionsArchive tournaments={tournamentsCol.data} />
 
             {/* 6. Closing CTA Banner */}
             <LeaderboardCTA />

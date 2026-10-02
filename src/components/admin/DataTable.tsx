@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { cn } from '@/utils/cn';
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -101,32 +102,38 @@ export function DataTable<T>({
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                       {onEdit && (
-                        <button
+                        <motion.button
+                          type="button"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.94 }}
                           onClick={() => onEdit(item)}
                           title="Edit"
                           className={cn(
-                            'p-1.5 rounded-lg border transition-all',
+                            'p-2 rounded-lg border transition-colors cursor-pointer',
                             isDay
-                              ? 'border-blue-200 bg-blue-50 text-[#1264FF] hover:bg-blue-100'
-                              : 'border-blue-500/30 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20',
+                              ? 'border-blue-200 bg-blue-50/80 text-blue-600 hover:bg-blue-100 shadow-2xs'
+                              : 'border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 shadow-2xs',
                           )}
                         >
-                          <FiEdit2 size={15} />
-                        </button>
+                          <FiEdit2 size={14} />
+                        </motion.button>
                       )}
                       {onDelete && (
-                        <button
+                        <motion.button
+                          type="button"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.94 }}
                           onClick={() => onDelete(item)}
                           title="Delete"
                           className={cn(
-                            'p-1.5 rounded-lg border transition-all',
+                            'p-2 rounded-lg border transition-colors cursor-pointer',
                             isDay
-                              ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
-                              : 'border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20',
+                              ? 'border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 shadow-2xs'
+                              : 'border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 shadow-2xs',
                           )}
                         >
-                          <FiTrash2 size={15} />
-                        </button>
+                          <FiTrash2 size={14} />
+                        </motion.button>
                       )}
                     </div>
                   </td>

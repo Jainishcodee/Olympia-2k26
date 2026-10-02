@@ -224,16 +224,16 @@ const PlayerDetail: React.FC = () => {
             <img
               src={player.photo}
               alt={player.name}
-              className={cn('h-16 w-16 shrink-0 rounded-md border object-cover', isDay ? 'border-slate-200 bg-white' : 'border-white/10 bg-white/[0.05]')}
+              className={cn('h-16 w-16 shrink-0 rounded-xl border object-cover', isDay ? 'border-slate-200 bg-white' : 'border-slate-800 bg-slate-800/40')}
             />
           ) : (
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-[#071426] text-xl font-bold text-[#D9A441]">
+            <span className={cn('flex h-16 w-16 shrink-0 items-center justify-center rounded-xl text-xl font-bold border', isDay ? 'border-slate-200 bg-slate-100 text-slate-700' : 'border-slate-800 bg-slate-800/80 text-slate-200')}>
               {initialsOf(player.name)}
             </span>
           )}
           <div className="min-w-0">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-9 min-w-9 items-center justify-center rounded-md bg-[#071426] px-2 font-mono text-sm font-bold tabular-nums text-[#FFD21F]">
+              <span className={cn('flex h-9 min-w-9 items-center justify-center rounded-lg px-2 font-mono text-sm font-bold tabular-nums border', isDay ? 'border-slate-200 bg-slate-100 text-slate-800' : 'border-slate-800 bg-slate-800 text-slate-100')}>
                 {player.jerseyNumber ?? '—'}
               </span>
               <h2 className={cn('truncate text-lg font-bold', isDay ? 'text-slate-900' : 'text-white')}>{player.name}</h2>
@@ -242,7 +242,7 @@ const PlayerDetail: React.FC = () => {
               {team ? (
                 <Link
                   to={`/admin/teams/${team.id}`}
-                  className={cn('font-semibold transition-colors hover:text-[#1264FF]', isDay ? 'text-slate-700' : 'text-white/80')}
+                  className={cn('font-semibold transition-colors hover:text-blue-600', isDay ? 'text-slate-700' : 'text-white/80')}
                 >
                   {team.name}
                 </Link>
@@ -339,13 +339,13 @@ const PlayerDetail: React.FC = () => {
                         className={cn('h-7 w-7 shrink-0 rounded-md border object-cover', isDay ? 'border-slate-200 bg-white' : 'border-white/10 bg-white/[0.05]')}
                       />
                     ) : (
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#071426] text-[10px] font-bold text-[#D9A441]">
+                      <span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[10px] font-bold border', isDay ? 'border-slate-200 bg-slate-100 text-slate-700' : 'border-slate-800 bg-slate-800 text-slate-300')}>
                         {initialsOf(mate.name)}
                       </span>
                     )}
                     <Link
                       to={`/admin/players/${mate.id}`}
-                      className={cn('min-w-0 flex-1 truncate text-[13px] font-semibold transition-colors hover:text-[#1264FF]', isDay ? 'text-slate-800' : 'text-white')}
+                      className={cn('min-w-0 flex-1 truncate text-[13px] font-semibold transition-colors hover:text-blue-600', isDay ? 'text-slate-800' : 'text-white')}
                     >
                       {mate.name}
                     </Link>

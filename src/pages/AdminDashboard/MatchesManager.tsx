@@ -268,7 +268,7 @@ const MatchesManager: React.FC = () => {
         title="Matches"
         subtitle="Every scheduled, live and completed match. Filters apply instantly to the live Firestore stream."
         actions={
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             <Btn
               variant={settingsDoc.data?.publicMatchesVisible !== false ? 'secondary' : 'primary'}
               onClick={handleToggleMasterVisibility}
@@ -322,10 +322,10 @@ const MatchesManager: React.FC = () => {
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
           className={cn(
-            'h-10 rounded-lg px-3 text-xs font-bold outline-none backdrop-blur-md transition-all',
+            'h-10 w-full sm:w-auto rounded-lg px-3 text-xs font-semibold outline-none backdrop-blur-md transition-all cursor-pointer',
             isDay
-              ? 'border border-slate-200 bg-white text-slate-800 shadow-xs focus:border-[#1264FF]'
-              : 'border border-white/15 bg-[#0B1A30]/90 text-white focus:border-[#D9A441]',
+              ? 'border border-slate-200 bg-white text-slate-800 shadow-2xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500/25'
+              : 'border border-slate-800 bg-slate-900/80 text-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/25',
           )}
           aria-label="Filter by date"
         />
@@ -429,7 +429,7 @@ const MatchesManager: React.FC = () => {
                       <td className={cn('whitespace-nowrap px-4 py-3.5 text-[12px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
                         {when.date}
                       </td>
-                      <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[12px] font-bold tabular-nums', isDay ? 'text-[#1264FF]' : 'text-[#D9A441]')}>
+                      <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[12px] font-bold tabular-nums', isDay ? 'text-slate-900' : 'text-slate-100')}>
                         {when.time}
                       </td>
                       <td className={cn('max-w-[150px] truncate px-4 py-3.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
@@ -448,10 +448,10 @@ const MatchesManager: React.FC = () => {
                       <td className="px-4 py-3.5">
                         {match.featured ? (
                           <span className={cn(
-                            'inline-block rounded-md border px-2 py-0.5 text-[10px] font-black uppercase',
+                            'inline-block rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
                             isDay
-                              ? 'border-[#D9A441]/50 bg-[#FFF7E6] text-[#A9761B]'
-                              : 'border-[#D9A441]/40 bg-[#D9A441]/15 text-[#FFD21F]',
+                              ? 'border-blue-200 bg-blue-50 text-blue-700'
+                              : 'border-blue-800/80 bg-blue-950/60 text-blue-300',
                           )}>
                             Featured
                           </span>

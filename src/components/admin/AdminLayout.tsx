@@ -49,20 +49,20 @@ const AdminLayout: React.FC = () => {
         <div 
           className={cn(
             'absolute -top-[15%] left-[20%] w-[55vw] h-[450px] rounded-full blur-[140px] pointer-events-none transition-opacity duration-700',
-            isDay ? 'opacity-10' : 'opacity-20',
+            isDay ? 'opacity-[0.03]' : 'opacity-[0.06]',
           )}
-          style={{ background: isDay ? 'radial-gradient(circle, #1264FF 0%, #1747B8 50%, transparent 80%)' : 'radial-gradient(circle, #1264FF 0%, #1747B8 50%, transparent 80%)' }}
+          style={{ background: 'radial-gradient(circle, #1264FF 0%, #1747B8 50%, transparent 80%)' }}
         />
         {/* Gold arena floodlight */}
         <div 
           className={cn(
             'absolute -bottom-[10%] right-[10%] w-[45vw] h-[400px] rounded-full blur-[130px] pointer-events-none transition-opacity duration-700',
-            isDay ? 'opacity-10' : 'opacity-15',
+            isDay ? 'opacity-[0.03]' : 'opacity-[0.05]',
           )}
           style={{ background: 'radial-gradient(circle, #D9A441 0%, #FFD21F 40%, transparent 80%)' }}
         />
         {/* Digital field line overlay */}
-        <div className={cn('absolute inset-0', isDay ? 'ol-day-field opacity-70' : 'ol-night-field opacity-60')} />
+        <div className={cn('absolute inset-0', isDay ? 'ol-day-field opacity-30' : 'ol-night-field opacity-30')} />
       </div>
 
       <AdminSidebar
@@ -79,7 +79,7 @@ const AdminLayout: React.FC = () => {
           onToggleCollapse={() => setCollapsed(!collapsed)}
         />
         
-        <main className="flex-1 overflow-y-auto p-4 md:p-7 hide-scrollbar scroll-smooth">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-5 md:p-7 hide-scrollbar scroll-smooth">
           <div className="mx-auto w-full max-w-[1540px]">
             <AnimatePresence mode="wait">
               <motion.div

@@ -91,54 +91,51 @@ const AdminTopbar: React.FC<Props> = ({ onMenu, collapsed, onToggleCollapse }) =
           title={isDay ? 'Switch to Night Mode' : 'Switch to Day Mode'}
           aria-label={isDay ? 'Switch to Night Mode' : 'Switch to Day Mode'}
           className={cn(
-            'flex h-9 w-9 items-center justify-center rounded-xl border transition-all duration-200',
+            'flex h-8.5 w-8.5 items-center justify-center rounded-lg border transition-colors cursor-pointer',
             isDay
-              ? 'border-slate-200 bg-white text-slate-700 shadow-xs hover:border-[#1264FF]/40 hover:text-[#1264FF]'
-              : 'border-white/10 bg-[#0B1A30]/80 text-[#FFD21F] shadow-[0_0_15px_rgba(217,164,65,0.15)] hover:border-[#D9A441]/40 hover:bg-[#0B1A30]',
+              ? 'border-slate-200 bg-white text-slate-700 shadow-2xs hover:bg-slate-50'
+              : 'border-slate-700 bg-slate-800 text-slate-300 shadow-2xs hover:bg-slate-700 hover:text-white',
           )}
         >
-          {isDay ? <FiMoon className="h-4 w-4 text-slate-700" /> : <FiSun className="h-4 w-4 text-[#FFD21F]" />}
+          {isDay ? <FiMoon className="h-4 w-4 text-slate-700" /> : <FiSun className="h-4 w-4 text-amber-300" />}
         </motion.button>
 
         {/* System Pulse */}
         <div
           className={cn(
-            'hidden items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-bold tracking-wider md:flex transition-colors',
+            'hidden items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-medium tracking-wide md:flex transition-colors',
             isDay
-              ? 'border-emerald-500/30 bg-emerald-50 text-emerald-700'
-              : 'border-emerald-500/30 bg-emerald-950/40 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]',
+              ? 'border-slate-200 bg-slate-50 text-slate-600'
+              : 'border-slate-700/80 bg-slate-800/80 text-slate-400',
           )}
         >
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-          </span>
-          <span className="uppercase text-[10px]">SYNC ACTIVE</span>
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          <span className="uppercase text-[9px] tracking-wider">SYNC ACTIVE</span>
         </div>
 
         {/* Scoring Simulator quick link */}
         <Link
           to="/admin/scoring-simulator"
           className={cn(
-            'hidden items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all lg:flex',
+            'hidden items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium tracking-wide transition-colors lg:flex',
             isDay
-              ? 'border-[#D9A441]/50 bg-[#FFF7E6] text-[#A9761B] hover:bg-[#FFEEC7]'
-              : 'border-[#D9A441]/30 bg-[#D9A441]/10 text-[#FFD21F] hover:bg-[#D9A441]/20 hover:border-[#D9A441]/50',
+              ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
+              : 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white shadow-2xs',
           )}
         >
-          <FiCpu className="h-3.5 w-3.5" />
-          Formula Sandbox
+          <FiCpu className="h-3.5 w-3.5 text-blue-500" />
+          <span>Formula Sandbox</span>
         </Link>
 
         {/* Public Arena Link */}
-        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+        <motion.div whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }}>
           <Link
             to="/"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1.5 rounded-lg border border-blue-500/40 bg-gradient-to-r from-[#1264FF] to-[#1747B8] px-3.5 py-1.5 text-xs font-black uppercase tracking-wider text-white shadow-[0_0_15px_rgba(18,100,255,0.4)] transition-all hover:shadow-[0_0_22px_rgba(18,100,255,0.6)]"
+            className="flex items-center gap-1.5 rounded-lg border border-blue-600 bg-blue-600 hover:bg-blue-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-2xs transition-colors"
           >
-            <FiRadio className="h-3.5 w-3.5 animate-pulse" />
+            <FiRadio className="h-3.5 w-3.5" />
             <span>Public Arena</span>
             <FiExternalLink className="h-3 w-3 opacity-70" />
           </Link>

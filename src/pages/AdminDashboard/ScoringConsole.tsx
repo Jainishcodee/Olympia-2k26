@@ -46,14 +46,14 @@ type Tone =
   | 'violet';
 
 const TONES: Record<Tone, string> = {
-  blue: 'bg-[#1264FF] border-[#4B90FF] text-[#FFFFFF] hover:bg-[#2A75FF] shadow-[0_14px_34px_-18px_rgba(18,100,255,1)]',
-  coral: 'bg-[#FF4D3D] border-[#FF8478] text-[#FFFFFF] hover:bg-[#FF6553] shadow-[0_14px_34px_-18px_rgba(255,77,61,1)]',
-  gold: 'bg-[#D9A441] border-[#F0C778] text-[#080A0F] hover:bg-[#E7B455] shadow-[0_14px_34px_-18px_rgba(217,164,65,1)]',
-  red: 'bg-[#C0142B] border-[#F04357] text-[#FFFFFF] hover:bg-[#DC1B34] shadow-[0_14px_34px_-18px_rgba(192,20,43,1)]',
-  yellow: 'bg-[#FFD21F] border-[#FFE87A] text-[#080A0F] hover:bg-[#FFDB48]',
-  slate: 'bg-[#101A2E] border-[#1E2A45] text-[#C7D2E4] hover:bg-[#17233C] hover:border-[#31426B]',
-  green: 'bg-[#0E9F6E] border-[#34D3A0] text-[#FFFFFF] hover:bg-[#12B680]',
-  violet: 'bg-[#6D28D9] border-[#9061F9] text-[#FFFFFF] hover:bg-[#7C3AED]',
+  blue: 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500/60 shadow-xs font-semibold',
+  coral: 'bg-rose-600 hover:bg-rose-500 text-white border-rose-500/60 shadow-xs font-semibold',
+  gold: 'bg-amber-600 hover:bg-amber-500 text-white border-amber-500/60 shadow-xs font-semibold',
+  red: 'bg-rose-700 hover:bg-rose-600 text-white border-rose-600/60 shadow-xs font-semibold',
+  yellow: 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-400/60 shadow-xs font-semibold',
+  slate: 'bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 border-slate-700/80 shadow-xs font-medium',
+  green: 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/60 shadow-xs font-semibold',
+  violet: 'bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-500/60 shadow-xs font-semibold',
 };
 
 const Pad: React.FC<
@@ -63,28 +63,29 @@ const Pad: React.FC<
     size?: 'sm' | 'md' | 'lg';
   }
 > = ({ tone = 'slate', sub, size = 'md', className, children, ...rest }) => (
-  <button
+  <motion.button
     type="button"
-    {...rest}
+    whileHover={{ y: -1 }}
+    whileTap={{ scale: 0.96 }}
+    {...(rest as any)}
     className={cn(
-      'relative flex flex-col items-center justify-center overflow-hidden rounded-lg border text-center font-black uppercase leading-tight tracking-[0.14em] transition-all duration-150 active:scale-[0.955] disabled:pointer-events-none disabled:opacity-40',
+      'relative flex flex-col items-center justify-center overflow-hidden rounded-lg border text-center font-bold uppercase leading-tight tracking-wider transition-colors duration-150 disabled:pointer-events-none disabled:opacity-40 cursor-pointer select-none',
       size === 'lg'
-        ? 'min-h-[80px] px-3 py-3 text-[15px]'
+        ? 'min-h-[72px] sm:min-h-[80px] px-3 py-2.5 sm:py-3 text-sm sm:text-[15px]'
         : size === 'sm'
-          ? 'min-h-[46px] px-2 py-2 text-[11px]'
-          : 'min-h-[62px] px-3 py-3 text-[13px]',
+          ? 'min-h-[42px] sm:min-h-[46px] px-2.5 py-2 text-xs sm:text-[11px]'
+          : 'min-h-[56px] sm:min-h-[62px] px-3 py-2.5 sm:py-3 text-xs sm:text-[13px]',
       TONES[tone],
       className,
     )}
   >
     <span className="relative z-10">{children}</span>
     {sub && (
-      <span className="relative z-10 mt-1 text-[10px] font-bold tracking-[0.2em] opacity-80">
+      <span className="relative z-10 mt-0.5 text-[9px] sm:text-[10px] font-medium tracking-wider opacity-80">
         {sub}
       </span>
     )}
-    <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[#FFFFFF]/35" />
-  </button>
+  </motion.button>
 );
 
 const PanelLabel: React.FC<{ children: React.ReactNode; hint?: string }> = ({ children, hint }) => (
@@ -2483,22 +2484,22 @@ const ScoringConsole: React.FC = () => {
 
             <div className="ml-auto flex flex-wrap gap-2">
               {liveMatch?.status === 'scheduled' && (
-                <Pad tone="green" size="sm" onClick={handleStartMatch} className="px-4">
+                <Pad tone="blue" size="sm" onClick={handleStartMatch} className="px-3.5 sm:px-4">
                   ▶ Start match
                 </Pad>
               )}
               {isMatchLive && !isPaused && (
-                <Pad tone="yellow" size="sm" onClick={handlePauseMatch} className="px-4">
+                <Pad tone="slate" size="sm" onClick={handlePauseMatch} className="px-3.5 sm:px-4">
                   ⏸ Pause
                 </Pad>
               )}
               {isMatchLive && isPaused && (
-                <Pad tone="green" size="sm" onClick={handleResumeMatch} className="px-4">
+                <Pad tone="blue" size="sm" onClick={handleResumeMatch} className="px-3.5 sm:px-4">
                   ▶ Resume
                 </Pad>
               )}
               {isMatchLive && (
-                <Pad tone="red" size="sm" onClick={() => setShowConfirm('end')} className="px-4">
+                <Pad tone="red" size="sm" onClick={() => setShowConfirm('end')} className="px-3.5 sm:px-4">
                   ⏹ End match
                 </Pad>
               )}
@@ -3341,13 +3342,12 @@ const TeamPlate: React.FC<{
       )}
     >
       <span
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[12px] font-black tracking-tight sm:h-14 sm:w-14 sm:text-sm overflow-hidden border border-white/20"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold tracking-tight sm:h-13 sm:w-13 sm:text-sm overflow-hidden border border-white/20"
         style={{
           background:
             side === 'left'
-              ? 'linear-gradient(140deg, #1264FF, #0A3AA8)'
-              : 'linear-gradient(140deg, #FF4D3D, #A61E14)',
-          boxShadow: `0 14px 34px -18px ${side === 'left' ? 'rgba(18,100,255,1)' : 'rgba(255,77,61,1)'}`,
+              ? 'linear-gradient(140deg, #2563EB, #1D4ED8)'
+              : 'linear-gradient(140deg, #E11D48, #BE123C)',
         }}
       >
         {logo ? (
@@ -3357,10 +3357,10 @@ const TeamPlate: React.FC<{
         )}
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-[13px] font-black uppercase tracking-[0.16em] text-[#EEF2F7] sm:text-base">
+        <span className="block truncate text-xs sm:text-sm md:text-base font-bold uppercase tracking-wide text-[#EEF2F7]">
           {team.name}
         </span>
-        <span className="block text-[9px] font-black uppercase tracking-[0.3em] text-[#4C5B75]">
+        <span className="block text-[9px] font-semibold uppercase tracking-wider text-slate-400">
           {side === 'left' ? 'Home' : 'Away'}
         </span>
       </span>

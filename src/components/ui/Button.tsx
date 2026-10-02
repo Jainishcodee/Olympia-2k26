@@ -12,26 +12,26 @@ interface ButtonProps extends HTMLMotionProps<"button"> {
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', isLoading, leftIcon, rightIcon, children, disabled, ...props }, ref) => {
-    const baseStyles = "inline-flex items-center justify-center font-bold tracking-wider uppercase transition-colors rounded-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#080A0D]";
+    const baseStyles = "inline-flex items-center justify-center font-medium tracking-normal transition-all rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer disabled:pointer-events-none select-none";
     
     const variants = {
-      primary: "bg-[#D9A441] text-[#071426] hover:bg-[#FFD21F] focus:ring-[#D9A441]",
-      secondary: "bg-[#1747B8] text-white hover:bg-[#1264FF] focus:ring-[#1264FF]",
-      ghost: "bg-transparent text-white hover:bg-white/10 focus:ring-white",
-      danger: "bg-[#FF4D3D] text-white hover:bg-[#FF6A00] focus:ring-[#FF4D3D]",
+      primary: "bg-blue-600 text-white hover:bg-blue-500 active:bg-blue-700 shadow-xs border border-blue-500/60 font-semibold",
+      secondary: "bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white border border-slate-700/80 shadow-2xs font-medium",
+      ghost: "bg-transparent text-slate-300 hover:bg-white/10 hover:text-white",
+      danger: "bg-rose-600 text-white hover:bg-rose-500 active:bg-rose-700 shadow-xs border border-rose-500/60 font-semibold",
     };
 
     const sizes = {
-      sm: "px-4 py-2 text-xs",
-      md: "px-6 py-3 text-sm",
-      lg: "px-8 py-4 text-base",
+      sm: "px-3 py-1.5 text-xs rounded-md",
+      md: "px-4 py-2 text-sm rounded-lg",
+      lg: "px-5 py-2.5 text-base rounded-lg",
     };
 
     return (
       <motion.button
         ref={ref}
-        whileHover={{ scale: disabled || isLoading ? 1 : 1.02 }}
-        whileTap={{ scale: disabled || isLoading ? 1 : 0.98 }}
+        whileHover={{ y: disabled || isLoading ? 0 : -1 }}
+        whileTap={{ scale: disabled || isLoading ? 1 : 0.97 }}
         className={cn(
           baseStyles,
           variants[variant],

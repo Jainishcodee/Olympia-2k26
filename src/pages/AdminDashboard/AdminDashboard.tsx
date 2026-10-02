@@ -141,16 +141,16 @@ const AdminDashboard: React.FC = () => {
   const error = firstError;
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6">
+    <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-4 sm:space-y-6">
       <AdminHeader
         title="Arena Command Center"
-        subtitle="Real-time live telemetry, telemetry aggregates, and operational controls for OLYMPIA 2K26."
+        subtitle="Real-time telemetry, operational aggregates, and match controls for OLYMPIA 2K26."
         actions={
-          <div className="flex items-center gap-3">
-            <Btn to="/admin/live" variant="primary" icon={<HiOutlineVideoCamera className="h-4 w-4 animate-pulse" />}>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <Btn to="/admin/live" variant="secondary" icon={<HiOutlineVideoCamera className="h-4 w-4" />}>
               Live Control Room
             </Btn>
-            <Btn to="/admin/matches/create" variant="warn">
+            <Btn to="/admin/matches/create" variant="primary">
               + New Match
             </Btn>
           </div>
@@ -161,12 +161,12 @@ const AdminDashboard: React.FC = () => {
 
       {/* ------------------------------------------------ Active Arena Stats Grid */}
       <motion.div variants={itemVariants}>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
           <StatTile
             label="Live Now"
             value={liveMatches.length}
             accent="red"
-            icon={<FiRadio className="text-red-400 animate-pulse" />}
+            icon={<FiRadio className="text-rose-500" />}
             hint="Active arena matches broadcasting"
             isLoading={isLoading}
             to="/admin/live"
@@ -175,7 +175,7 @@ const AdminDashboard: React.FC = () => {
             label="Upcoming Today"
             value={upcomingToday.length}
             accent="blue"
-            icon={<FiClock className="text-blue-400" />}
+            icon={<FiClock className="text-blue-500" />}
             hint="Scheduled on local timeline"
             isLoading={isLoading}
             to="/admin/matches"
@@ -183,8 +183,8 @@ const AdminDashboard: React.FC = () => {
           <StatTile
             label="Completed Today"
             value={completedToday.length}
-            accent="green"
-            icon={<FiTrendingUp className="text-emerald-400" />}
+            accent="slate"
+            icon={<FiTrendingUp className="text-slate-500" />}
             hint="Archived results confirmed"
             isLoading={isLoading}
             to="/admin/matches"
@@ -194,8 +194,8 @@ const AdminDashboard: React.FC = () => {
 
       {/* ------------------------------------------------ Competition Totals */}
       <motion.div variants={itemVariants}>
-        <Card title="Competition Telemetry" hint="Core database aggregates" glow="gold">
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Card title="Competition Telemetry" hint="Core database aggregates">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <StatTile 
               label="Total Matches" 
               value={matches.data.length} 
@@ -234,7 +234,7 @@ const AdminDashboard: React.FC = () => {
 
       {/* ------------------------------------------------ Public Interaction telemetry */}
       <motion.div variants={itemVariants}>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
           <StatTile
             label="Ballots & Votes"
             value={votes.data.length}
@@ -309,7 +309,7 @@ const AdminDashboard: React.FC = () => {
                          </span>
                          <StatusPill value="live" />
                        </div>
-                       <span className={cn('font-mono text-xs font-bold tabular-nums flex items-center gap-1.5', isDay ? 'text-[#A9761B]' : 'text-[#D9A441]')}>
+                       <span className={cn('font-mono text-xs font-semibold tabular-nums flex items-center gap-1.5', isDay ? 'text-slate-600' : 'text-slate-400')}>
                          <FiClock className="h-3.5 w-3.5" />
                          {formatTime(match.scheduledAt)}
                        </span>
@@ -318,12 +318,12 @@ const AdminDashboard: React.FC = () => {
                      <div className="my-4 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
                        <span className={cn('truncate text-right text-sm font-extrabold', isDay ? 'text-slate-900' : 'text-white')}>{a}</span>
                        <div className={cn(
-                         'relative rounded-lg px-4 py-1.5',
+                         'rounded-md px-3.5 py-1 text-center border',
                          isDay
-                           ? 'border border-amber-300/80 bg-gradient-to-r from-amber-50 to-orange-50/80 shadow-[0_4px_16px_rgba(217,164,65,0.15)]'
-                           : 'border border-[#D9A441]/40 bg-gradient-to-r from-[#0B1A30] to-[#071426] shadow-[0_0_20px_rgba(217,164,65,0.2)]'
+                           ? 'border-slate-200 bg-slate-50 text-slate-900'
+                           : 'border-slate-700 bg-slate-800 text-slate-100'
                        )}>
-                         <span className={cn('text-lg font-black tabular-nums tracking-wider', isDay ? 'text-amber-900' : 'text-[#FFD21F]')}>
+                         <span className="text-base font-bold tabular-nums tracking-wider">
                            {renderScore(match)}
                          </span>
                        </div>
@@ -331,7 +331,7 @@ const AdminDashboard: React.FC = () => {
                      </div>
 
                      <div className="flex justify-end">
-                       <Btn to={`/admin/matches/${match.id}/scoring`} variant="warn" size="xs">
+                       <Btn to={`/admin/matches/${match.id}/scoring`} variant="primary" size="xs">
                          Open Scoring Console →
                        </Btn>
                      </div>
@@ -366,7 +366,7 @@ const AdminDashboard: React.FC = () => {
                    whileHover={{ backgroundColor: isDay ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.02)' }}
                    className="flex items-start gap-3.5 px-5 py-3.5 transition-colors"
                  >
-                   <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', isDay ? 'bg-[#A9761B]' : 'bg-[#D9A441] shadow-[0_0_8px_#D9A441]')} />
+                   <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', isDay ? 'bg-blue-600' : 'bg-blue-500')} />
                    <div className="min-w-0 flex-1">
                      <span className={cn('block truncate text-xs font-black uppercase tracking-wider', isDay ? 'text-slate-900' : 'text-white')}>
                        {String(event.type ?? 'EVENT').replace(/_/g, ' ')}
@@ -412,10 +412,10 @@ const AdminDashboard: React.FC = () => {
                {upcomingFixtures.map((fixture) => (
                  <li key={fixture.id} className={cn('flex items-center gap-4 px-5 py-3.5 transition-colors', isDay ? 'hover:bg-slate-50' : 'hover:bg-white/[0.02]')}>
                    <div className={cn(
-                     'flex w-16 shrink-0 flex-col items-center rounded-lg py-1.5 shadow-inner',
-                     isDay ? 'border border-amber-200 bg-amber-50/80' : 'border border-white/10 bg-[#0B1A30]/80'
+                     'flex w-16 shrink-0 flex-col items-center rounded-lg py-1.5 border',
+                     isDay ? 'border-slate-200 bg-slate-50' : 'border-slate-800 bg-slate-800/60'
                    )}>
-                     <span className={cn('text-[10px] font-black uppercase tracking-wider', isDay ? 'text-[#A9761B]' : 'text-[#D9A441]')}>
+                     <span className={cn('text-[10px] font-black uppercase tracking-wider', isDay ? 'text-blue-700' : 'text-blue-400')}>
                        {formatDay(fixture.scheduledAt)}
                      </span>
                      <span className={cn('font-mono text-xs font-bold tabular-nums', isDay ? 'text-slate-900' : 'text-white')}>
@@ -424,7 +424,7 @@ const AdminDashboard: React.FC = () => {
                    </div>
                    <div className="min-w-0 flex-1">
                      <span className={cn('block truncate text-xs font-extrabold', isDay ? 'text-slate-900' : 'text-white')}>
-                       {teamName(fixture.teamAId)} <span className={isDay ? 'text-[#A9761B] font-black' : 'text-[#D9A441] font-black'}>VS</span> {teamName(fixture.teamBId)}
+                       {teamName(fixture.teamAId)} <span className="text-slate-400 dark:text-slate-500 font-semibold px-1">vs</span> {teamName(fixture.teamBId)}
                      </span>
                      <span className={cn('block text-[11px] mt-0.5', isDay ? 'text-slate-500' : 'text-slate-400')}>
                        {fixture.round ?? 'Round Match'} · {fixture.venueId ?? 'Arena Main'}

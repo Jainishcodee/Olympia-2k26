@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/config/firebase';
 import { Match, MatchFilter } from '@/types';
+import { syncSportLeaderboardToFirestore } from '@/services/standings/standingsService';
 
 const MATCHES_COLLECTION = 'matches';
 
@@ -135,6 +136,24 @@ export const updateMatch = async (id: string, data: Partial<Match>): Promise<voi
   if (!isFirebaseConfigured || !db) throw new Error('Firebase not configured');
   const docRef = doc(db, MATCHES_COLLECTION, id);
   await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() });
+
+  if (data.status === 'completed') {
+    if (data.sportId) {
+      const isIndiv = ['badminton', 'table-tennis', 'chess', 'carrom'].includes(data.sportId.toLowerCase());
+      syncSportLeaderboardToFirestore(data.sportId, data.sportId, isIndiv ? 'individual' : 'team').catch((err) => {
+        console.warn('[standings] Auto-sync on updateMatch failed:', err);
+      });
+    } else {
+      getMatch(id).then((match) => {
+        if (match?.sportId) {
+          const isIndiv = ['badminton', 'table-tennis', 'chess', 'carrom'].includes(match.sportId.toLowerCase());
+          syncSportLeaderboardToFirestore(match.sportId, match.sportId, isIndiv ? 'individual' : 'team').catch((err) => {
+            console.warn('[standings] Auto-sync on updateMatch failed:', err);
+          });
+        }
+      }).catch(() => {});
+    }
+  }
 };
 
 export const deleteMatch = async (id: string): Promise<void> => {
@@ -145,6 +164,17 @@ export const deleteMatch = async (id: string): Promise<void> => {
 export const updateMatchStatus = async (id: string, status: Match['status']): Promise<void> => {
   if (!isFirebaseConfigured || !db) throw new Error('Firebase not configured');
   await updateDoc(doc(db, MATCHES_COLLECTION, id), { status, updatedAt: serverTimestamp() });
+
+  if (status === 'completed') {
+    getMatch(id).then((match) => {
+      if (match?.sportId) {
+        const isIndiv = ['badminton', 'table-tennis', 'chess', 'carrom'].includes(match.sportId.toLowerCase());
+        syncSportLeaderboardToFirestore(match.sportId, match.sportId, isIndiv ? 'individual' : 'team').catch((err) => {
+          console.warn('[standings] Auto-sync on updateMatchStatus failed:', err);
+        });
+      }
+    }).catch(() => {});
+  }
 };
 
 export const startMatch = async (id: string): Promise<void> => {

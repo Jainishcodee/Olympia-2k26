@@ -93,7 +93,8 @@ export const MatchDetail: React.FC = () => {
     if (!liveEvents || liveEvents.length === 0) return;
     const active = liveEvents.filter((e) => !e.undone);
     if (active.length === 0) return;
-    const latest = active[active.length - 1];
+    const sortedActive = [...active].sort((a, b) => (b.sequence ?? 0) - (a.sequence ?? 0));
+    const latest = sortedActive[0];
     if (latest.sequence && latest.sequence > seenSeqRef.current) {
       const isInitial = seenSeqRef.current === 0;
       seenSeqRef.current = latest.sequence;
@@ -277,20 +278,23 @@ export const MatchDetail: React.FC = () => {
     displayTime = liveClock || (liveMatch?.liveState as Record<string, unknown>)?.clock as string || '00:00';
   }
 
-  const mappedEvents = liveEvents
-    .filter((e) => !e.undone)
-    .map((e) => ({
-      id: e.id,
-      sequence: e.sequence,
-      time: e.positioningText || e.matchTime || (e.positioning?.period ? `P${e.positioning.period}` : 'LIVE'),
-      description: e.description || (e as any).detail || 'Match play update',
-      team: (e.team as string) === 'teamA' || (e.team as string) === 'A' ? ('A' as const) : (e.team as string) === 'teamB' || (e.team as string) === 'B' ? ('B' as const) : undefined,
-      teamName: e.teamName,
-      type: e.type,
-      playerName: (e.data as any)?.playerName || e.playerName || undefined,
-      scoreText: e.snapshot?.score ? `${e.snapshot.score.teamA ?? 0} - ${e.snapshot.score.teamB ?? 0}` : undefined,
-      isCorrection: e.isCorrection,
-    }));
+  const mappedEvents = useMemo(() => {
+    return liveEvents
+      .filter((e) => !e.undone)
+      .sort((a, b) => (b.sequence ?? 0) - (a.sequence ?? 0))
+      .map((e) => ({
+        id: e.id,
+        sequence: e.sequence,
+        time: e.positioningText || e.matchTime || (e.positioning?.period ? `P${e.positioning.period}` : 'LIVE'),
+        description: e.description || (e as any).detail || 'Match play update',
+        team: (e.team as string) === 'teamA' || (e.team as string) === 'A' ? ('A' as const) : (e.team as string) === 'teamB' || (e.team as string) === 'B' ? ('B' as const) : undefined,
+        teamName: e.teamName,
+        type: e.type,
+        playerName: (e.data as any)?.playerName || e.playerName || undefined,
+        scoreText: e.snapshot?.score ? `${e.snapshot.score.teamA ?? 0} - ${e.snapshot.score.teamB ?? 0}` : undefined,
+        isCorrection: e.isCorrection,
+      }));
+  }, [liveEvents]);
 
   const stats = isFootball 
     ? deriveFootballStats(liveEvents) 

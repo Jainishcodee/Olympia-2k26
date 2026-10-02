@@ -75,26 +75,26 @@ const MatchCard: React.FC<{
       whileHover={{ y: -3, scale: 1.01 }}
       transition={{ duration: 0.2 }}
       className={cn(
-        'relative overflow-hidden rounded-xl border backdrop-blur-xl transition-all duration-300',
+        'relative overflow-hidden rounded-xl border backdrop-blur-xl transition-all duration-200',
         isDay
-          ? 'border-slate-200/80 bg-white/95 shadow-[0_12px_30px_rgba(0,0,0,0.06)] hover:border-[#D9A441]/80'
-          : 'border-white/10 bg-[#071426]/90 shadow-[0_16px_40px_rgba(0,0,0,0.5)] hover:border-[#D9A441]/40'
+          ? 'border-slate-200/90 bg-white/95 shadow-sm hover:border-slate-300 hover:shadow-md'
+          : 'border-slate-800/80 bg-slate-900/90 shadow-sm hover:border-slate-700/80 hover:shadow-md'
       )}
     >
-      {/* Top radiant light beam */}
+      {/* Top status indicator line */}
       {isLive && (
-        <span className="absolute inset-x-0 top-0 h-[2.5px] bg-gradient-to-r from-transparent via-[#1264FF] to-transparent shadow-[0_0_12px_#1264FF]" />
+        <span className="absolute inset-x-0 top-0 h-[2px] bg-blue-600 dark:bg-blue-500" />
       )}
 
       <header className={cn(
-        'flex items-center gap-2.5 border-b px-5 py-3.5',
-        isDay ? 'border-slate-100 bg-slate-50/80' : 'border-white/10 bg-white/[0.02]'
+        'flex items-center gap-2.5 border-b px-4 sm:px-5 py-3',
+        isDay ? 'border-slate-100 bg-slate-50/80' : 'border-slate-800/80 bg-slate-800/30'
       )}>
-        <span className={cn('text-[11px] font-black uppercase tracking-[0.2em]', isDay ? 'text-[#A9761B]' : 'text-[#D9A441]')}>
+        <span className={cn('text-[11px] font-black uppercase tracking-[0.16em]', isDay ? 'text-blue-700' : 'text-blue-400')}>
           {sportLabel}
         </span>
-        <span className={cn('h-3 w-px', isDay ? 'bg-slate-300' : 'bg-white/20')} />
-        <span className={cn('truncate text-xs font-bold', isDay ? 'text-slate-600' : 'text-slate-400')}>
+        <span className={cn('h-3 w-px', isDay ? 'bg-slate-300' : 'bg-slate-700')} />
+        <span className={cn('truncate text-xs font-semibold', isDay ? 'text-slate-600' : 'text-slate-400')}>
           {tournamentLabel ? `${tournamentLabel} · ` : ''}Match #{match.matchNumber ?? '—'}
         </span>
         <span className="ml-auto">
@@ -102,34 +102,34 @@ const MatchCard: React.FC<{
         </span>
       </header>
 
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-6">
-        <span className={cn('truncate text-right text-sm md:text-base font-extrabold', isDay ? 'text-slate-900' : 'text-white')}>{a}</span>
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-4 px-4 sm:px-5 py-5 sm:py-6">
+        <span className={cn('truncate text-right text-sm md:text-base font-bold', isDay ? 'text-slate-900' : 'text-slate-100')}>{a}</span>
         
         <div className="flex flex-col items-center">
           <div className={cn(
-            'rounded-xl border px-4 py-2',
+            'rounded-xl border px-3 sm:px-4 py-1.5 sm:py-2',
             isDay
-              ? 'border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 shadow-[0_4px_16px_rgba(217,164,65,0.15)]'
-              : 'border-[#D9A441]/40 bg-gradient-to-r from-[#0B1A30] to-[#071426] shadow-[0_0_20px_rgba(217,164,65,0.25)]'
+              ? 'border-slate-200 bg-slate-50 shadow-2xs'
+              : 'border-slate-800 bg-slate-950/80 shadow-2xs'
           )}>
-            <span className={cn('text-xl md:text-2xl font-black tabular-nums tracking-widest', isDay ? 'text-amber-900' : 'text-[#FFD21F]')}>
+            <span className={cn('text-lg sm:text-2xl font-black tabular-nums tracking-wider', isDay ? 'text-slate-900' : 'text-slate-100')}>
               {scoreline}
             </span>
           </div>
-          <span className={cn('mt-2 font-mono text-[11px] font-bold tabular-nums flex items-center gap-1.5', isDay ? 'text-slate-600' : 'text-slate-400')}>
-            {isLive && <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-ping" />}
+          <span className={cn('mt-2 font-mono text-[11px] font-semibold tabular-nums flex items-center gap-1.5', isDay ? 'text-slate-600' : 'text-slate-400')}>
+            {isLive && <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" />}
             {clock}
           </span>
         </div>
 
-        <span className={cn('truncate text-left text-sm md:text-base font-extrabold', isDay ? 'text-slate-900' : 'text-white')}>{b}</span>
+        <span className={cn('truncate text-left text-sm md:text-base font-bold', isDay ? 'text-slate-900' : 'text-slate-100')}>{b}</span>
       </div>
 
       <footer className={cn(
-        'flex flex-wrap items-center gap-2.5 border-t px-5 py-3.5',
-        isDay ? 'border-slate-100 bg-slate-50/50' : 'border-white/10 bg-white/[0.01]'
+        'flex flex-wrap items-center gap-2 border-t px-4 sm:px-5 py-3',
+        isDay ? 'border-slate-100 bg-slate-50/50' : 'border-slate-800/80 bg-slate-800/20'
       )}>
-        <Btn to={`/admin/matches/${match.id}/scoring`} variant="warn" size="xs" icon={<FiArrowRight className="h-3.5 w-3.5" />}>
+        <Btn to={`/admin/matches/${match.id}/scoring`} variant="primary" size="xs" icon={<FiArrowRight className="h-3.5 w-3.5" />}>
           Scoring Console
         </Btn>
         <Btn to={`/admin/matches/${match.id}`} variant="ghost" size="xs">
@@ -227,8 +227,8 @@ const LiveControl: React.FC = () => {
   ) => (
     <section className="mb-8">
       <div className="mb-4 flex items-center gap-3">
-        <h2 className={cn('text-xs font-black uppercase tracking-[0.24em] flex items-center gap-2', isDay ? 'text-[#A9761B]' : 'text-[#D9A441]')}>
-          <FiRadio className="h-3.5 w-3.5" />
+        <h2 className={cn('text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2', isDay ? 'text-slate-700' : 'text-slate-300')}>
+          <FiRadio className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
           {title}
         </h2>
         <span className={cn(
@@ -285,7 +285,7 @@ const LiveControl: React.FC = () => {
             <Btn to="/admin/matches" variant="secondary">
               Matches Archive
             </Btn>
-            <Btn to="/admin/matches/create" variant="warn">
+            <Btn to="/admin/matches/create" variant="primary">
               + New Match
             </Btn>
           </div>

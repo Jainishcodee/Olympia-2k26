@@ -58,8 +58,8 @@ const cellDate = (value: unknown): string => {
   return date ? date.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 };
 
-const TeamMark: React.FC<{ name: string; logo?: string; large?: boolean }> = ({ name, logo, large }) => {
-  const finalLogo = logo || getTeamLogo(name);
+const TeamMark: React.FC<{ name: string; logo?: string; large?: boolean; teamId?: string }> = ({ name, logo, large, teamId }) => {
+  const finalLogo = logo || getTeamLogo(name) || (teamId ? getTeamLogo(teamId) : undefined);
   return finalLogo ? (
     <img
       src={finalLogo}
@@ -369,7 +369,7 @@ const TeamDetail: React.FC = () => {
         <div className="space-y-5">
           <Card>
             <div className="flex flex-wrap items-center gap-4">
-              <TeamMark name={team.name} logo={team.logo} large />
+              <TeamMark name={team.name} logo={team.logo} large teamId={team.id} />
               <div className="min-w-0">
                 <h2 className={cn('truncate text-lg font-bold', isDay ? 'text-slate-900' : 'text-white')}>{team.name}</h2>
                 <p className={cn('mt-1 text-[13px]', isDay ? 'text-slate-500' : 'text-white/60')}>

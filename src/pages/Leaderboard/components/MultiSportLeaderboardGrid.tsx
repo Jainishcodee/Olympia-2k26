@@ -3,9 +3,8 @@ import { motion } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
 import { TiltCard, RollingScore } from '@/components/motion';
 import { BRAND } from '@/components/arena/BrandAssets';
-import { getTeamLogo } from '@/utils/teamLogos';
 
-interface DisciplineLeader {
+export interface DisciplineLeader {
   sportId: string;
   sportName: string;
   emoji: string;
@@ -17,113 +16,16 @@ interface DisciplineLeader {
   photo?: string;
 }
 
-const DISCIPLINE_LEADERS: DisciplineLeader[] = [
-  {
-    sportId: 'football',
-    sportName: 'Football',
-    emoji: '⚽',
-    winnerName: 'Reign FC',
-    team: 'Rishi · Captain',
-    points: 31,
-    record: '10W · 1D · 1L',
-    status: 'leading',
-    photo: getTeamLogo('reign fc') || '/logos/reign-fc.jpg',
-  },
-  {
-    sportId: 'cricket',
-    sportName: 'Cricket',
-    emoji: '🏏',
-    winnerName: 'Ronin XI',
-    team: 'Tanish · Captain',
-    points: 28,
-    record: '9W · 0D · 1L',
-    status: 'leading',
-    photo: getTeamLogo('ronin xi') || '/logos/ronin-xi.png',
-  },
-  {
-    sportId: 'volleyball',
-    sportName: 'Volleyball',
-    emoji: '🏐',
-    winnerName: 'Spike Warriors',
-    team: 'Shrey · Captain',
-    points: 30,
-    record: '10W · 0D · 1L',
-    status: 'leading',
-    photo: getTeamLogo('spike warriors') || '/logos/spike-warriors.jpg',
-  },
-  {
-    sportId: 'hand-tennis',
-    sportName: 'Hand Tennis',
-    emoji: '✋',
-    winnerName: 'Court Kings',
-    team: 'Herit · Captain',
-    points: 32,
-    record: '11W · 0D · 1L',
-    status: 'leading',
-    photo: getTeamLogo('court kings') || '/logos/court-kings.jpg',
-  },
-  {
-    sportId: 'lan-games',
-    sportName: 'LAN Games',
-    emoji: '🎮',
-    winnerName: 'K-Strike',
-    team: 'Kriyans · Captain',
-    points: 33,
-    record: '11W · 0D · 1L',
-    status: 'leading',
-    photo: getTeamLogo('k-strike') || '/logos/K-Strike.png',
-  },
-  {
-    sportId: 'badminton',
-    sportName: 'Badminton',
-    emoji: '🏸',
-    winnerName: 'Saurav Gupta',
-    team: 'Singles Ace · #1 Seed',
-    points: 1240,
-    record: '11W · 1L',
-    status: 'leading',
-    photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    sportId: 'table-tennis',
-    sportName: 'Table Tennis',
-    emoji: '🏓',
-    winnerName: 'Manav Thakkar',
-    team: 'Loop Specialist · #1 Seed',
-    points: 1290,
-    record: '13W · 1L',
-    status: 'leading',
-    photo: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    sportId: 'chess',
-    sportName: 'Chess',
-    emoji: '♟',
-    winnerName: 'Nihal Sarin',
-    team: 'Grandmaster · #1 Seed',
-    points: 1480,
-    record: '14W · 1L',
-    status: 'leading',
-    photo: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    sportId: 'carrom',
-    sportName: 'Carrom',
-    emoji: '🟤',
-    winnerName: 'K. Srinivas',
-    team: 'National Champion · #1 Seed',
-    points: 1190,
-    record: '11W · 1L',
-    status: 'leading',
-    photo: 'https://images.unsplash.com/photo-1521119989659-a83eee488004?w=600&auto=format&fit=crop&q=80',
-  },
-];
-
 export const MultiSportLeaderboardGrid: React.FC<{
+  leaders?: DisciplineLeader[];
   onSelectDiscipline?: (sportId: string) => void;
-}> = ({ onSelectDiscipline }) => {
+}> = ({ leaders = [], onSelectDiscipline }) => {
   const { theme } = useTheme();
   const isDay = theme === 'day';
+
+  if (!leaders || leaders.length === 0) {
+    return null;
+  }
 
   return (
     <section className="my-20 relative">
@@ -141,7 +43,7 @@ export const MultiSportLeaderboardGrid: React.FC<{
               isDay ? 'text-[#071426]' : 'text-white'
             }`}
           >
-            ALL 9 DISCIPLINES · TITLE LEADERS
+            ALL DISCIPLINES · TITLE LEADERS
           </h3>
         </div>
         <p
@@ -154,7 +56,7 @@ export const MultiSportLeaderboardGrid: React.FC<{
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {DISCIPLINE_LEADERS.map((item, i) => (
+        {leaders.map((item, i) => (
           <motion.div
             key={item.sportId}
             initial={{ opacity: 0, y: 20 }}
@@ -202,11 +104,15 @@ export const MultiSportLeaderboardGrid: React.FC<{
                 {/* Champion Cutout & Name */}
                 <div className="flex items-center gap-3.5 mb-4 relative z-10">
                   <div className="relative w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-[#D9A441] shadow-md bg-black/10 flex items-center justify-center">
-                    <img
-                      src={item.photo}
-                      alt={item.winnerName}
-                      className="w-full h-full object-contain p-1 group-hover:scale-110 transition-transform duration-500"
-                    />
+                    {item.photo ? (
+                      <img
+                        src={item.photo}
+                        alt={item.winnerName}
+                        className="w-full h-full object-contain p-1 group-hover:scale-110 transition-transform duration-500"
+                      />
+                    ) : (
+                      <span className="text-xl">🏆</span>
+                    )}
                     <span className="absolute bottom-0 inset-x-0 bg-[#D9A441] text-[#071426] text-[7px] font-black text-center py-0.5 uppercase">
                       #01
                     </span>

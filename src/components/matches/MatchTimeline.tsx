@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useEventReactions } from '@/hooks/useReactions';
@@ -186,11 +186,20 @@ export const MatchTimeline: React.FC<{
   const isDay = theme === 'day';
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Guarantee latest / recent timeline events appear first (descending order by sequence)
+  const sortedEvents = useMemo(() => {
+    return [...events].sort((a, b) => {
+      const seqA = a.sequence ?? 0;
+      const seqB = b.sequence ?? 0;
+      return seqB - seqA;
+    });
+  }, [events]);
+
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTop = 0;
     }
-  }, [events]);
+  }, [sortedEvents.length]);
 
   return (
     <div
@@ -218,15 +227,16 @@ export const MatchTimeline: React.FC<{
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto pr-2 space-y-4 hide-scrollbar smooth-scroll-y">
-        {events.length === 0 ? (
+        {sortedEvents.length === 0 ? (
           <div className={cn("flex flex-col items-center justify-center h-full text-sm font-medium", isDay ? "text-[#071426]/40" : "text-white/40")}>
             <span className="text-xl mb-1">⏱️</span>
             No events recorded yet.
           </div>
         ) : (
-          events.map((event, i) => {
+          sortedEvents.map((event, i) => {
             const badge = getEventBadge(event.type);
             const isNeutral = !event.team;
+            const isLatest = i === 0;
 
             return (
               <motion.div
@@ -264,6 +274,12 @@ export const MatchTimeline: React.FC<{
                   )}
                 >
                   <div className={cn("flex items-center gap-1.5 flex-wrap mb-1.5", isNeutral && "justify-center")}>
+                    {isLatest && sortedEvents.length > 1 && (
+                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 animate-pulse">
+                        ● LATEST
+                      </span>
+                    )}
+
                     {event.sequence !== undefined && (
                       <span className="font-mono text-[9px] text-[#FFD21F] bg-black/50 px-1.5 py-0.5 rounded font-bold">
                         #{event.sequence}

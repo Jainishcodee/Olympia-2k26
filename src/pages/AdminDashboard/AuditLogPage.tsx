@@ -63,13 +63,13 @@ const getActionTone = (action: string, isDay: boolean): string => {
     case 'TEAM':
     case 'PLAYER':
     case 'ROSTER':
-      return isDay ? 'border-[#F0DFB8] bg-[#FFF7E6] text-[#A9761B]' : 'border-[#D9A441]/40 bg-[#D9A441]/10 text-[#F5CA6E]';
+      return isDay ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-amber-900/50 bg-amber-950/40 text-amber-300';
     case 'ADMIN':
       return isDay ? 'border-red-200 bg-red-50 text-red-700' : 'border-rose-500/40 bg-rose-500/15 text-rose-300';
     case 'SETTINGS':
       return isDay ? 'border-slate-300 bg-slate-100 text-slate-700' : 'border-slate-600 bg-slate-800 text-slate-200';
     default:
-      return isDay ? 'border-slate-200 bg-white text-slate-600' : 'border-white/10 bg-white/[0.05] text-white/70';
+      return isDay ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-800 bg-slate-800/40 text-slate-300';
   }
 };
 
@@ -488,7 +488,7 @@ const AuditLogPage: React.FC = () => {
                       {jsonOpen && !open && (
                         <tr className={isDay ? 'bg-slate-50' : 'bg-white/[0.02]'}>
                           <td colSpan={7} className="px-3 py-3">
-                            <pre className="overflow-x-auto rounded-md border border-[#D9A441]/20 bg-[#071426] px-3 py-2.5 font-mono text-[11px] leading-relaxed text-[#D9A441]">
+                            <pre className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-900 dark:bg-slate-950 px-3 py-2.5 font-mono text-[11px] leading-relaxed text-slate-200">
                               {prettyJson(entry.metadata)}
                             </pre>
                           </td>

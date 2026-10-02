@@ -2,46 +2,25 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
 import { TiltCard } from '@/components/motion';
+import { Tournament } from '@/types';
 
-interface ChampionRecord {
+export interface ChampionRecord {
   year: string;
   sport: string;
   title: string;
   winner: string;
   tagline: string;
-  image: string;
+  image?: string;
 }
 
-const HISTORICAL_CHAMPIONS: ChampionRecord[] = [
-  {
-    year: '2026',
-    sport: 'Football',
-    title: 'Olympia Grand Series',
-    winner: 'Thunderbolts FC',
-    tagline: 'Undefeated Cup Run · 18 Goals',
-    image: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&auto=format&fit=crop&q=80',
-  },
-  {
-    year: '2026',
-    sport: 'Cricket',
-    title: 'Titan Super League',
-    winner: 'Storm Breakers XI',
-    tagline: 'Record NRR · 340 Run Margin',
-    image: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=800&auto=format&fit=crop&q=80',
-  },
-  {
-    year: '2026',
-    sport: 'Volleyball',
-    title: 'Spike Championship',
-    winner: 'Spike Masters',
-    tagline: 'Flawless 5-Set Finals Victor',
-    image: 'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=800&auto=format&fit=crop&q=80',
-  },
-];
-
-export const ChampionsArchive: React.FC = () => {
+export const ChampionsArchive: React.FC<{
+  tournaments?: Tournament[];
+}> = ({ tournaments = [] }) => {
   const { theme } = useTheme();
   const isDay = theme === 'day';
+
+  // Only real completed tournaments become historical champions
+  const completedTournaments = (tournaments || []).filter((t) => t.status === 'completed');
 
   return (
     <section className="my-24 relative">
@@ -59,64 +38,76 @@ export const ChampionsArchive: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {HISTORICAL_CHAMPIONS.map((champ, i) => (
-          <motion.div
-            key={champ.sport}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: i * 0.1 }}
-          >
-            <TiltCard
-              tiltAngle={7}
-              glowColor="rgba(217, 164, 65, 0.2)"
-              cursorLabel="ARCHIVE"
+      {completedTournaments.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {completedTournaments.map((t, i) => (
+            <motion.div
+              key={t.id}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: i * 0.1 }}
             >
-              <div
-                className={`relative rounded-3xl overflow-hidden border p-6 md:p-8 flex flex-col justify-between min-h-[340px] group ${
-                  isDay
-                    ? 'bg-gradient-to-b from-white to-[#F7F6F1] border-[#071426]/12 shadow-[0_10px_30px_rgba(7,20,38,0.06)]'
-                    : 'bg-gradient-to-b from-[#111C2E] to-[#040B17] border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.8)]'
-                }`}
+              <TiltCard
+                tiltAngle={7}
+                glowColor="rgba(217, 164, 65, 0.2)"
+                cursorLabel="ARCHIVE"
               >
-                {/* Image Backdrop with Gradient */}
-                <div className="absolute inset-0 z-0">
-                  <img
-                    src={champ.image}
-                    alt={champ.winner}
-                    className="h-full w-full object-cover opacity-20 group-hover:opacity-30 group-hover:scale-105 transition-all duration-700"
-                  />
-                  <div className={`absolute inset-0 ${isDay ? 'bg-gradient-to-t from-white via-white/80 to-transparent' : 'bg-gradient-to-t from-[#040B17] via-[#040B17]/80 to-transparent'}`} />
-                </div>
+                <div
+                  className={`relative rounded-3xl overflow-hidden border p-6 md:p-8 flex flex-col justify-between min-h-[300px] group ${
+                    isDay
+                      ? 'bg-gradient-to-b from-white to-[#F7F6F1] border-[#071426]/12 shadow-[0_10px_30px_rgba(7,20,38,0.06)]'
+                      : 'bg-gradient-to-b from-[#111C2E] to-[#040B17] border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.8)]'
+                  }`}
+                >
+                  {/* Top Badge */}
+                  <div className="relative z-10 flex items-center justify-between">
+                    <span className="px-3 py-1 rounded-full bg-[#D9A441] text-[#071426] font-black text-xs uppercase tracking-widest shadow-sm">
+                      2026 CHAMPION
+                    </span>
+                    <span className={`text-xs font-black uppercase tracking-wider ${isDay ? 'text-[#071426]/60' : 'text-white/60'}`}>
+                      {t.sportId}
+                    </span>
+                  </div>
 
-                {/* Top Badge */}
-                <div className="relative z-10 flex items-center justify-between">
-                  <span className="px-3 py-1 rounded-full bg-[#D9A441] text-[#071426] font-black text-xs uppercase tracking-widest shadow-sm">
-                    {champ.year} CHAMPION
-                  </span>
-                  <span className={`text-xs font-black uppercase tracking-wider ${isDay ? 'text-[#071426]/60' : 'text-white/60'}`}>
-                    {champ.sport}
-                  </span>
+                  {/* Bottom Details */}
+                  <div className="relative z-10 mt-12">
+                    <span className={`text-xs font-bold uppercase tracking-wider block ${isDay ? 'text-[#155EEF]' : 'text-[#D9A441]'}`}>
+                      {t.name}
+                    </span>
+                    <h4 className={`text-2xl font-black uppercase tracking-tight mt-1 mb-2 ${isDay ? 'text-[#071426]' : 'text-white'}`}>
+                      Tournament Finalist
+                    </h4>
+                    <p className={`text-xs font-medium ${isDay ? 'text-[#071426]/70' : 'text-white/70'}`}>
+                      Official tournament concluded at {t.venue || 'Olympia Arena'}.
+                    </p>
+                  </div>
                 </div>
-
-                {/* Bottom Details */}
-                <div className="relative z-10 mt-12">
-                  <span className={`text-xs font-bold uppercase tracking-wider block ${isDay ? 'text-[#155EEF]' : 'text-[#D9A441]'}`}>
-                    {champ.title}
-                  </span>
-                  <h4 className={`text-2xl font-black uppercase tracking-tight mt-1 mb-2 ${isDay ? 'text-[#071426]' : 'text-white'}`}>
-                    {champ.winner}
-                  </h4>
-                  <p className={`text-xs font-medium ${isDay ? 'text-[#071426]/70' : 'text-white/70'}`}>
-                    {champ.tagline}
-                  </p>
-                </div>
-              </div>
-            </TiltCard>
-          </motion.div>
-        ))}
-      </div>
+              </TiltCard>
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        <div
+          className={`p-8 sm:p-12 rounded-3xl border text-center transition-all ${
+            isDay
+              ? 'bg-white/80 border-[#071426]/10 text-[#071426]'
+              : 'bg-[#071426]/80 border-white/10 text-white'
+          }`}
+        >
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#D9A441]/10 border border-[#D9A441]/30 flex items-center justify-center text-3xl">
+            🏆
+          </div>
+          <h4 className="text-lg sm:text-xl font-black uppercase tracking-wider mb-2">
+            Olympia 2K26 In Progress
+          </h4>
+          <p className={`max-w-md mx-auto text-xs sm:text-sm font-medium ${isDay ? 'text-[#071426]/60' : 'text-white/60'}`}>
+            Official championship title holders and podium crowns will be permanently enshrined in the Pantheon Archive as tournament finals conclude.
+          </p>
+        </div>
+      )}
     </section>
   );
 };
+
+export default ChampionsArchive;

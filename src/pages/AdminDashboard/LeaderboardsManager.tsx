@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { doc, deleteDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/config/firebase';
@@ -329,16 +330,18 @@ const LeaderboardsManager: React.FC = () => {
             const isBusy = syncingSport === sport.id;
 
             return (
-              <button
+              <motion.button
                 key={sport.id}
                 type="button"
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.98 }}
                 disabled={isBusy}
                 onClick={() => handleSyncSport(sport.id, sport.name, isTeam)}
                 className={cn(
-                  'p-3 rounded-xl border text-left flex flex-col justify-between transition-all group',
+                  'p-3.5 rounded-xl border text-left flex flex-col justify-between transition-colors group cursor-pointer',
                   isDay
-                    ? 'bg-white border-slate-200 hover:border-[#1264FF] shadow-sm'
-                    : 'bg-[#0B1528] border-white/10 hover:border-[#D9A441] shadow-md',
+                    ? 'bg-white border-slate-200 hover:border-blue-400 shadow-2xs'
+                    : 'bg-slate-900/90 border-slate-800 hover:border-slate-700 shadow-2xs',
                 )}
               >
                 <div>
@@ -350,11 +353,11 @@ const LeaderboardsManager: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between text-xs font-bold text-[#1264FF] dark:text-[#D9A441]">
+                <div className="mt-3 flex items-center justify-between text-xs font-bold text-blue-600 dark:text-blue-400">
                   <span>{isBusy ? 'Publishing…' : 'Publish'}</span>
                   <FiRefreshCw className={cn('w-3.5 h-3.5', isBusy && 'animate-spin')} />
                 </div>
-              </button>
+              </motion.button>
             );
           })}
         </div>

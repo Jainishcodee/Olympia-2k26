@@ -28,55 +28,55 @@ export const Btn: React.FC<
   const isDay = theme === 'day';
 
   const variants: Record<Variant, string> = {
-    primary:
-      'bg-gradient-to-r from-[#1264FF] to-[#1747B8] text-white border border-blue-400/40 hover:from-[#1747B8] hover:to-[#1264FF] shadow-[0_0_20px_rgba(18,100,255,0.35)] hover:shadow-[0_0_28px_rgba(18,100,255,0.55)]',
+    primary: isDay
+      ? 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white border border-blue-600 shadow-xs hover:shadow transition-colors font-semibold'
+      : 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white border border-blue-500/50 shadow-xs hover:shadow transition-colors font-semibold',
     secondary: isDay
-      ? 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 shadow-xs'
-      : 'bg-[#0B1A30]/80 text-slate-200 border border-white/15 hover:bg-[#102442] hover:border-white/30 hover:text-white backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.2)]',
+      ? 'bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-2xs font-medium transition-colors'
+      : 'bg-slate-800/80 hover:bg-slate-700/80 active:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 shadow-2xs font-medium backdrop-blur-md transition-colors',
     danger: isDay
-      ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 hover:border-red-300 shadow-xs'
-      : 'bg-red-500/15 text-red-300 border border-red-500/30 hover:bg-red-500/25 hover:border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.2)]',
-    warn:
-      'bg-gradient-to-r from-[#D9A441] to-[#FFD21F] text-[#071426] font-black border border-yellow-300/60 hover:brightness-110 shadow-[0_0_22px_rgba(217,164,65,0.45)]',
+      ? 'bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 border border-rose-200/80 shadow-2xs font-medium transition-colors'
+      : 'bg-rose-500/15 hover:bg-rose-500/25 active:bg-rose-500/35 text-rose-300 border border-rose-500/30 shadow-2xs font-medium transition-colors',
+    warn: isDay
+      ? 'bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white border border-amber-600/30 shadow-2xs font-semibold transition-colors'
+      : 'bg-amber-500/20 hover:bg-amber-500/30 active:bg-amber-500/40 text-amber-200 border border-amber-500/40 shadow-2xs font-semibold transition-colors',
     ghost: isDay
-      ? 'bg-transparent text-slate-600 border border-transparent hover:bg-slate-100 hover:text-slate-900 hover:border-slate-200'
-      : 'bg-transparent text-slate-400 border border-transparent hover:bg-white/5 hover:text-white hover:border-white/10',
+      ? 'bg-transparent hover:bg-slate-100/80 active:bg-slate-200/80 text-slate-600 hover:text-slate-900 border border-transparent font-medium transition-colors'
+      : 'bg-transparent hover:bg-slate-800/60 active:bg-slate-800 text-slate-400 hover:text-white border border-transparent font-medium transition-colors',
   };
 
   const classes = cn(
-    'relative inline-flex items-center justify-center gap-2 rounded-lg font-bold transition-all duration-200 whitespace-nowrap disabled:pointer-events-none disabled:opacity-40 overflow-hidden group cursor-pointer',
+    'relative inline-flex items-center justify-center gap-2 font-medium transition-all duration-150 whitespace-nowrap disabled:pointer-events-none disabled:opacity-40 cursor-pointer select-none',
     size === 'xs'
-      ? 'h-7 px-2.5 text-[11px] tracking-wide'
+      ? 'h-8 px-2.5 text-xs rounded-md'
       : size === 'md'
-        ? 'h-10 px-5 text-sm tracking-wide'
-        : 'h-9 px-4 text-[13px] tracking-wide',
+        ? 'h-10 px-4 text-sm rounded-lg'
+        : 'h-9 px-3.5 text-xs sm:text-[13px] rounded-lg',
     variants[variant],
     className,
   );
-  
+
   const inner = (
     <>
-      {/* Subtle shine on hover */}
-      <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
-      {icon && <span className="shrink-0 transition-transform duration-200 group-hover:scale-110">{icon}</span>}
-      <span className="relative z-10">{children}</span>
+      {icon && <span className="shrink-0 transition-transform duration-150">{icon}</span>}
+      <span className="truncate">{children}</span>
     </>
   );
 
   if (to) {
     return (
-      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="inline-block">
+      <motion.div whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }} className="inline-block">
         <Link to={to} className={classes}>
           {inner}
         </Link>
       </motion.div>
     );
   }
-  
+
   return (
     <motion.button
       type="button"
-      whileHover={{ scale: 1.02 }}
+      whileHover={{ y: -1 }}
       whileTap={{ scale: 0.98 }}
       className={classes}
       {...(rest as any)}
@@ -104,30 +104,30 @@ export const AdminHeader: React.FC<{
   const isDay = theme === 'day';
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: -12 }}
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
       className={cn(
-        'mb-6 flex flex-wrap items-start justify-between gap-4 pb-5 transition-colors',
-        isDay ? 'border-b border-slate-200' : 'border-b border-white/10',
+        'mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-5 transition-colors border-b',
+        isDay ? 'border-slate-200' : 'border-white/10',
       )}
     >
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         {breadcrumbs && breadcrumbs.length > 0 && (
           <nav
             className={cn(
-              'mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.2em]',
+              'mb-1.5 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider',
               isDay ? 'text-slate-500' : 'text-slate-400',
             )}
           >
             {breadcrumbs.map((crumb, index) => (
               <React.Fragment key={`${crumb.label}-${index}`}>
-                {index > 0 && <FiChevronRight className={cn('h-3 w-3', isDay ? 'text-[#1264FF]' : 'text-[#D9A441]')} />}
+                {index > 0 && <FiChevronRight className="h-3 w-3 text-slate-400" />}
                 {crumb.to ? (
                   <Link
                     to={crumb.to}
-                    className={cn('transition-colors', isDay ? 'hover:text-[#1264FF]' : 'hover:text-[#D9A441]')}
+                    className={cn('transition-colors', isDay ? 'hover:text-blue-600' : 'hover:text-blue-400')}
                   >
                     {crumb.label}
                   </Link>
@@ -138,29 +138,33 @@ export const AdminHeader: React.FC<{
             ))}
           </nav>
         )}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <h1
             className={cn(
-              'text-2xl md:text-3xl font-black tracking-tight flex items-center gap-3',
+              'text-xl sm:text-2xl font-bold tracking-tight',
               isDay ? 'text-slate-900' : 'text-white',
             )}
           >
-            <span>{title}</span>
+            {title}
           </h1>
           {badge}
         </div>
         {subtitle && (
           <p
             className={cn(
-              'mt-1.5 max-w-3xl text-sm leading-relaxed font-medium',
-              isDay ? 'text-slate-600' : 'text-slate-400',
+              'mt-1 max-w-3xl text-xs sm:text-sm font-normal leading-relaxed',
+              isDay ? 'text-slate-500' : 'text-slate-400',
             )}
           >
             {subtitle}
           </p>
         )}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2.5">{actions}</div>}
+      {actions && (
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto mt-2 sm:mt-0 shrink-0">
+          {actions}
+        </div>
+      )}
     </motion.div>
   );
 };
@@ -176,68 +180,49 @@ export const Card: React.FC<{
   flush?: boolean;
   glow?: 'gold' | 'blue' | 'none';
   children: React.ReactNode;
-}> = ({ title, hint, actions, className, bodyClassName, flush, glow = 'none', children }) => {
+}> = ({ title, hint, actions, className, bodyClassName, flush, children }) => {
   const { theme } = useTheme();
   const isDay = theme === 'day';
 
-  const glowStyle = isDay
-    ? {
-        gold: 'border-[#D9A441]/40 shadow-[0_4px_24px_rgba(217,164,65,0.08)]',
-        blue: 'border-[#1264FF]/30 shadow-[0_4px_24px_rgba(18,100,255,0.08)]',
-        none: 'border-slate-200/90 shadow-[0_4px_20px_rgba(0,0,0,0.04)]',
-      }[glow]
-    : {
-        gold: 'border-[#D9A441]/30 shadow-[0_12px_40px_rgba(217,164,65,0.12)]',
-        blue: 'border-[#1264FF]/30 shadow-[0_12px_40px_rgba(18,100,255,0.12)]',
-        none: 'border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.4)]',
-      }[glow];
-
   return (
     <motion.section
-      initial={{ opacity: 0, y: 14 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
       className={cn(
-        'relative rounded-xl border backdrop-blur-xl transition-all duration-300',
+        'relative rounded-xl border backdrop-blur-xl transition-all duration-200',
         isDay
-          ? 'bg-white/95 text-slate-900 hover:border-slate-300'
-          : 'bg-[#071426]/85 text-slate-100 hover:border-white/20',
-        glowStyle,
+          ? 'bg-white border-slate-200/90 shadow-2xs hover:border-slate-300/80 text-slate-900'
+          : 'bg-slate-900/60 border-slate-800/80 shadow-sm hover:border-slate-700/80 text-slate-100',
         className,
       )}
     >
       {(title || actions) && (
         <header
           className={cn(
-            'flex items-center justify-between gap-3 px-5 py-4 transition-colors',
+            'flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 transition-colors border-b',
             isDay
-              ? 'border-b border-slate-200/90 bg-slate-50/70'
-              : 'border-b border-white/10 bg-white/[0.02]',
+              ? 'border-slate-200/80 bg-slate-50/60'
+              : 'border-slate-800/80 bg-slate-800/20',
           )}
         >
           <div className="min-w-0">
             <h2
               className={cn(
-                'text-xs font-black uppercase tracking-[0.18em] flex items-center gap-2',
-                isDay ? 'text-[#A9761B]' : 'text-[#D9A441]',
+                'text-xs font-semibold uppercase tracking-wider flex items-center gap-2',
+                isDay ? 'text-slate-700' : 'text-slate-300',
               )}
             >
-              <span
-                className={cn(
-                  'inline-block h-1.5 w-1.5 rounded-full',
-                  isDay ? 'bg-[#A9761B]' : 'bg-[#D9A441] shadow-[0_0_8px_#D9A441]',
-                )}
-              />
               {title}
             </h2>
             {hint && (
-              <p className={cn('mt-0.5 text-xs', isDay ? 'text-slate-500' : 'text-slate-400')}>{hint}</p>
+              <p className={cn('mt-0.5 text-xs font-normal', isDay ? 'text-slate-500' : 'text-slate-400')}>{hint}</p>
             )}
           </div>
           {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
         </header>
       )}
-      <div className={cn(flush ? '' : 'p-5', bodyClassName)}>{children}</div>
+      <div className={cn(flush ? '' : 'p-4 sm:p-5', bodyClassName)}>{children}</div>
     </motion.section>
   );
 };
@@ -245,44 +230,44 @@ export const Card: React.FC<{
 /* ----------------------------------------------------------- status pills */
 
 const PILL_TONES: Record<string, string> = {
-  live: 'bg-red-500/20 text-red-400 border-red-500/40 shadow-[0_0_12px_rgba(239,68,68,0.25)]',
-  paused: 'bg-amber-500/20 text-amber-500 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.25)]',
-  scheduled: 'bg-blue-500/15 text-blue-500 border-blue-500/40 shadow-[0_0_12px_rgba(59,130,246,0.2)]',
-  upcoming: 'bg-indigo-500/15 text-indigo-500 border-indigo-500/40 shadow-[0_0_12px_rgba(99,102,241,0.2)]',
-  completed: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.2)]',
-  ongoing: 'bg-blue-500/15 text-blue-500 border-blue-500/40 shadow-[0_0_12px_rgba(59,130,246,0.2)]',
-  finished: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.2)]',
-  cancelled: 'bg-slate-500/15 text-slate-500 border-slate-400/30',
-  archived: 'bg-slate-500/15 text-slate-500 border-slate-400/30',
-  active: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.2)]',
-  inactive: 'bg-slate-500/15 text-slate-500 border-slate-400/30',
-  disabled: 'bg-slate-500/15 text-slate-500 border-slate-400/30',
-  open: 'bg-blue-500/15 text-blue-500 border-blue-500/40 shadow-[0_0_12px_rgba(59,130,246,0.2)]',
-  closed: 'bg-slate-500/15 text-slate-500 border-slate-400/30',
-  hidden: 'bg-amber-500/15 text-amber-500 border-amber-500/40',
-  published: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/40',
-  draft: 'bg-slate-500/15 text-slate-500 border-slate-400/30',
-  featured: 'bg-[#D9A441]/20 text-[#A9761B] dark:text-[#FFD21F] border-[#D9A441]/50 shadow-[0_0_16px_rgba(217,164,65,0.25)]',
+  live: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25',
+  paused: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25',
+  scheduled: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/25',
+  upcoming: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/25',
+  completed: 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200/90 dark:border-slate-700/60',
+  ongoing: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/25',
+  finished: 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200/90 dark:border-slate-700/60',
+  cancelled: 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/40',
+  archived: 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/40',
+  active: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25',
+  inactive: 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/40',
+  disabled: 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/40',
+  open: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/25',
+  closed: 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/40',
+  hidden: 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/40',
+  published: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25',
+  draft: 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/40',
+  featured: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25',
 };
 
 export const StatusPill: React.FC<{ value?: string; className?: string }> = ({ value, className }) => {
   if (!value) return null;
   const key = String(value).toLowerCase();
-  const tone = PILL_TONES[key] ?? 'bg-slate-500/15 text-slate-500 border-slate-400/30';
+  const tone = PILL_TONES[key] ?? 'bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700/40';
   const live = key === 'live';
-  
+
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider backdrop-blur-md',
+        'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-0.5 text-[11px] font-semibold tracking-normal transition-colors',
         tone,
         className,
       )}
     >
       {live && (
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-90" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500 shadow-[0_0_8px_#EF4444]" />
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-75" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-rose-600" />
         </span>
       )}
       {String(value)}
@@ -300,79 +285,52 @@ export const StatTile: React.FC<{
   isLoading?: boolean;
   icon?: React.ReactNode;
   to?: string;
-}> = ({ label, value, hint, accent = 'gold', isLoading, icon, to }) => {
+}> = ({ label, value, hint, accent = 'blue', isLoading, icon, to }) => {
   const { theme } = useTheme();
   const isDay = theme === 'day';
 
-  const accents = {
-    blue: {
-      bar: 'bg-[#1264FF] shadow-[0_0_15px_#1264FF]',
-      border: isDay ? 'hover:border-[#1264FF]/60' : 'hover:border-[#1264FF]/40',
-      glow: 'from-[#1264FF]/15 to-transparent',
-      text: isDay ? 'text-[#1264FF]' : 'text-blue-400',
-    },
-    gold: {
-      bar: isDay ? 'bg-[#A9761B]' : 'bg-[#D9A441] shadow-[0_0_15px_#D9A441]',
-      border: isDay ? 'hover:border-[#A9761B]/60' : 'hover:border-[#D9A441]/40',
-      glow: 'from-[#D9A441]/15 to-transparent',
-      text: isDay ? 'text-[#A9761B]' : 'text-[#D9A441]',
-    },
-    red: {
-      bar: 'bg-red-500 shadow-[0_0_15px_#EF4444]',
-      border: 'hover:border-red-500/40',
-      glow: 'from-red-500/15 to-transparent',
-      text: 'text-red-500',
-    },
-    green: {
-      bar: 'bg-emerald-500 shadow-[0_0_15px_#10B981]',
-      border: 'hover:border-emerald-500/40',
-      glow: 'from-emerald-500/15 to-transparent',
-      text: 'text-emerald-500',
-    },
-    slate: {
-      bar: isDay ? 'bg-slate-400' : 'bg-slate-400',
-      border: 'hover:border-slate-500',
-      glow: 'from-slate-700/20 to-transparent',
-      text: isDay ? 'text-slate-600' : 'text-slate-300',
-    },
+  const iconTones = {
+    blue: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+    gold: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+    red: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+    green: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+    slate: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
   }[accent];
 
   const body = (
     <div
       className={cn(
-        'relative overflow-hidden rounded-xl border p-5 backdrop-blur-xl transition-all duration-300 group',
+        'relative overflow-hidden rounded-xl border p-4 sm:p-4.5 transition-all duration-200',
         isDay
-          ? 'border-slate-200 bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_28px_rgba(0,0,0,0.08)]'
-          : 'border-white/10 bg-[#071426]/90 shadow-[0_12px_32px_rgba(0,0,0,0.5)] hover:shadow-[0_16px_40px_rgba(0,0,0,0.6)]',
+          ? 'border-slate-200/90 bg-white shadow-2xs hover:shadow-xs hover:border-slate-300'
+          : 'border-slate-800/80 bg-slate-900/60 backdrop-blur-xl shadow-2xs hover:border-slate-700/80',
       )}
     >
-      {/* Accent edge light */}
-      <span className={cn('absolute inset-y-0 left-0 w-[4px]', accents.bar)} />
-      
-      {/* Background radiant glow */}
-      <div className={cn('absolute -right-10 -bottom-10 h-32 w-32 rounded-full blur-[45px] bg-gradient-to-br opacity-50 transition-opacity duration-300 group-hover:opacity-80', accents.glow)} />
-
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <span
           className={cn(
-            'block text-[11px] font-black uppercase tracking-[0.2em]',
+            'block text-xs font-medium truncate',
             isDay ? 'text-slate-500' : 'text-slate-400',
           )}
         >
           {label}
         </span>
-        {icon && <span className={cn('text-lg opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all', accents.text)}>{icon}</span>}
+        {icon && (
+          <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm transition-transform duration-150', iconTones)}>
+            {icon}
+          </span>
+        )}
       </div>
 
-      <div className="mt-2.5 flex items-baseline gap-2">
+      <div className="mt-2 flex items-baseline gap-2">
         <span
           className={cn(
-            'text-3xl md:text-4xl font-black tabular-nums tracking-tight drop-shadow-sm',
-            isDay ? 'text-slate-900' : 'text-white',
+            'text-2xl sm:text-3xl font-bold tabular-nums tracking-tight',
+            isDay ? 'text-slate-900' : 'text-slate-100',
           )}
         >
           {isLoading ? (
-            <span className={cn('inline-block h-9 w-16 animate-pulse rounded', isDay ? 'bg-slate-200' : 'bg-white/10')} />
+            <span className={cn('inline-block h-8 w-14 animate-pulse rounded', isDay ? 'bg-slate-100' : 'bg-slate-800')} />
           ) : (
             value
           )}
@@ -380,7 +338,7 @@ export const StatTile: React.FC<{
       </div>
 
       {hint && (
-        <span className={cn('mt-1.5 block text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>
+        <span className={cn('mt-1 block text-[11px] font-normal truncate', isDay ? 'text-slate-500' : 'text-slate-400')}>
           {hint}
         </span>
       )}
@@ -388,13 +346,13 @@ export const StatTile: React.FC<{
   );
 
   return to ? (
-    <motion.div whileHover={{ y: -4, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.99 }}>
       <Link to={to} className="block">
         {body}
       </Link>
     </motion.div>
   ) : (
-    <motion.div whileHover={{ y: -3 }}>
+    <motion.div whileHover={{ y: -1 }}>
       {body}
     </motion.div>
   );
@@ -420,10 +378,10 @@ export const SearchInput: React.FC<{
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className={cn(
-          'h-10 w-full rounded-lg pl-9 pr-3 text-sm outline-none backdrop-blur-md transition-all duration-200',
+          'h-10 w-full rounded-lg pl-9 pr-3 text-sm outline-none backdrop-blur-md transition-all duration-150',
           isDay
-            ? 'border border-slate-200 bg-white text-slate-900 placeholder-slate-400 shadow-xs focus:border-[#1264FF] focus:ring-2 focus:ring-[#1264FF]/20'
-            : 'border border-white/15 bg-[#0B1A30]/80 text-white placeholder-slate-400 focus:border-[#D9A441] focus:ring-2 focus:ring-[#D9A441]/20',
+            ? 'border border-slate-200 bg-white text-slate-900 placeholder-slate-400 shadow-2xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500/25'
+            : 'border border-slate-800 bg-slate-900/80 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/25',
         )}
       />
     </div>
@@ -441,11 +399,11 @@ export const FilterSelect: React.FC<{
   const isDay = theme === 'day';
 
   return (
-    <label className={cn('inline-flex items-center gap-2', className)}>
+    <label className={cn('inline-flex items-center gap-2 w-full sm:w-auto', className)}>
       {label && (
         <span
           className={cn(
-            'whitespace-nowrap text-[11px] font-black uppercase tracking-[0.16em]',
+            'whitespace-nowrap text-[11px] font-semibold uppercase tracking-wider',
             isDay ? 'text-slate-500' : 'text-slate-400',
           )}
         >
@@ -456,17 +414,17 @@ export const FilterSelect: React.FC<{
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
-          'h-10 rounded-lg px-3 text-xs font-bold outline-none backdrop-blur-md transition-all duration-200 cursor-pointer',
+          'h-10 w-full sm:w-auto rounded-lg px-3 text-xs font-semibold outline-none backdrop-blur-md transition-all duration-150 cursor-pointer',
           isDay
-            ? 'border border-slate-200 bg-white text-slate-800 shadow-xs focus:border-[#1264FF] focus:ring-2 focus:ring-[#1264FF]/20'
-            : 'border border-white/15 bg-[#0B1A30]/90 text-white focus:border-[#D9A441] focus:ring-2 focus:ring-[#D9A441]/20',
+            ? 'border border-slate-200 bg-white text-slate-800 shadow-2xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500/25'
+            : 'border border-slate-800 bg-slate-900/80 text-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/25',
         )}
       >
         {options.map((option) => (
           <option
             key={option.value}
             value={option.value}
-            className={isDay ? 'bg-white text-slate-900' : 'bg-[#071426] text-white'}
+            className={isDay ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}
           >
             {option.label}
           </option>
@@ -486,10 +444,10 @@ export const Toolbar: React.FC<{
   return (
     <div
       className={cn(
-        'mb-5 flex flex-wrap items-center gap-3 rounded-xl p-3 backdrop-blur-md transition-colors',
+        'mb-5 flex flex-wrap items-center gap-2.5 sm:gap-3 rounded-xl p-2.5 sm:p-3 transition-colors border',
         isDay
-          ? 'border border-slate-200/90 bg-white/85 text-slate-800 shadow-xs'
-          : 'border border-white/10 bg-[#071426]/60 text-white',
+          ? 'border-slate-200/90 bg-white/80 text-slate-800 shadow-2xs'
+          : 'border-slate-800/80 bg-slate-900/60 backdrop-blur-md text-white shadow-2xs',
         className,
       )}
     >
@@ -518,8 +476,8 @@ export const AdminTabs: React.FC<{
   return (
     <div
       className={cn(
-        'mb-6 flex gap-2 overflow-x-auto pb-px transition-colors',
-        isDay ? 'border-b border-slate-200' : 'border-b border-white/10',
+        'mb-6 flex gap-1.5 overflow-x-auto pb-px transition-colors no-scrollbar border-b',
+        isDay ? 'border-slate-200' : 'border-slate-800',
       )}
     >
       {items.map((item) => {
@@ -530,27 +488,27 @@ export const AdminTabs: React.FC<{
             type="button"
             onClick={() => onChange(item.id)}
             className={cn(
-              'relative flex items-center gap-2 whitespace-nowrap rounded-t-lg px-4 py-3 text-xs font-black uppercase tracking-[0.16em] transition-all duration-200 cursor-pointer',
+              'relative flex items-center gap-2 whitespace-nowrap rounded-t-lg px-3.5 py-2.5 text-xs font-semibold tracking-wide transition-colors duration-150 cursor-pointer',
               isActive
                 ? isDay
-                  ? 'text-[#1264FF] bg-blue-50/70 font-black'
-                  : 'text-[#FFD21F] bg-white/[0.04]'
+                  ? 'text-blue-600 bg-blue-50/50'
+                  : 'text-blue-400 bg-blue-500/10'
                 : isDay
-                  ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-                  : 'text-slate-400 hover:text-white hover:bg-white/[0.02]',
+                  ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40',
             )}
           >
             {item.label}
             {item.count !== undefined && (
               <span
                 className={cn(
-                  'rounded-full px-2 py-0.5 text-[10px] font-black tabular-nums transition-colors',
+                  'rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums transition-colors',
                   isActive
                     ? isDay
-                      ? 'bg-[#1264FF]/15 text-[#1264FF] border border-[#1264FF]/30'
-                      : 'bg-[#D9A441]/20 text-[#FFD21F] border border-[#D9A441]/40'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-blue-500/20 text-blue-300'
                     : isDay
-                      ? 'bg-slate-100 text-slate-500'
+                      ? 'bg-slate-100 text-slate-600'
                       : 'bg-slate-800 text-slate-400',
                 )}
               >
@@ -560,12 +518,10 @@ export const AdminTabs: React.FC<{
             {isActive && (
               <motion.span
                 layoutId={`${layoutPrefix}-indicator`}
-                transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                 className={cn(
-                  'absolute inset-x-0 bottom-0 h-[2.5px]',
-                  isDay
-                    ? 'bg-gradient-to-r from-[#1264FF] via-[#1747B8] to-[#1264FF] shadow-[0_0_10px_#1264FF]'
-                    : 'bg-gradient-to-r from-[#D9A441] via-[#FFD21F] to-[#D9A441] shadow-[0_0_12px_#D9A441]',
+                  'absolute inset-x-0 bottom-0 h-[2px]',
+                  isDay ? 'bg-blue-600' : 'bg-blue-500',
                 )}
               />
             )}
@@ -811,27 +767,29 @@ export const ActionIcon: React.FC<{
   const isDay = theme === 'day';
 
   return (
-    <button
+    <motion.button
       type="button"
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.94 }}
       title={label}
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'flex h-7 w-7 items-center justify-center rounded border transition-all duration-150 disabled:opacity-40 cursor-pointer',
+        'flex h-8 w-8 min-w-[32px] sm:h-7.5 sm:w-7.5 items-center justify-center rounded-md border transition-colors disabled:opacity-40 cursor-pointer',
         primary
-          ? 'border-[#1264FF] bg-[#1264FF] text-white hover:bg-[#0B4FD1] shadow-xs'
+          ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-500 shadow-2xs'
           : danger
             ? isDay
-              ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-300'
-              : 'border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:border-red-500/50'
+              ? 'border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:border-rose-300'
+              : 'border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 hover:border-rose-500/50'
             : isDay
-              ? 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50 shadow-xs'
-              : 'border-white/10 bg-[#0B1A30]/80 text-slate-300 hover:border-white/20 hover:text-white hover:bg-white/10',
+              ? 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50 shadow-2xs'
+              : 'border-slate-700/80 bg-slate-800/80 text-slate-300 hover:border-slate-600 hover:text-white hover:bg-slate-700/80',
       )}
     >
       {children}
-    </button>
+    </motion.button>
   );
 };
 

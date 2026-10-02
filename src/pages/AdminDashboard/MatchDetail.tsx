@@ -263,7 +263,7 @@ const MatchDetail: React.FC = () => {
           <span
             className={cn(
               'text-[11px] font-black uppercase tracking-[0.16em]',
-              isDay ? 'text-slate-600' : 'text-[#D9A441]',
+              isDay ? 'text-blue-700' : 'text-blue-400',
             )}
           >
             {lookups.sport(data.sportId)}
@@ -284,10 +284,10 @@ const MatchDetail: React.FC = () => {
           <span className="flex flex-col items-center">
             <span
               className={cn(
-                'rounded-md px-4 py-2 text-[28px] font-black leading-none tabular-nums shadow-sm',
+                'rounded-lg px-4 py-2 text-[26px] font-black leading-none tabular-nums tracking-wider shadow-2xs',
                 isDay
                   ? 'bg-slate-900 text-white'
-                  : 'border border-[#D9A441]/40 bg-[#071426] text-[#D9A441] shadow-[#D9A441]/10',
+                  : 'border border-slate-800 bg-slate-900 text-slate-100',
               )}
             >
               {scoreline}
@@ -436,7 +436,7 @@ const MatchDetail: React.FC = () => {
                           ? isDay ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-[#1264FF]/40 bg-[#1264FF]/15 text-[#60A5FA]'
                           : event.type === 'wicket' || event.type === 'red_card'
                             ? isDay ? 'border-red-200 bg-red-50 text-red-700' : 'border-rose-500/40 bg-rose-500/15 text-rose-300'
-                            : isDay ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-[#D9A441]/40 bg-[#D9A441]/10 text-[#F5CA6E]',
+                            : isDay ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-amber-900/60 bg-amber-950/40 text-amber-300',
                     )}
                   >
                     {String(event.type).replace(/_/g, ' ')}

@@ -461,8 +461,8 @@ const FixtureEditor: React.FC = () => {
                 className={cn(
                   'h-8 rounded px-3 text-[11px] font-bold uppercase tracking-wider transition-colors',
                   form.mode === option.id
-                    ? isDay ? 'bg-slate-900 text-amber-300' : 'bg-[#071426] text-[#FFD21F] border border-amber-500/30'
-                    : isDay ? 'text-slate-500 hover:text-slate-900' : 'text-slate-400 hover:text-white'
+                    ? isDay ? 'bg-slate-900 text-white shadow-2xs' : 'bg-blue-600 text-white shadow-2xs'
+                    : isDay ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
                 )}
               >
                 {option.label}

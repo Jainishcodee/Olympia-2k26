@@ -45,13 +45,13 @@ const ROLE_LABEL: Record<AdminRole, string> = {
 const getRoleTone = (role: AdminRole, isDay: boolean): string => {
   switch (role) {
     case 'super_admin':
-      return isDay ? 'border-[#F0DFB8] bg-[#FFF7E6] text-[#A9761B]' : 'border-[#D9A441]/40 bg-[#D9A441]/10 text-[#F5CA6E]';
+      return isDay ? 'border-indigo-200 bg-indigo-50 text-indigo-700' : 'border-indigo-800/80 bg-indigo-950/60 text-indigo-300';
     case 'admin':
-      return isDay ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-[#1264FF]/40 bg-[#1264FF]/15 text-[#60A5FA]';
+      return isDay ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-blue-800/80 bg-blue-950/60 text-blue-300';
     case 'score_operator':
     case 'content_manager':
     default:
-      return isDay ? 'border-slate-200 bg-slate-100 text-slate-700' : 'border-white/10 bg-white/[0.05] text-white/70';
+      return isDay ? 'border-slate-200 bg-slate-100 text-slate-700' : 'border-slate-700 bg-slate-800/60 text-slate-300';
   }
 };
 
@@ -148,19 +148,19 @@ const AdminsManager: React.FC = () => {
       {/* ------------------------------------------------- security banner */}
       <div
         className={cn(
-          'mb-5 flex items-start gap-3 rounded-lg border px-4 py-3 shadow-sm',
+          'mb-5 flex items-start gap-3 rounded-lg border px-4 py-3 shadow-2xs',
           isDay
-            ? 'border-[#F0DFB8] bg-[#FFF7E6]'
-            : 'border-[#D9A441]/30 bg-[#D9A441]/10 text-white/90',
+            ? 'border-blue-200 bg-blue-50/70 text-slate-800'
+            : 'border-blue-900/50 bg-blue-950/30 text-slate-200',
         )}
       >
-        <FiShield className={cn('mt-0.5 h-4 w-4 shrink-0', isDay ? 'text-[#A9761B]' : 'text-[#F5CA6E]')} />
+        <FiShield className={cn('mt-0.5 h-4 w-4 shrink-0', isDay ? 'text-blue-600' : 'text-blue-400')} />
         <div className="min-w-0">
-          <p className={cn('text-[13px] font-bold', isDay ? 'text-[#7A5A17]' : 'text-[#F5CA6E]')}>
+          <p className={cn('text-[13px] font-bold', isDay ? 'text-slate-900' : 'text-white')}>
             Passwords are never displayed or stored here. Authentication is handled by Firebase
             Authentication.
           </p>
-          <p className={cn('mt-0.5 text-[12px] leading-relaxed', isDay ? 'text-[#8A6A2A]' : 'text-white/70')}>
+          <p className={cn('mt-0.5 text-[12px] leading-relaxed', isDay ? 'text-slate-600' : 'text-slate-400')}>
             This panel can only read and update the{' '}
             <span className="font-mono text-[11px]">admins/&#123;uid&#125;</span> profile document and its{' '}
             <span className="font-mono text-[11px]">active</span> flag. Accounts themselves are

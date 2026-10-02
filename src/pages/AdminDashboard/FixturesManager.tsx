@@ -602,7 +602,7 @@ const FixturesManager: React.FC = () => {
                   className={cn(
                     'inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold tabular-nums',
                     isToday
-                      ? isDay ? 'bg-[#071426] text-[#FFD21F]' : 'bg-[#1264FF] text-white shadow-[0_0_8px_rgba(18,100,255,0.6)]'
+                      ? 'bg-blue-600 text-white font-extrabold'
                       : isDay ? 'text-slate-600' : 'text-slate-400',
                   )}
                 >
@@ -786,8 +786,8 @@ const FixturesManager: React.FC = () => {
                 'h-8 rounded px-3 text-[11px] font-bold uppercase tracking-wider transition-colors',
                 view === tab.id
                   ? isDay
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'bg-[#1264FF] text-white shadow-[0_0_10px_rgba(18,100,255,0.4)]'
+                    ? 'bg-slate-900 text-white shadow-2xs'
+                    : 'bg-blue-600 text-white shadow-2xs'
                   : isDay
                     ? 'text-slate-600 hover:text-slate-900'
                     : 'text-slate-400 hover:text-white',

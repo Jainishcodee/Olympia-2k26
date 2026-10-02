@@ -7,6 +7,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useCollection } from '@/hooks/useCollection';
 import { Team, Player, Match, Sport } from '@/types';
 import { MatchCard } from '@/components/matches/MatchCard';
+import { getTeamLogo } from '@/utils/teamLogos';
 
 export const TeamDetail: React.FC = () => {
   const { teamId } = useParams<{ teamId: string }>();
@@ -18,7 +19,12 @@ export const TeamDetail: React.FC = () => {
   const { data: allMatches } = useCollection<Match>('matches');
   const { data: allSports } = useCollection<Sport>('sports');
 
-  const team = teams?.find(t => t.id === teamId);
+  const team = teams?.find(
+    (t) => t.id === teamId || t.name?.toLowerCase() === teamId?.toLowerCase(),
+  );
+  const teamLogoUrl = team
+    ? (team.logo || getTeamLogo(team.name) || getTeamLogo(team.id) || getTeamLogo(team.shortName))
+    : undefined;
 
   if (isLoading) {
     return (
@@ -78,13 +84,33 @@ export const TeamDetail: React.FC = () => {
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             <div
               className={cn(
-                "w-28 h-28 sm:w-36 sm:h-36 rounded-3xl flex items-center justify-center text-3xl sm:text-5xl font-black border shadow-2xl shrink-0",
+                "w-28 h-28 sm:w-36 sm:h-36 rounded-3xl flex items-center justify-center text-3xl sm:text-5xl font-black border shadow-2xl shrink-0 overflow-hidden relative",
                 isDay
                   ? "bg-white border-[#071426]/10 text-[#155EEF] shadow-[0_10px_30px_rgba(7,20,38,0.08)]"
                   : "bg-gradient-to-br from-[#1264FF]/20 to-[#071426] border-white/10 text-white shadow-[0_0_30px_rgba(18,100,255,0.2)]"
               )}
             >
-              {team.shortName || team.name?.slice(0, 3).toUpperCase()}
+              {teamLogoUrl ? (
+                <img
+                  src={teamLogoUrl}
+                  alt={team.name}
+                  className="w-full h-full object-cover rounded-3xl"
+                  onError={(e) => {
+                    const el = e.currentTarget;
+                    if (!el.dataset.fallbackTried) {
+                      el.dataset.fallbackTried = 'true';
+                      const fallback = getTeamLogo(team.name) || getTeamLogo(team.id);
+                      if (fallback && el.src !== fallback) {
+                        el.src = fallback;
+                        return;
+                      }
+                    }
+                    el.style.display = 'none';
+                  }}
+                />
+              ) : (
+                team.shortName || team.name?.slice(0, 3).toUpperCase()
+              )}
             </div>
 
             <div className="text-center md:text-left flex-1">
@@ -168,11 +194,15 @@ export const TeamDetail: React.FC = () => {
                   >
                     <div
                       className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center font-black text-sm border shrink-0",
+                        "w-12 h-12 rounded-xl flex items-center justify-center font-black text-sm border shrink-0 overflow-hidden",
                         isDay ? "bg-[#155EEF]/10 text-[#155EEF] border-[#155EEF]/20" : "bg-white/10 text-white border-white/10"
                       )}
                     >
-                      {player.jerseyNumber || player.name.charAt(0)}
+                      {player.photo ? (
+                        <img src={player.photo} alt={player.name} className="w-full h-full object-cover" />
+                      ) : (
+                        player.jerseyNumber || player.name.charAt(0)
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="font-black text-sm sm:text-base truncate">{player.name}</div>

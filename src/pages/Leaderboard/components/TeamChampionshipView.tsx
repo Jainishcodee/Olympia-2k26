@@ -97,6 +97,14 @@ export const TeamChampionshipView: React.FC<TeamChampionshipViewProps> = ({
           { label: 'Map Diff', value: raw.mapDifference !== undefined ? String(raw.mapDifference) : '-' },
         ];
 
+      case 'smash-karts':
+        return [
+          { label: 'Matches', value: matches },
+          { label: 'Wins', value: wins },
+          { label: 'Losses', value: losses },
+          { label: 'Points', value: team.points ?? 0 },
+        ];
+
       default:
         return [
           { label: 'Matches', value: matches },
@@ -113,7 +121,7 @@ export const TeamChampionshipView: React.FC<TeamChampionshipViewProps> = ({
     const wins = team.wins ?? 0;
     const losses = team.losses ?? 0;
     const draws = team.draws ?? 0;
-    const matches = (raw.matchesPlayed as number) || (wins + losses + draws) || 1;
+    const matches = (raw.matchesPlayed as number) ?? (wins + losses + draws);
 
     return {
       id: team.id,

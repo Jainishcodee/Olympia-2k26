@@ -117,6 +117,8 @@ export interface SystemSettings {
   cricketMaxOvers?: number;
   /** Full custom formula rules for cricket */
   cricketConfig?: Record<string, unknown>;
+  /** Configurable tournament scoring rules per sport (win, draw, loss, tie-breakers) */
+  tournamentScoringRules?: Record<string, { winPoints?: number; drawPoints?: number; lossPoints?: number }>;
 
   /* --- Public interaction defaults ------------------------------------- */
   defaultReactionsEnabled: boolean;

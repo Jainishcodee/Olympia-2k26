@@ -347,7 +347,7 @@ const MatchEditor: React.FC = () => {
                   disabled={index > step}
                   className={cn(
                     'flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] font-bold transition-colors',
-                    active && (isDay ? 'bg-slate-900 text-amber-300' : 'bg-[#071426] text-[#FFD21F] border border-amber-500/30'),
+                    active && (isDay ? 'bg-slate-900 text-white shadow-2xs' : 'bg-blue-600 text-white shadow-2xs'),
                     done && 'text-blue-500',
                     !active && !done && (isDay ? 'text-slate-400' : 'text-slate-500'),
                     index <= step ? 'cursor-pointer' : 'cursor-not-allowed opacity-60',
@@ -356,7 +356,7 @@ const MatchEditor: React.FC = () => {
                   <span
                     className={cn(
                       'flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black',
-                      active && (isDay ? 'bg-amber-300 text-slate-900' : 'bg-[#FFD21F] text-[#071426]'),
+                      active && (isDay ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'),
                       done && 'bg-blue-600 text-white',
                       !active && !done && (isDay ? 'bg-slate-100 text-slate-400' : 'bg-white/10 text-slate-400'),
                     )}

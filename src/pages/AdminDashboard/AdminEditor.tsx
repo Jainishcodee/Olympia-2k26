@@ -416,20 +416,20 @@ const AdminEditor: React.FC = () => {
                   'rounded-lg border px-4 py-4',
                   highlightPanel
                     ? isDay
-                      ? 'border-2 border-[#D9A441] bg-[#FFF7E6]'
-                      : 'border-2 border-[#D9A441] bg-[#D9A441]/10'
+                      ? 'border-2 border-blue-500 bg-blue-50/60'
+                      : 'border-2 border-blue-500 bg-blue-950/30'
                     : isDay
                     ? 'border-slate-200 bg-slate-50'
                     : 'border-white/10 bg-white/[0.03]'
                 )}
               >
                 <p className={cn('text-[13px] font-bold', isDay ? 'text-slate-800' : 'text-white')}>
-                  Create the account with the <span className="font-mono text-amber-500">createAdmin</span> Cloud
+                  Create the account with the <span className="font-mono text-blue-600 dark:text-blue-400 font-semibold">createAdmin</span> Cloud
                   Function, then paste the returned UID above.
                 </p>
                 <ol className={cn('mt-2 list-decimal space-y-1 pl-5 text-[12px] leading-relaxed', isDay ? 'text-slate-600' : 'text-slate-400')}>
                   <li>
-                    Callable function <span className="font-mono text-amber-500">createAdmin</span>, exported from{' '}
+                    Callable function <span className="font-mono text-blue-600 dark:text-blue-400 font-semibold">createAdmin</span>, exported from{' '}
                     <span className="font-mono">functions/src/admins/createAdmin.ts</span> via{' '}
                     <span className="font-mono">functions/src/index.ts</span>.
                   </li>
@@ -457,7 +457,7 @@ const AdminEditor: React.FC = () => {
                     Copy payload
                   </Btn>
                 </div>
-                <pre className={cn('mt-2 overflow-x-auto rounded-md px-3 py-3 font-mono text-[11px] leading-relaxed', isDay ? 'bg-slate-900 text-amber-400' : 'bg-[#071426] text-[#D9A441]')}>
+                <pre className={cn('mt-2 overflow-x-auto rounded-md px-3 py-3 font-mono text-[11px] leading-relaxed', isDay ? 'bg-slate-900 text-slate-200' : 'bg-slate-950 text-slate-200 border border-slate-800')}>
 {provisionPayload}
                 </pre>
 

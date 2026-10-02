@@ -18,6 +18,7 @@ import {
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/config/firebase';
 import { EventType, Match, MatchEvent, MatchStatus, Score, SportPositioning } from '@/types';
+import { syncSportLeaderboardToFirestore } from '@/services/standings/standingsService';
 
 /* ============================================================================
  *  Sport-Specific Positioning Formatter
@@ -247,7 +248,7 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
   if (!isFirebaseConfigured || !db) throw new Error('Firebase not configured');
   const firestore = db;
 
-  return runTransaction(firestore, async (transaction) => {
+  const result = await runTransaction(firestore, async (transaction) => {
     const matchRef = doc(firestore, 'matches', input.matchId);
     const matchSnap = await transaction.get(matchRef);
     if (!matchSnap.exists()) {
@@ -1118,8 +1119,22 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
 
     transaction.update(matchRef, matchUpdate);
 
-    return { eventId: eventDocRef.id, sequence: nextSequence };
+    return {
+      eventId: eventDocRef.id,
+      sequence: nextSequence,
+      isCompleted: targetStatus === 'completed',
+      sportId: matchData.sportId,
+    };
   });
+
+  if (result.isCompleted && result.sportId) {
+    const isIndiv = ['badminton', 'table-tennis', 'chess', 'carrom'].includes(result.sportId.toLowerCase());
+    syncSportLeaderboardToFirestore(result.sportId, result.sportId, isIndiv ? 'individual' : 'team').catch((err) => {
+      console.warn('[standings] Auto-sync leaderboard failed:', err);
+    });
+  }
+
+  return { eventId: result.eventId, sequence: result.sequence };
 };
 
 /**
