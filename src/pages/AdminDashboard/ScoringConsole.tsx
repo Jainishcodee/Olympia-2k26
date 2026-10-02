@@ -18,6 +18,8 @@ import {
   type ScoreDelta,
 } from '@/services/scoring/scoringService';
 import { updateMatchStatus, updateMatch } from '@/services/matches/matchService';
+import { syncSportLeaderboardToFirestore } from '@/services/standings/standingsService';
+import { cleanFirestoreData } from '@/utils/firestore';
 import type { EventType, Match, MatchEvent, MatchStatus, Player, Sport, SportPositioning, Team } from '@/types';
 
 import { RollingScore, RollingLabel } from '@/components/scoring/RollingScore';
@@ -29,7 +31,7 @@ import {
   type FXKind,
 } from '@/components/scoring/ScoreFX';
 import { StandingsTicker, type ScorerRow } from '@/components/scoring/StandingsTicker';
-import { FiCornerDownLeft, FiEdit3, FiX, FiCheck, FiClock, FiAlertCircle } from 'react-icons/fi';
+import { FiCornerDownLeft, FiEdit3, FiX, FiCheck, FiClock, FiAlertCircle, FiZap, FiChevronDown, FiChevronUp, FiSave } from 'react-icons/fi';
 
 /* ============================================================================
  *  Visual Tone Styles for Tactile Scoring Pads
@@ -134,10 +136,20 @@ const ScoringConsole: React.FC = () => {
   const [subPlayerOn, setSubPlayerOn] = useState('');
   const [footballAddedTime, setFootballAddedTime] = useState<number>(0);
   const [isPenaltyGoal, setIsPenaltyGoal] = useState(false);
+  const [footballCustomMinute, setFootballCustomMinute] = useState('');
+  const [footballCustomPeriod, setFootballCustomPeriod] = useState<1 | 2 | 'ET'>(1);
   const [footballShootingTeam, setFootballShootingTeam] = useState<'teamA' | 'teamB'>('teamA');
   const [footballShootoutKicker, setFootballShootoutKicker] = useState('');
   const [volleyballPlayerA, setVolleyballPlayerA] = useState('');
   const [volleyballPlayerB, setVolleyballPlayerB] = useState('');
+
+  // Fast Score Overwrite / Post-Match Entry
+  const [showFastScorePanel, setShowFastScorePanel] = useState(false);
+  const [fastScoreTeamA, setFastScoreTeamA] = useState<number>(0);
+  const [fastScoreTeamB, setFastScoreTeamB] = useState<number>(0);
+  const [fastMatchStatus, setFastMatchStatus] = useState<MatchStatus>('completed');
+  const [fastMatchWinner, setFastMatchWinner] = useState<'teamA' | 'teamB' | 'tie'>('teamA');
+  const [fastResultSummary, setFastResultSummary] = useState('');
 
   const teamAPlayers = useMemo(() => {
     return players.data.filter((p) => p.teamId === liveMatch?.teamAId);
@@ -224,6 +236,21 @@ const ScoringConsole: React.FC = () => {
     const secs = (seconds % 60).toString().padStart(2, '0');
     return `${mins}:${secs}`;
   }, [seconds]);
+
+  // Synchronize Fast Score panel inputs with liveMatch snapshot
+  useEffect(() => {
+    if (liveMatch) {
+      setFastScoreTeamA(Number(liveMatch.score?.teamA ?? 0));
+      setFastScoreTeamB(Number(liveMatch.score?.teamB ?? 0));
+      setFastMatchStatus(liveMatch.status || 'completed');
+      const ls = (liveMatch.liveState as Record<string, any>) || {};
+      const scoreA = Number(liveMatch.score?.teamA ?? 0);
+      const scoreB = Number(liveMatch.score?.teamB ?? 0);
+      const winner = ls.winnerTeam || (scoreA > scoreB ? 'teamA' : scoreB > scoreA ? 'teamB' : 'tie');
+      setFastMatchWinner(winner);
+      setFastResultSummary(ls.resultText || '');
+    }
+  }, [liveMatch?.id, liveMatch?.status, liveMatch?.score?.teamA, liveMatch?.score?.teamB]);
 
   /* ------------------------------------------------------------- metadata */
 
@@ -533,6 +560,60 @@ const ScoringConsole: React.FC = () => {
     }
   };
 
+  /* ======================================================== FAST RESULT OVERWRITE */
+  const handleSaveFastScore = async () => {
+    if (!matchId || !liveMatch) return;
+    setIsBusy(true);
+    try {
+      const winner = fastMatchWinner;
+      const winnerSide = winner === 'teamA' ? teamAInfo : winner === 'teamB' ? teamBInfo : null;
+      const autoResult = winner === 'tie'
+        ? `Match drawn (${fastScoreTeamA}–${fastScoreTeamB})`
+        : `${winnerSide?.name || 'Winner'} won (${fastScoreTeamA}–${fastScoreTeamB})`;
+      const resultText = fastResultSummary.trim() || autoResult;
+
+      const updatedScore = {
+        ...(liveMatch.score || {}),
+        teamA: Number(fastScoreTeamA),
+        teamB: Number(fastScoreTeamB),
+      };
+
+      const updatedLiveState = {
+        ...(liveMatch.liveState || {}),
+        matchStatus: fastMatchStatus,
+        winnerTeam: winner,
+        winnerTeamId: winner === 'teamA' ? liveMatch.teamAId : winner === 'teamB' ? liveMatch.teamBId : '',
+        resultText,
+      };
+
+      const updatePayload: Record<string, unknown> = {
+        score: updatedScore,
+        liveState: updatedLiveState,
+        status: fastMatchStatus,
+        updatedAt: Timestamp.now(),
+      };
+      if (fastMatchStatus === 'completed' && !liveMatch.endedAt) {
+        updatePayload.endedAt = Timestamp.now();
+      }
+
+      await updateMatch(matchId, cleanFirestoreData(updatePayload as any));
+      await log('MATCH_UPDATED', 'match', matchId, {
+        label: `Fast score saved: ${teamAInfo.shortName} ${fastScoreTeamA} - ${fastScoreTeamB} ${teamBInfo.shortName} (${fastMatchStatus})`,
+      });
+
+      if (fastMatchStatus === 'completed' && liveMatch.sportId) {
+        const isIndiv = ['badminton', 'table-tennis', 'chess', 'carrom'].includes(liveMatch.sportId.toLowerCase());
+        syncSportLeaderboardToFirestore(liveMatch.sportId, liveMatch.sportId, isIndiv ? 'individual' : 'team').catch(() => {});
+      }
+
+      toast.success('Match score & result saved!');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save score');
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
   /* ======================================================== SPORT HANDLERS */
 
   /* 1. Football */
@@ -545,6 +626,10 @@ const ScoringConsole: React.FC = () => {
     setSubPlayerOff('');
     setSubPlayerOn('');
     setIsPenaltyGoal(false);
+    const curMins = Math.floor(seconds / 60);
+    setFootballCustomMinute(curMins > 0 ? String(curMins) : '');
+    const curPeriod = Number(liveMatch?.liveState?.period || 1);
+    setFootballCustomPeriod(curPeriod === 2 ? 2 : 1);
     setFootballModal({ type, team });
   };
 
@@ -552,10 +637,14 @@ const ScoringConsole: React.FC = () => {
     if (!footballModal) return;
     const { type, team } = footballModal;
     const side = team === 'teamA' ? teamAInfo : teamBInfo;
-    const period = Number(liveMatch?.liveState?.period || 1);
+    const period = footballCustomPeriod;
+    const minuteStr = footballCustomMinute.trim();
+    const effectiveTime = minuteStr ? `${minuteStr}'` : elapsedTime;
+    const matchSec = minuteStr ? (parseInt(minuteStr, 10) || 0) * 60 : seconds;
+
     const positioning: SportPositioning = {
       period,
-      matchSecond: seconds,
+      matchSecond: matchSec,
       addedTime: footballAddedTime > 0 ? footballAddedTime : undefined,
     };
 
@@ -568,21 +657,26 @@ const ScoringConsole: React.FC = () => {
       const penText = isPenaltyGoal ? ' (Penalty)' : '';
       const scorerText = selectedPlayer ? ` (${selectedPlayer})` : '';
       const assistText = assistPlayer && !isPenaltyGoal ? ` [Assist: ${assistPlayer}]` : '';
+      const timePrefix = minuteStr ? `[${minuteStr}'] ` : '';
 
       await recordEvent({
         type: 'goal',
         team,
         teamName: side.name,
-        playerName: selectedPlayer || undefined,
+        playerName: selectedPlayer || '',
         data: {
-          scorer: selectedPlayer || undefined,
-          assist: isPenaltyGoal ? undefined : (assistPlayer || undefined),
+          scorer: selectedPlayer || '',
+          assist: isPenaltyGoal ? '' : (assistPlayer || ''),
           isPenalty: isPenaltyGoal,
+          minute: minuteStr || '',
+          period,
+          isPrivilegedCorrection: true,
+          allowPostMatch: true,
         },
-        description: `⚽ GOAL!${penText} ${side.name}${scorerText}${assistText}`,
+        description: `⚽ GOAL! ${timePrefix}${penText}${side.name}${scorerText}${assistText}`,
         scoreDelta: { [team]: 1 },
         newScore,
-        newLiveState: { ...liveMatch?.liveState, clock: elapsedTime, period },
+        newLiveState: { ...liveMatch?.liveState, clock: effectiveTime, period },
         positioning,
         fxKind: 'goal',
         fxTitle: isPenaltyGoal ? 'PENALTY GOAL!' : 'GOAL!',
@@ -590,37 +684,40 @@ const ScoringConsole: React.FC = () => {
       });
     } else if (type === 'yellow_card') {
       const playerText = selectedPlayer ? ` · ${selectedPlayer}` : '';
+      const timePrefix = minuteStr ? `[${minuteStr}'] ` : '';
       await recordEvent({
         type: 'yellow_card',
         team,
         teamName: side.name,
-        playerName: selectedPlayer || undefined,
-        data: { player: selectedPlayer || undefined },
-        description: `🟨 Yellow Card · ${side.shortName}${playerText}`,
+        playerName: selectedPlayer || '',
+        data: { player: selectedPlayer || '', minute: minuteStr || '', period, isPrivilegedCorrection: true, allowPostMatch: true },
+        description: `🟨 Yellow Card ${timePrefix}· ${side.shortName}${playerText}`,
         positioning,
         newScore: (liveMatch?.score || {}) as Record<string, unknown>,
       });
     } else if (type === 'red_card') {
       const playerText = selectedPlayer ? ` · ${selectedPlayer}` : '';
+      const timePrefix = minuteStr ? `[${minuteStr}'] ` : '';
       await recordEvent({
         type: 'red_card',
         team,
         teamName: side.name,
-        playerName: selectedPlayer || undefined,
-        data: { player: selectedPlayer || undefined },
-        description: `🟥 Red Card · ${side.shortName}${playerText}`,
+        playerName: selectedPlayer || '',
+        data: { player: selectedPlayer || '', minute: minuteStr || '', period, isPrivilegedCorrection: true, allowPostMatch: true },
+        description: `🟥 Red Card ${timePrefix}· ${side.shortName}${playerText}`,
         positioning,
         newScore: (liveMatch?.score || {}) as Record<string, unknown>,
       });
     } else if (type === 'substitution') {
       const offText = subPlayerOff || 'Player Off';
       const onText = subPlayerOn || 'Player On';
+      const timePrefix = minuteStr ? `[${minuteStr}'] ` : '';
       await recordEvent({
         type: 'substitution',
         team,
         teamName: side.name,
-        data: { playerOff: offText, playerOn: onText },
-        description: `🔄 SUB (${side.shortName}): ${onText} ON ⇄ ${offText} OFF`,
+        data: { playerOff: offText, playerOn: onText, minute: minuteStr || '', period, isPrivilegedCorrection: true, allowPostMatch: true },
+        description: `🔄 SUB ${timePrefix}(${side.shortName}): ${onText} ON ⇄ ${offText} OFF`,
         positioning,
         newScore: (liveMatch?.score || {}) as Record<string, unknown>,
       });
@@ -2957,6 +3054,125 @@ const ScoringConsole: React.FC = () => {
               </span>
             </div>
 
+            {/* Quick Score & Post-Match Overwrite Panel */}
+            <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FiZap className="h-4 w-4 text-amber-400" />
+                  <span className="text-xs font-black uppercase tracking-wider text-amber-400">
+                    Fast Post-Match & Quick Score Overwrite
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowFastScorePanel(!showFastScorePanel)}
+                  className="flex items-center gap-1.5 rounded border border-[#1E2A45] bg-[#101A2E] px-2.5 py-1 text-[11px] font-bold text-slate-300 hover:text-white transition-colors cursor-pointer"
+                >
+                  <span>{showFastScorePanel ? 'Collapse' : 'Open Quick Overwrite'}</span>
+                  {showFastScorePanel ? <FiChevronUp className="h-3.5 w-3.5" /> : <FiChevronDown className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+
+              {showFastScorePanel && (
+                <div className="mt-4 pt-4 border-t border-[#1E2A45] space-y-4">
+                  <p className="text-[11px] text-slate-400">
+                    Use this panel to instantly overwrite final match scores, select winner, or mark the match completed if it finished before live operator entry.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Team A Score */}
+                    <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
+                      <label className="block text-[11px] font-black uppercase text-blue-400 mb-1">
+                        {teamAInfo.name} ({teamAInfo.shortName})
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={fastScoreTeamA}
+                        onChange={(e) => setFastScoreTeamA(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                        className="w-full bg-[#101A2E] border border-blue-500/40 text-white font-mono text-xl font-black p-2 rounded outline-none"
+                      />
+                    </div>
+
+                    {/* Team B Score */}
+                    <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3">
+                      <label className="block text-[11px] font-black uppercase text-rose-400 mb-1">
+                        {teamBInfo.name} ({teamBInfo.shortName})
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={fastScoreTeamB}
+                        onChange={(e) => setFastScoreTeamB(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                        className="w-full bg-[#101A2E] border border-rose-500/40 text-white font-mono text-xl font-black p-2 rounded outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Match Status */}
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-wider text-[#8FA0BC] mb-1">
+                        Match Status
+                      </label>
+                      <select
+                        value={fastMatchStatus}
+                        onChange={(e) => setFastMatchStatus(e.target.value as MatchStatus)}
+                        className="w-full bg-[#101A2E] border border-[#1E2A45] text-slate-200 text-xs p-2.5 rounded focus:border-amber-400 outline-none"
+                      >
+                        <option value="completed">Completed (Full Time / Concluded)</option>
+                        <option value="live">Live (Ongoing)</option>
+                        <option value="paused">Paused (Half Time / Intermission)</option>
+                        <option value="scheduled">Scheduled</option>
+                      </select>
+                    </div>
+
+                    {/* Match Winner */}
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-wider text-[#8FA0BC] mb-1">
+                        Winner
+                      </label>
+                      <select
+                        value={fastMatchWinner}
+                        onChange={(e) => setFastMatchWinner(e.target.value as any)}
+                        className="w-full bg-[#101A2E] border border-[#1E2A45] text-slate-200 text-xs p-2.5 rounded focus:border-amber-400 outline-none"
+                      >
+                        <option value="teamA">{teamAInfo.name} ({teamAInfo.shortName}) Win</option>
+                        <option value="teamB">{teamBInfo.name} ({teamBInfo.shortName}) Win</option>
+                        <option value="tie">Draw / Tie</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Summary / Result Text */}
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-[#8FA0BC] mb-1">
+                      Official Result Summary (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={`e.g. ${teamAInfo.name} won 2–1 against ${teamBInfo.name}`}
+                      value={fastResultSummary}
+                      onChange={(e) => setFastResultSummary(e.target.value)}
+                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-slate-200 text-xs p-2.5 rounded outline-none placeholder-slate-600 focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveFastScore}
+                      disabled={isBusy}
+                      className="flex items-center gap-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-black uppercase text-xs tracking-wider px-5 py-2.5 shadow-md transition-colors cursor-pointer"
+                    >
+                      <FiSave className="h-4 w-4" />
+                      <span>{isBusy ? 'Saving Score…' : 'Save Match Score & Result'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="flex-1">{renderScoringButtons()}</div>
 
             {/* UNDO BUTTON */}
@@ -3237,6 +3453,89 @@ const ScoringConsole: React.FC = () => {
                 >
                   <FiX className="h-5 w-5" />
                 </button>
+              </div>
+
+              {/* Half & Match Minute Selection */}
+              <div className="space-y-2 rounded-lg border border-[#1E2A45] bg-[#101A2E]/60 p-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1.5">
+                    Match Half / Period
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFootballCustomPeriod(1)}
+                      className={cn(
+                        "py-1.5 px-2 rounded text-xs font-bold border transition-colors text-center cursor-pointer",
+                        footballCustomPeriod === 1
+                          ? "bg-blue-600 text-white border-blue-500 shadow-sm"
+                          : "bg-[#101A2E] border-[#1E2A45] text-slate-300 hover:bg-white/5"
+                      )}
+                    >
+                      1st Half (1H)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFootballCustomPeriod(2)}
+                      className={cn(
+                        "py-1.5 px-2 rounded text-xs font-bold border transition-colors text-center cursor-pointer",
+                        footballCustomPeriod === 2
+                          ? "bg-blue-600 text-white border-blue-500 shadow-sm"
+                          : "bg-[#101A2E] border-[#1E2A45] text-slate-300 hover:bg-white/5"
+                      )}
+                    >
+                      2nd Half (2H)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFootballCustomPeriod('ET')}
+                      className={cn(
+                        "py-1.5 px-2 rounded text-xs font-bold border transition-colors text-center cursor-pointer",
+                        footballCustomPeriod === 'ET'
+                          ? "bg-blue-600 text-white border-blue-500 shadow-sm"
+                          : "bg-[#101A2E] border-[#1E2A45] text-slate-300 hover:bg-white/5"
+                      )}
+                    >
+                      Extra Time (ET)
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC]">
+                      Match Minute (e.g. 23', 44' before HT, 67', 88')
+                    </label>
+                    <span className="text-[10px] text-slate-500 font-mono">Live Clock: {elapsedTime}</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Type minute (e.g. 23, 44, 78)..."
+                    value={footballCustomMinute}
+                    onChange={(e) => setFootballCustomMinute(e.target.value)}
+                    className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded focus:border-[#4B90FF] outline-none"
+                  />
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {[12, 23, 38, 44, 55, 68, 77, 89].map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => {
+                          setFootballCustomMinute(String(m));
+                          if (m > 45 && footballCustomPeriod === 1) setFootballCustomPeriod(2);
+                        }}
+                        className={cn(
+                          "px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition-colors cursor-pointer",
+                          footballCustomMinute === String(m)
+                            ? "bg-amber-400 text-black border-amber-400"
+                            : "bg-[#0B1220] border-[#1E2A45] text-slate-400 hover:text-white"
+                        )}
+                      >
+                        {m}'
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {footballModal.type === 'goal' && (

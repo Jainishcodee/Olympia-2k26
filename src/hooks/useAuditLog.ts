@@ -24,14 +24,14 @@ export const useAuditLog = () => {
       try {
         await logAudit({
           adminId: user?.uid ?? 'anonymous',
-          adminEmail: user?.email ?? undefined,
+          adminEmail: user?.email ?? '',
           adminName:
-            admin?.displayName ?? user?.displayName ?? user?.email ?? undefined,
+            admin?.displayName ?? user?.displayName ?? user?.email ?? '',
           action,
           resourceType,
           resourceId,
-          resourceLabel: extra?.label,
-          metadata: extra?.metadata,
+          resourceLabel: extra?.label ?? '',
+          metadata: extra?.metadata ?? {},
         });
       } finally {
         setIsLogging(false);

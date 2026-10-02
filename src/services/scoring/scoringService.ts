@@ -19,6 +19,7 @@ import {
 import { db, isFirebaseConfigured } from '@/config/firebase';
 import { EventType, Match, MatchEvent, MatchStatus, Score, SportPositioning } from '@/types';
 import { syncSportLeaderboardToFirestore } from '@/services/standings/standingsService';
+import { cleanFirestoreData } from '@/utils/firestore';
 
 /* ============================================================================
  *  Sport-Specific Positioning Formatter
@@ -286,8 +287,13 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
       input.type === 'chess_move' ||
       input.type === 'match_end' ||
       input.type === 'full_time';
-    if (isTerminalStatus && !input.data?.isPrivilegedCorrection && !isLifecycleAction) {
-      throw new Error(`Cannot record scoring events on a ${matchData?.status} match`);
+
+    const allowTerminalWrite =
+      Boolean(input.data?.isPrivilegedCorrection) ||
+      Boolean(input.data?.allowPostMatch) ||
+      Boolean(input.data?.postMatchEntry);
+    if (isTerminalStatus && !allowTerminalWrite && !isLifecycleAction) {
+      throw new Error(`Cannot record scoring events on a ${matchData?.status} match without admin override`);
     }
 
     const currentSequence = Number(matchData?.lastSequence || 0);
@@ -1135,10 +1141,11 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
 
     const eventsCollRef = collection(firestore, `matches/${input.matchId}/events`);
     const eventDocRef = doc(eventsCollRef);
-    transaction.set(eventDocRef, {
+    const cleanPayload = cleanFirestoreData({
       ...eventPayload,
       createdAt: Timestamp.now(),
     });
+    transaction.set(eventDocRef, cleanPayload);
 
     const matchUpdate: Record<string, unknown> = {
       score: computedScore,
@@ -1203,7 +1210,7 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
       }
     }
 
-    transaction.update(matchRef, matchUpdate);
+    transaction.update(matchRef, cleanFirestoreData(matchUpdate));
 
     return {
       eventId: eventDocRef.id,
@@ -1272,11 +1279,11 @@ export const undoLastActiveEvent = async (
     const restoredLiveState = previousEvent?.snapshot?.liveState || fallbackInitialLiveState || {};
 
     const matchRef = doc(firestore, 'matches', matchId);
-    transaction.update(matchRef, {
+    transaction.update(matchRef, cleanFirestoreData({
       score: restoredScore as unknown as Match['score'],
       liveState: restoredLiveState as unknown as Match['liveState'],
       updatedAt: Timestamp.now(),
-    });
+    }));
 
     return {
       undoneEvent: targetEvent,
@@ -1351,18 +1358,18 @@ export const correctMatchEvent = async (input: CorrectEventInput): Promise<{ new
       createdBy: input.correctedBy || 'admin',
     };
 
-    transaction.set(newDocRef, {
+    transaction.set(newDocRef, cleanFirestoreData({
       ...newEventPayload,
       createdAt: Timestamp.now(),
-    });
+    }));
 
     // 3. Atomically update match doc
-    transaction.update(matchRef, {
+    transaction.update(matchRef, cleanFirestoreData({
       score: input.correctedScore as unknown as Match['score'],
       liveState: (input.correctedLiveState || matchData?.liveState || {}) as unknown as Match['liveState'],
       lastSequence: nextSequence,
       updatedAt: Timestamp.now(),
-    });
+    }));
 
     return { newEventId: newDocRef.id, sequence: nextSequence };
   });

@@ -130,8 +130,45 @@ export const Leaderboard: React.FC = () => {
     return resolveScoringRules(selectedSport, configured);
   }, [settingsDoc.data, selectedSport]);
 
-  // Authoritative standings derived directly from completed matches
+  // Authoritative standings: check Firestore published leaderboard first, fallback to completed matches derivation
   const standingsRows = useMemo(() => {
+    const publishedDoc = leaderboardsCol.data.find(
+      (doc) => (doc.sportId === selectedSport || doc.id === selectedSport) && !doc.isHidden
+    );
+
+    if (publishedDoc && Array.isArray(publishedDoc.entries) && publishedDoc.entries.length > 0) {
+      const sortedEntries = [...publishedDoc.entries].sort((a, b) => a.position - b.position);
+      return sortedEntries.map((entry, idx) => ({
+        position: entry.position || idx + 1,
+        entityId: entry.entityId,
+        entityName: entry.entityName,
+        logo: entry.logo || '',
+        shortName: entry.entityName.substring(0, 4).toUpperCase(),
+        entityType: entry.entityType || (isTeamSport ? 'team' : 'player'),
+        sportId: selectedSport,
+        played: Number(
+          entry.stats?.played !== undefined
+            ? entry.stats.played
+            : Number(entry.wins || 0) + Number(entry.losses || 0) + Number(entry.draws || 0)
+        ),
+        wins: Number(entry.wins || 0),
+        draws: Number(entry.draws || 0),
+        losses: Number(entry.losses || 0),
+        points: Number(entry.points || 0),
+        goalsFor: Number(entry.stats?.goalsFor || 0),
+        goalsAgainst: Number(entry.stats?.goalsAgainst || 0),
+        goalDifference: Number(entry.stats?.goalDifference || 0),
+        setsWon: Number(entry.stats?.setsWon || 0),
+        setsLost: Number(entry.stats?.setsLost || 0),
+        roundsWon: Number(entry.stats?.roundsWon || 0),
+        roundsLost: Number(entry.stats?.roundsLost || 0),
+        runs: Number(entry.stats?.runs || 0),
+        wickets: Number(entry.stats?.wickets || 0),
+        netRunRate: String(entry.stats?.netRunRate || '+0.000'),
+        stats: entry.stats || {},
+      }));
+    }
+
     return deriveStandingsFromCompletedMatches(
       selectedSport,
       matchesCol.data,
@@ -139,7 +176,7 @@ export const Leaderboard: React.FC = () => {
       !isTeamSport,
       scoringRules
     );
-  }, [selectedSport, matchesCol.data, registeredEntities, isTeamSport, scoringRules]);
+  }, [selectedSport, leaderboardsCol.data, matchesCol.data, registeredEntities, isTeamSport, scoringRules]);
 
   // Format team standings for TeamChampionshipView
   const effectiveTeams = useMemo(() => {
@@ -199,6 +236,31 @@ export const Leaderboard: React.FC = () => {
   const disciplineLeaders = useMemo<DisciplineLeader[]>(() => {
     return DISCIPLINE_LIST.map((disc) => {
       const isIndiv = disc.category === 'individual';
+
+      // 1. Check if published leaderboard exists
+      const publishedDoc = leaderboardsCol.data.find(
+        (doc) => (doc.sportId === disc.id || doc.id === disc.id) && !doc.isHidden
+      );
+
+      if (publishedDoc && Array.isArray(publishedDoc.entries) && publishedDoc.entries.length > 0) {
+        const top = [...publishedDoc.entries].sort((a, b) => a.position - b.position)[0];
+        if (top) {
+          const photoUrl = top.logo || '';
+          const hasPlayed = (top.wins + top.losses + (top.draws || 0)) > 0;
+          return {
+            sportId: disc.id,
+            sportName: disc.name,
+            emoji: disc.icon,
+            winnerName: top.entityName,
+            team: hasPlayed ? (isIndiv ? '#1 Ranked Contender' : 'Leader') : 'Title Contender',
+            points: top.points,
+            record: `${top.wins}W · ${top.draws || 0}D · ${top.losses}L`,
+            status: 'champion' as const,
+            photo: photoUrl,
+          };
+        }
+      }
+
       const discTeams = teamsCol.data.filter((t) => {
         if (disc.id === 'lan-games') {
           return t.sportId === 'lan-games' || t.sportId === 'counter-strike';
@@ -221,7 +283,7 @@ export const Leaderboard: React.FC = () => {
       );
 
       const top = standings[0];
-      if (!top) {
+      if (!top || (top.played === 0 && isIndiv && discPlayers.length === 0)) {
         return {
           sportId: disc.id,
           sportName: disc.name,
@@ -243,14 +305,14 @@ export const Leaderboard: React.FC = () => {
         sportName: disc.name,
         emoji: disc.icon,
         winnerName: top.entityName,
-        team: hasPlayed ? (isIndiv ? '#1 Ranked Contender' : (top.shortName || 'Leader')) : 'Seed #1 · Contender',
+        team: hasPlayed ? (isIndiv ? '#1 Ranked Contender' : (top.shortName || 'Leader')) : 'Title Contender',
         points: top.points,
         record: hasPlayed ? `${top.wins}W · ${top.draws}D · ${top.losses}L` : '0W · 0D · 0L',
         status: 'leading' as const,
         photo: photoUrl,
       };
     });
-  }, [matchesCol.data, teamsCol.data, playersCol.data, settingsDoc.data]);
+  }, [matchesCol.data, teamsCol.data, playersCol.data, settingsDoc.data, leaderboardsCol.data]);
 
   const totalEntries = isTeamSport ? effectiveTeams.length : effectivePlayers.length;
 

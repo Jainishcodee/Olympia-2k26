@@ -11,6 +11,8 @@ import {
 import { db, isFirebaseConfigured } from '@/config/firebase';
 import type { AuditEntry, AuditEntryInput } from '@/types';
 
+import { cleanFirestoreData } from '@/utils/firestore';
+
 export const AUDIT_COLLECTION = 'auditLogs';
 
 /**
@@ -25,10 +27,23 @@ export const logAudit = async (entry: AuditEntryInput): Promise<void> => {
     return;
   }
   try {
-    await addDoc(collection(db, AUDIT_COLLECTION), {
-      ...entry,
+    const rawPayload: Record<string, unknown> = {
+      adminId: entry.adminId || 'anonymous',
+      action: entry.action,
+      resourceType: entry.resourceType,
+      resourceId: entry.resourceId,
       timestamp: serverTimestamp(),
-    });
+    };
+
+    if (entry.adminEmail) rawPayload.adminEmail = entry.adminEmail;
+    if (entry.adminName) rawPayload.adminName = entry.adminName;
+    if (entry.resourceLabel) rawPayload.resourceLabel = entry.resourceLabel;
+    if (entry.metadata && Object.keys(entry.metadata).length > 0) {
+      rawPayload.metadata = entry.metadata;
+    }
+
+    const cleanPayload = cleanFirestoreData(rawPayload);
+    await addDoc(collection(db, AUDIT_COLLECTION), cleanPayload);
   } catch (error) {
     console.error('[audit] failed to write entry', error);
   }
