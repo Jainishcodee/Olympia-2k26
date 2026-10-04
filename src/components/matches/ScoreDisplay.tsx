@@ -76,6 +76,13 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
     }>;
   } | undefined;
   const isShootout = Boolean(live.isShootout || penalties);
+  const battingTeam = live.battingTeam === 'teamB' ? teamB : teamA;
+  const battingRuns = Number(live.totalRuns ?? (live.battingTeam === 'teamB' ? scoreB : scoreA));
+  const battingWickets = Number(live.wickets ?? 0);
+  const battingOvers = `${Number(live.overs ?? live.over ?? 0)}.${Number(live.ball ?? 0)}`;
+  const targetRuns = Number(live.targetRuns ?? 0);
+  const requiredRuns = Number(live.requiredRuns ?? Math.max(0, targetRuns - battingRuns));
+  const ballsRemaining = Number(live.ballsRemaining ?? 0);
 
   return (
     <div
@@ -215,10 +222,13 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               )}
             >
               {isCricket ? (
-                <div className="flex items-center gap-1.5 sm:gap-3">
-                  <span>{scoreA}</span>
-                  <span className={cn("text-[0.6em] -translate-y-0.5", isDay ? "text-[#071426]/30" : "text-white/30")}>-</span>
-                  <span>{scoreB}</span>
+                <div className="flex min-w-[15rem] flex-col items-center gap-1 sm:min-w-[22rem]">
+                  <span className="text-[10px] font-black uppercase tracking-[0.28em] text-[#D9A441]">
+                    {live.innings === 2 ? '2ND INNINGS' : '1ST INNINGS'} · {battingTeam}
+                  </span>
+                  <span className="text-4xl sm:text-6xl">{battingRuns}/{battingWickets}</span>
+                  <span className="text-xs font-black uppercase tracking-wider opacity-70">{battingOvers} OVERS</span>
+                  {targetRuns > 0 && <span className="text-[11px] font-bold uppercase tracking-wider text-amber-300">TARGET {targetRuns} · NEED {requiredRuns} FROM {ballsRemaining} BALLS</span>}
                 </div>
               ) : (
                 <>
@@ -231,9 +241,10 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               )}
             </div>
             {isCricket && (
-              <div className="mt-1.5 sm:mt-2 text-[11px] sm:text-sm font-black uppercase tracking-wider text-[#D9A441]">
-                {live.innings === 2 ? '2nd Innings' : '1st Innings'}
-                {live.overs !== undefined && ` · ${live.overs}.${live.ball || 0} ov`}
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center text-[10px] font-black uppercase tracking-wider">
+                <div><span className="block opacity-50">Striker</span><span>{live.strikerName || '—'}</span></div>
+                <div><span className="block opacity-50">Non-striker</span><span>{live.nonStrikerName || '—'}</span></div>
+                <div><span className="block opacity-50">Bowler</span><span>{live.currentBowlerName || '—'}</span></div>
               </div>
             )}
             {isVolleyball && (

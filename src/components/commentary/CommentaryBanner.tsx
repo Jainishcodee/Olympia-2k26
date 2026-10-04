@@ -16,6 +16,8 @@ interface CommentaryBannerProps {
   onToggleVoice: () => void;
   onSpeechStarted?: () => void;
   onSpeechEnded?: () => void;
+  onTestVoice?: () => void;
+  speechSupported?: boolean;
   autoDismissMs?: number;
 }
 
@@ -25,14 +27,26 @@ export const CommentaryBanner: React.FC<CommentaryBannerProps> = ({
   onToggleVoice,
   onSpeechStarted,
   onSpeechEnded,
+  onTestVoice,
+  speechSupported = true,
   autoDismissMs = 4000,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const [lastSequence, setLastSequence] = useState<number>(0);
+  const lastSequenceRef = React.useRef(0);
+  const lastSpokenSequenceRef = React.useRef(0);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   useEffect(() => {
-    if (commentary && commentary.eventSequence > lastSequence) {
-      setLastSequence(commentary.eventSequence);
+    if (typeof window === 'undefined' || !speechSupported) return undefined;
+    const loadVoices = () => setVoices(window.speechSynthesis.getVoices());
+    loadVoices();
+    window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+  }, [speechSupported]);
+
+  useEffect(() => {
+    if (commentary && commentary.eventSequence > lastSequenceRef.current) {
+      lastSequenceRef.current = commentary.eventSequence;
       setIsVisible(true);
 
       const timer = setTimeout(() => {
@@ -42,21 +56,24 @@ export const CommentaryBanner: React.FC<CommentaryBannerProps> = ({
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [commentary, lastSequence, autoDismissMs]);
+  }, [commentary, autoDismissMs]);
 
   useEffect(() => {
-    if (!commentary || !voiceEnabled || !commentary.voiceEnabled || !isVisible) {
+    if (!commentary || !voiceEnabled || !commentary.voiceEnabled || !speechSupported || !isVisible) {
       return;
     }
 
     if (typeof window === 'undefined' || !window.speechSynthesis) {
       return;
     }
+    if (commentary.eventSequence <= lastSpokenSequenceRef.current) return;
+    lastSpokenSequenceRef.current = commentary.eventSequence;
 
     const utterance = new SpeechSynthesisUtterance(commentary.text);
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
     utterance.volume = 0.9;
+    utterance.voice = voices.find((voice) => /^en(-|_)/i.test(voice.lang)) || voices.find((voice) => voice.lang.toLowerCase().startsWith('en')) || null;
 
     utterance.onstart = () => onSpeechStarted?.();
     utterance.onend = () => onSpeechEnded?.();
@@ -68,10 +85,10 @@ export const CommentaryBanner: React.FC<CommentaryBannerProps> = ({
     return () => {
       window.speechSynthesis.cancel();
     };
-  }, [commentary, voiceEnabled, isVisible, onSpeechStarted, onSpeechEnded]);
+  }, [commentary, voiceEnabled, speechSupported, isVisible, voices, onSpeechStarted, onSpeechEnded]);
 
   return (
-    <div className="fixed top-6 left-1/2 z-50 -translate-x-1/2 pointer-events-auto">
+    <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-50 pointer-events-auto sm:right-6">
       <div className="flex flex-col items-center gap-2">
         <button
           type="button"
@@ -84,8 +101,19 @@ export const CommentaryBanner: React.FC<CommentaryBannerProps> = ({
           )}
         >
           {voiceEnabled ? <Volume2 size={12} /> : <VolumeX size={12} />}
-          <span>{voiceEnabled ? 'Commentary ON' : 'Commentary OFF'}</span>
+          <span>{voiceEnabled ? 'ENABLE LIVE COMMENTARY' : 'ENABLE LIVE COMMENTARY'}</span>
         </button>
+        {voiceEnabled && speechSupported && (
+          <button
+            type="button"
+            onClick={onTestVoice}
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#D9A441]/40 bg-[#071426]/95 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#D9A441] shadow-lg"
+          >
+            <Mic size={12} />
+            <span>TEST VOICE</span>
+          </button>
+        )}
+        {!speechSupported && <span className="rounded bg-[#071426]/95 px-3 py-1.5 text-[10px] font-bold text-amber-300">Voice unavailable in this browser.</span>}
 
         <AnimatePresence>
           {isVisible && commentary && (

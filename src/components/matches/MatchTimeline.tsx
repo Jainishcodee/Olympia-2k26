@@ -43,6 +43,9 @@ const getEventBadge = (type: string) => {
   if (t === 'match_start') {
     return { icon: '🟢', label: 'MATCH START', color: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30' };
   }
+  if (t === 'toss_decided') {
+    return { icon: '🪙', label: 'TOSS', color: 'text-[#D9A441] bg-[#D9A441]/15 border-[#D9A441]/30' };
+  }
   if (t === 'match_end' || t === 'full_time') {
     return { icon: '🏁', label: 'FULL TIME', color: 'text-purple-400 bg-purple-500/15 border-purple-500/30' };
   }

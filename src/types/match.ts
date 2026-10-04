@@ -27,6 +27,10 @@ export interface LiveState {
 
   // Cricket State
   innings?: number;
+  tossWinnerId?: string;
+  tossWinnerName?: string;
+  tossDecision?: 'BAT' | 'BOWL';
+  tossWinner?: 'teamA' | 'teamB';
   battingTeam?: 'teamA' | 'teamB';
   battingTeamId?: string;
   bowlingTeamId?: string;

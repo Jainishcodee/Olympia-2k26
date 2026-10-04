@@ -53,6 +53,7 @@ let mockMatchData: any = {
 let mockEvents: any[] = [];
 let mockTransactionUpdates: any[] = [];
 let mockTransactionSets: any[] = [];
+let mockTransactionVersion = 0;
 
 vi.mock('firebase/firestore', () => {
   return {
@@ -76,41 +77,43 @@ vi.mock('firebase/firestore', () => {
       })),
     })),
     runTransaction: vi.fn(async (_db: any, callback: any) => {
-      const transaction = {
-        get: vi.fn(async (ref: any) => {
-          if (ref._segments?.includes('matches') && !ref._segments?.includes('events')) {
-            return {
-              exists: () => true,
-              data: () => JSON.parse(JSON.stringify(mockMatchData)),
-            };
-          }
-          const eventId = ref._segments?.[ref._segments.length - 1] || ref._id;
-          const found = mockEvents.find((e) => e.id === eventId);
-          return {
-            exists: () => Boolean(found),
-            data: () => (found ? JSON.parse(JSON.stringify(found)) : undefined),
-          };
-        }),
-        set: vi.fn((ref: any, data: any) => {
-          mockTransactionSets.push({ ref, data });
-          if (ref._segments?.includes('events') || data.sequence) {
-            mockEvents.push({ id: ref._id || `event-${data.sequence}`, ...data });
-          }
-        }),
-        update: vi.fn((ref: any, data: any) => {
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const readVersion = mockTransactionVersion;
+        const stagedSets: any[] = [];
+        const stagedUpdates: any[] = [];
+        const transaction = {
+          get: vi.fn(async (ref: any) => {
+            if (ref._segments?.includes('matches') && !ref._segments?.includes('events')) {
+              return { exists: () => true, data: () => JSON.parse(JSON.stringify(mockMatchData)) };
+            }
+            const eventId = ref._segments?.[ref._segments.length - 1] || ref._id;
+            const found = mockEvents.find((e) => e.id === eventId);
+            return { exists: () => Boolean(found), data: () => (found ? JSON.parse(JSON.stringify(found)) : undefined) };
+          }),
+          set: vi.fn((ref: any, data: any) => stagedSets.push({ ref, data })),
+          update: vi.fn((ref: any, data: any) => stagedUpdates.push({ ref, data })),
+        };
+        const result = await callback(transaction);
+        if (readVersion !== mockTransactionVersion) continue;
+
+        stagedUpdates.forEach(({ ref, data }) => {
           mockTransactionUpdates.push({ ref, data });
           if (ref._segments?.includes('matches') && !ref._segments?.includes('events')) {
             Object.assign(mockMatchData, data);
           } else {
             const eventId = ref._segments?.[ref._segments.length - 1] || ref._id;
             const targetEvent = mockEvents.find((e) => e.id === eventId);
-            if (targetEvent) {
-              Object.assign(targetEvent, data);
-            }
+            if (targetEvent) Object.assign(targetEvent, data);
           }
-        }),
-      };
-      return callback(transaction);
+        });
+        stagedSets.forEach(({ ref, data }) => {
+          mockTransactionSets.push({ ref, data });
+          if (ref._segments?.includes('events') || data.sequence) mockEvents.push({ id: ref._id || `event-${data.sequence}`, ...data });
+        });
+        mockTransactionVersion += 1;
+        return result;
+      }
+      throw new Error('mock transaction contention did not resolve');
     }),
   };
 });
@@ -156,6 +159,7 @@ describe('Phase 2B: Cricket Live Scoring Engine', () => {
     mockEvents = [];
     mockTransactionUpdates = [];
     mockTransactionSets = [];
+    mockTransactionVersion = 0;
   });
 
   it('1. match_start initializes Innings 1, 0/0 score, 0.0 overs, and sets status to live', async () => {
@@ -176,6 +180,30 @@ describe('Phase 2B: Cricket Live Scoring Engine', () => {
     expect(mockMatchData.liveState.ball).toBe(0);
     expect(mockMatchData.liveState.wickets).toBe(0);
     expect(mockMatchData.liveState.totalRuns).toBe(0);
+  });
+
+  it('1a. toss BAT derives Team A batting and Team B bowling and records TOSS_DECIDED', async () => {
+    await recordMatchEvent({
+      matchId: 'cricket-match-1', sportId: 'cricket', type: 'TOSS_DECIDED', team: 'teamA',
+      description: 'Team A won the toss and chose to bat.',
+      data: { tossWinner: 'teamA', tossWinnerId: 'team-india', tossWinnerName: 'Team A', decision: 'BAT' },
+    });
+
+    expect(mockMatchData.liveState.battingTeamId).toBe('team-india');
+    expect(mockMatchData.liveState.bowlingTeamId).toBe('team-australia');
+    expect(mockEvents[0].type).toBe('TOSS_DECIDED');
+    expect(mockEvents[0].data.decision).toBe('BAT');
+  });
+
+  it('1b. toss BOWL derives the opposite batting and bowling teams', async () => {
+    await recordMatchEvent({
+      matchId: 'cricket-match-1', sportId: 'cricket', type: 'TOSS_DECIDED', team: 'teamB',
+      description: 'Team B won the toss and chose to bowl.',
+      data: { tossWinner: 'teamB', tossWinnerId: 'team-australia', tossWinnerName: 'Team B', decision: 'BOWL' },
+    });
+
+    expect(mockMatchData.liveState.battingTeamId).toBe('team-india');
+    expect(mockMatchData.liveState.bowlingTeamId).toBe('team-australia');
   });
 
   it('2. 1 run (single) increments batting score, advances ball (0.1), and rotates strike', async () => {
@@ -641,6 +669,9 @@ describe('Phase 2B: Cricket Live Scoring Engine', () => {
 
     expect(mockMatchData.score.teamA).toBe(110); // 100 + 4 + 6 = 110!
     expect(mockMatchData.lastSequence).toBe(2);
+    expect(mockEvents).toHaveLength(2);
+    expect(mockEvents.map((event) => event.sequence).sort((a, b) => a - b)).toEqual([1, 2]);
+    expect(mockEvents.map((event) => event.snapshot.score.teamA).sort((a, b) => a - b)).toEqual([104, 110]);
   });
 
   it('23. Undo last active event rolls back runs, balls, sequence, and restores prior snapshot', async () => {

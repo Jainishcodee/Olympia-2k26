@@ -286,10 +286,33 @@ const FXSequence: React.FC<{ event: ScoreFXEvent }> = ({ event }) => {
   );
 };
 
-export const ScoreFXLayer: React.FC<{ event: ScoreFXEvent | null }> = ({ event }) => (
-  <div aria-hidden className="pointer-events-none fixed inset-0 z-[95] overflow-hidden">
-    <AnimatePresence mode="wait">{event && <FXSequence key={event.id} event={event} />}</AnimatePresence>
-  </div>
+const CricketFXCard: React.FC<{ event: ScoreFXEvent }> = ({ event }) => (
+  <motion.div
+    initial={{ opacity: 0, x: 28, y: 12, scale: 0.92 }}
+    animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+    exit={{ opacity: 0, x: 28, y: 12, scale: 0.92 }}
+    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+    className="pointer-events-none fixed bottom-[max(5rem,calc(env(safe-area-inset-bottom)+4.5rem))] right-4 z-[45] w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-[#D9A441]/45 bg-[#071426]/95 p-4 text-white shadow-[0_14px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:bottom-6 sm:right-6"
+  >
+    <div className="flex items-start gap-3">
+      <span className="text-2xl">{event.kind === 'six' ? '⚡' : event.kind === 'wicket' ? '🎯' : '🏏'}</span>
+      <div className="min-w-0">
+        <div className="text-[11px] font-black uppercase tracking-[0.24em] text-[#FFD21F]">{event.title}</div>
+        <div className="mt-1 text-xs font-bold leading-snug text-slate-100">{event.sub || 'Cricket update'}</div>
+        {event.score && <div className="mt-2 font-mono text-[11px] font-black tabular-nums text-[#D9A441]">SCORE {event.score}</div>}
+      </div>
+    </div>
+  </motion.div>
+);
+
+export const ScoreFXLayer: React.FC<{ event: ScoreFXEvent | null; compact?: boolean }> = ({ event, compact = false }) => (
+  compact ? (
+    <AnimatePresence mode="wait">{event && <CricketFXCard key={event.id} event={event} />}</AnimatePresence>
+  ) : (
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-[95] overflow-hidden">
+      <AnimatePresence mode="wait">{event && <FXSequence key={event.id} event={event} />}</AnimatePresence>
+    </div>
+  )
 );
 
 /* -------------------------------------------------------------------------- */

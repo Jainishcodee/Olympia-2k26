@@ -41,6 +41,7 @@ export type EventType =
   | 'period_start'
   | 'period_end'
   | 'match_start'
+  | 'TOSS_DECIDED'
   | 'match_pause'
   | 'match_resume'
   | 'half_time'

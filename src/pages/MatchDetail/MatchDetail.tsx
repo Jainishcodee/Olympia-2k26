@@ -554,7 +554,7 @@ export const MatchDetail: React.FC = () => {
       </div>
 
       {/* Real-time Broadcast Score FX Fullscreen Layer */}
-      <ScoreFXLayer event={fx} />
+      <ScoreFXLayer event={fx} compact={isCricket} />
 
       {/* 3-2-1 Kickoff Countdown Overlay */}
       <AnimatePresence>
@@ -611,18 +611,29 @@ export const MatchDetail: React.FC = () => {
 
       <CommentaryBanner
         commentary={(liveMatch?.liveState as any)?.latestCommentary || null}
-        voiceEnabled={voiceEnabled && speechSupported}
+        voiceEnabled={voiceEnabled}
+        speechSupported={speechSupported}
         onToggleVoice={() => {
           if (!speechSupported) return;
-          if (!voiceEnabled) {
-            const utterance = new SpeechSynthesisUtterance('');
-            try {
-              window.speechSynthesis.speak(utterance);
-            } catch (e) {
-              // ignore
-            }
+          const next = !voiceEnabled;
+          setVoiceEnabled(next);
+          if (next) {
+            const utterance = new SpeechSynthesisUtterance('Live commentary enabled.');
+            const voices = window.speechSynthesis.getVoices();
+            utterance.voice = voices.find((voice) => voice.lang.toLowerCase().startsWith('en')) || null;
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+          } else {
+            window.speechSynthesis.cancel();
           }
-          setVoiceEnabled((v) => !v);
+        }}
+        onTestVoice={() => {
+          if (!speechSupported) return;
+          const utterance = new SpeechSynthesisUtterance('This is live cricket commentary.');
+          const voices = window.speechSynthesis.getVoices();
+          utterance.voice = voices.find((voice) => voice.lang.toLowerCase().startsWith('en')) || null;
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(utterance);
         }}
       />
 

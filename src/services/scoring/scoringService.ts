@@ -265,6 +265,7 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
     const isTerminalStatus = matchData?.status === 'completed' || matchData?.status === 'cancelled';
     const isLifecycleAction =
       input.type === 'match_start' ||
+      input.type === 'TOSS_DECIDED' ||
       input.type === 'match_pause' ||
       input.type === 'match_resume' ||
       input.type === 'half_time' ||
@@ -320,10 +321,27 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
     };
 
     // Automatic lifecycle mappings for periods, cricket innings, and multi-sport sets/rounds
-    if (input.type === 'match_start') {
+    if (input.type === 'TOSS_DECIDED' && isCricket) {
+      const tossWinner = input.data?.tossWinner as 'teamA' | 'teamB';
+      const decision = input.data?.decision as 'BAT' | 'BOWL';
+      const tossWinnerId = String(input.data?.tossWinnerId || (tossWinner === 'teamA' ? matchData.teamAId : matchData.teamBId));
+      const tossWinnerName = String(input.data?.tossWinnerName || (tossWinner === 'teamA' ? matchData.participantA?.name : matchData.participantB?.name) || 'Team');
+      const battingTeam = decision === 'BAT' ? tossWinner : tossWinner === 'teamA' ? 'teamB' : 'teamA';
+      const bowlingTeam = battingTeam === 'teamA' ? 'teamB' : 'teamA';
+      computedLiveState.tossWinner = tossWinner;
+      computedLiveState.tossWinnerId = tossWinnerId;
+      computedLiveState.tossWinnerName = tossWinnerName;
+      computedLiveState.tossDecision = decision;
+      computedLiveState.battingTeam = battingTeam;
+      computedLiveState.battingTeamId = battingTeam === 'teamA' ? matchData.teamAId : matchData.teamBId;
+      computedLiveState.bowlingTeamId = bowlingTeam === 'teamA' ? matchData.teamAId : matchData.teamBId;
+    } else if (input.type === 'match_start') {
       if (isCricket) {
         computedLiveState.innings = 1;
-        computedLiveState.battingTeam = input.team === 'teamB' ? 'teamB' : 'teamA';
+        const configuredBattingTeam = currentLiveState.battingTeam === 'teamB' ? 'teamB' : currentLiveState.battingTeam === 'teamA' ? 'teamA' : input.team === 'teamB' ? 'teamB' : 'teamA';
+        computedLiveState.battingTeam = configuredBattingTeam;
+        computedLiveState.battingTeamId = configuredBattingTeam === 'teamA' ? matchData.teamAId : matchData.teamBId;
+        computedLiveState.bowlingTeamId = configuredBattingTeam === 'teamA' ? matchData.teamBId : matchData.teamAId;
         computedLiveState.over = 0;
         computedLiveState.overs = 0;
         computedLiveState.ball = 0;
@@ -464,6 +482,8 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
       } else {
         computedLiveState.battingTeam = input.team === 'teamB' ? 'teamB' : 'teamA';
       }
+      computedLiveState.battingTeamId = computedLiveState.battingTeam === 'teamA' ? matchData.teamAId : matchData.teamBId;
+      computedLiveState.bowlingTeamId = computedLiveState.battingTeam === 'teamA' ? matchData.teamBId : matchData.teamAId;
       computedLiveState.over = 0;
       computedLiveState.overs = 0;
       computedLiveState.ball = 0;

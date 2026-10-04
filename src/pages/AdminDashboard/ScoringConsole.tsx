@@ -150,6 +150,8 @@ const ScoringConsole: React.FC = () => {
   const [fastMatchStatus, setFastMatchStatus] = useState<MatchStatus>('completed');
   const [fastMatchWinner, setFastMatchWinner] = useState<'teamA' | 'teamB' | 'tie'>('teamA');
   const [fastResultSummary, setFastResultSummary] = useState('');
+  const [cricketTossWinner, setCricketTossWinner] = useState<'teamA' | 'teamB' | ''>('');
+  const [cricketTossDecision, setCricketTossDecision] = useState<'BAT' | 'BOWL'>('BAT');
 
   const teamAPlayers = useMemo(() => {
     return players.data.filter((p) => p.teamId === liveMatch?.teamAId);
@@ -963,6 +965,10 @@ const ScoringConsole: React.FC = () => {
     };
   }, [liveMatch]);
 
+  const cricketTossLocked = Boolean(liveMatch?.liveState?.tossWinnerId || liveMatch?.status === 'live' || liveMatch?.liveState?.inningsStatus === 'in_progress');
+  const configuredTossWinner = (liveMatch?.liveState?.tossWinner || cricketTossWinner) as 'teamA' | 'teamB' | '';
+  const configuredTossDecision = (liveMatch?.liveState?.tossDecision || cricketTossDecision) as 'BAT' | 'BOWL';
+
   // Cricket dialog states
   const [cricketWicketModal, setCricketWicketModal] = useState(false);
   const [wicketDismissalType, setWicketDismissalType] = useState<
@@ -1013,6 +1019,29 @@ const ScoringConsole: React.FC = () => {
       fxTitle: isTen ? '10' : isSix ? '6' : runsDelta === 4 ? 'FOUR' : runsDelta === 0 ? 'DOT' : `+${runsDelta}`,
       fxSub: `${type.toUpperCase()} · ${battingTeamInfo.shortName}`,
       accent: isTen || isSix ? '#FFD21F' : runsDelta === 4 ? '#1264FF' : undefined,
+    });
+  };
+
+  const handleConfirmCricketToss = async () => {
+    if (!configuredTossWinner || cricketTossLocked || !matchId) return;
+    const winnerInfo = configuredTossWinner === 'teamA' ? teamAInfo : teamBInfo;
+    const battingTeam = configuredTossDecision === 'BAT'
+      ? configuredTossWinner
+      : configuredTossWinner === 'teamA' ? 'teamB' : 'teamA';
+    const bowlingTeam = battingTeam === 'teamA' ? 'teamB' : 'teamA';
+    await recordEvent({
+      type: 'TOSS_DECIDED',
+      team: configuredTossWinner,
+      teamName: winnerInfo.name,
+      description: `🪙 ${winnerInfo.name} won the toss and chose to ${configuredTossDecision === 'BAT' ? 'bat' : 'bowl'}.`,
+      data: {
+        tossWinner: configuredTossWinner,
+        tossWinnerId: winnerInfo.id,
+        tossWinnerName: winnerInfo.name,
+        decision: configuredTossDecision,
+        battingTeamId: battingTeam === 'teamA' ? teamAInfo.id : teamBInfo.id,
+        bowlingTeamId: bowlingTeam === 'teamA' ? teamAInfo.id : teamBInfo.id,
+      },
     });
   };
 
@@ -1526,6 +1555,48 @@ const ScoringConsole: React.FC = () => {
 
       return (
         <div className="space-y-6">
+          {/* Toss is canonical match state; once innings begins it is read-only. */}
+          <div className="rounded-lg border border-[var(--sc-gold)]/40 bg-[var(--sc-gold)]/10 p-4">
+            <PanelLabel hint={cricketTossLocked ? 'locked after innings start' : 'required before innings 1'}>Cricket Match Setup</PanelLabel>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="text-[10px] font-black uppercase tracking-wider text-[var(--sc-ink-2)]">
+                Toss Winner
+                <select
+                  value={configuredTossWinner}
+                  disabled={cricketTossLocked || isBusy}
+                  onChange={(event) => setCricketTossWinner(event.target.value as 'teamA' | 'teamB' | '')}
+                  className="mt-1 w-full rounded border border-[var(--sc-line)] bg-[var(--sc-chip)] p-2.5 text-xs font-bold text-[var(--sc-ink)]"
+                >
+                  <option value="">Select team</option>
+                  <option value="teamA">{teamAInfo.name}</option>
+                  <option value="teamB">{teamBInfo.name}</option>
+                </select>
+              </label>
+              <label className="text-[10px] font-black uppercase tracking-wider text-[var(--sc-ink-2)]">
+                Decision
+                <select
+                  value={configuredTossDecision}
+                  disabled={cricketTossLocked || isBusy}
+                  onChange={(event) => setCricketTossDecision(event.target.value as 'BAT' | 'BOWL')}
+                  className="mt-1 w-full rounded border border-[var(--sc-line)] bg-[var(--sc-chip)] p-2.5 text-xs font-bold text-[var(--sc-ink)]"
+                >
+                  <option value="BAT">BAT</option>
+                  <option value="BOWL">BOWL</option>
+                </select>
+              </label>
+            </div>
+            {configuredTossWinner && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--sc-line)] pt-3">
+                <span className="text-xs font-bold text-[var(--sc-ink)]">
+                  {configuredTossWinner === 'teamA' ? teamAInfo.name : teamBInfo.name} won the toss and chose to {configuredTossDecision === 'BAT' ? 'bat' : 'bowl'}.
+                </span>
+                {!cricketTossLocked && (
+                  <Pad tone="gold" size="sm" onClick={handleConfirmCricketToss} disabled={isBusy}>Confirm Toss</Pad>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Batting Team & Innings Progression Banner */}
           <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-[var(--sc-line)] bg-[var(--sc-chip)]/80">
             <div>
