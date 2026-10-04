@@ -69,6 +69,40 @@
   --scrollbar-thumb-hover: #1264ff;
   --selection-bg: #d9a441;
   --selection-ink: #080a0d;
+
+  /* Scoring console / simulator — broadcast panel palette.
+     Night is the original hard-coded console palette, verbatim. */
+  --sc-bg: #05070c;
+  --sc-elev: #070b14;
+  --sc-onlight: #080a0f;
+  --sc-panel: #0b1220;
+  --sc-sunken: #070d18;
+  --sc-panel-alt: #0c1322;
+  --sc-panel-alt2: #0e1726;
+  --sc-panel-deep: #050b14;
+  --sc-redbg: #1a0f14;
+  --sc-chip: #101a2e;
+  --sc-line: #1e2a45;
+  --sc-line-strong: #1a2440;
+  --sc-line-mid: #3b4763;
+  --sc-line-soft: #374151;
+  --sc-darkchip: #111827;
+  --sc-ink: #eef2f7;
+  --sc-ink-1: #c7d2e4;
+  --sc-ink-2: #8fa0bc;
+  --sc-ink-3: #5e6e86;
+  --sc-ink-4: #4c5b75;
+  --sc-ink-5: #3b4d6b;
+  --sc-ink-6: #2c3a58;
+  --sc-gold: #d9a441;
+  --sc-gold-dim: #c49235;
+  --sc-blue-2: #4b90ff;
+  --sc-coral: #ff4d3d;
+  --sc-coral-2: #ff8478;
+  --sc-live: #ff3b3b;
+  --sc-yellow: #ffd21f;
+  --sc-green: #34d399;
+  --sc-orange: #fb923c;
 }
 
 /* ------------------------------------------------------------
@@ -113,6 +147,40 @@
   --scrollbar-thumb-hover: #1264ff;
   --selection-bg: #1264ff;
   --selection-ink: #ffffff;
+
+  /* Scoring console / simulator — same surfaces rendered as day paper.
+     Mirrors the naming above so every `var(--sc-*)` flips with the theme. */
+  --sc-bg: #f7f6f1;
+  --sc-elev: #ffffff;
+  --sc-onlight: #0b1b33;
+  --sc-panel: #ffffff;
+  --sc-sunken: #f1f4fa;
+  --sc-panel-alt: #ffffff;
+  --sc-panel-alt2: #fbfcfe;
+  --sc-panel-deep: #ffffff;
+  --sc-redbg: #fff1f1;
+  --sc-chip: #eef1f8;
+  --sc-line: #dfe4ee;
+  --sc-line-strong: #cfd6e4;
+  --sc-line-mid: #c3cbdb;
+  --sc-line-soft: #d8dde8;
+  --sc-darkchip: #0b1b33;
+  --sc-ink: #0b1b33;
+  --sc-ink-1: #1c355f;
+  --sc-ink-2: #4a5a75;
+  --sc-ink-3: #5b6a80;
+  --sc-ink-4: #6d7789;
+  --sc-ink-5: #98a0ad;
+  --sc-ink-6: #b6bcc6;
+  --sc-gold: #a9761b;
+  --sc-gold-dim: #8a5f13;
+  --sc-blue-2: #0b4fd6;
+  --sc-coral: #dc2626;
+  --sc-coral-2: #b91c1c;
+  --sc-live: #e11d48;
+  --sc-yellow: #8a6d00;
+  --sc-green: #059669;
+  --sc-orange: #c2410c;
 }
 
 /* ------------------------------------------------------------

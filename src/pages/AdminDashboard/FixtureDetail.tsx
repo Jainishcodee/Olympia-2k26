@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useCollection, useDoc } from '@/hooks/useCollection';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { deleteFixture } from '@/services/fixtures/fixtureService';
 import {
@@ -18,7 +17,6 @@ import {
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import type { Fixture, Match, Team, Tournament, Venue } from '@/types';
 import { FiTrash2 } from 'react-icons/fi';
-import { cn } from '@/utils/cn';
 
 /* ============================================================================
  *  Fixture detail — read-only record of one scheduled slot: who plays, when,
@@ -51,8 +49,6 @@ const renderScore = (match: Match) => {
 const FixtureDetail: React.FC = () => {
   const { fixtureId } = useParams<{ fixtureId: string }>();
   const navigate = useNavigate();
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
   const { log } = useAuditLog();
 
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -201,20 +197,14 @@ const FixtureDetail: React.FC = () => {
             <MetaRow label="Team A id">{row.teamAId || '—'}</MetaRow>
             <MetaRow label="Team B id">{row.teamBId || '—'}</MetaRow>
           </dl>
-          <div className={cn(
-            'mt-4 flex items-center justify-center gap-3 rounded-lg border px-4 py-4',
-            isDay ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/[0.02]'
-          )}>
-            <span className={cn('min-w-0 flex-1 truncate text-right text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-slate-100')}>
+          <div className="mt-4 flex items-center justify-center gap-3 rounded-xl border border-line bg-surface-soft px-4 py-4">
+            <span className="min-w-0 flex-1 truncate text-right text-[13px] font-semibold text-ink">
               {sideA}
             </span>
-            <span className={cn(
-              'rounded px-2.5 py-1 font-mono text-[13px] font-bold tabular-nums',
-              isDay ? 'bg-slate-900 text-amber-300' : 'bg-black/60 text-[#FFD21F] border border-amber-500/20'
-            )}>
+            <span className="rounded-md border border-[#D9A441]/30 bg-[#D9A441]/12 px-2.5 py-1 font-mono text-[12.5px] font-bold text-gold-ink">
               VS
             </span>
-            <span className={cn('min-w-0 flex-1 truncate text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-slate-100')}>
+            <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-ink">
               {sideB}
             </span>
           </div>

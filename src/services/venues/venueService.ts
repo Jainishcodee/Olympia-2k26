@@ -17,7 +17,7 @@ export const getVenues = async (): Promise<Venue[]> => {
   if (!isFirebaseConfigured || !db) return [];
   try {
     const snapshot = await getDocs(collection(db, VENUES_COLLECTION));
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Venue));
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Venue));
   } catch (error) {
     console.error('Error getting venues', error);
     return [];
@@ -30,7 +30,7 @@ export const getVenue = async (id: string): Promise<Venue | null> => {
     const docRef = doc(db, VENUES_COLLECTION, id);
     const snapshot = await getDoc(docRef);
     if (snapshot.exists()) {
-      return { id: snapshot.id, ...snapshot.data() } as Venue;
+      return { ...snapshot.data(), id: snapshot.id } as Venue;
     }
     return null;
   } catch (error) {

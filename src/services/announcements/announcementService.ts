@@ -19,7 +19,7 @@ export const getAnnouncements = async (): Promise<Announcement[]> => {
   try {
     const q = query(collection(db, ANNOUNCEMENTS_COLLECTION), orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Announcement));
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Announcement));
   } catch (error) {
     console.error('Error getting announcements', error);
     return [];

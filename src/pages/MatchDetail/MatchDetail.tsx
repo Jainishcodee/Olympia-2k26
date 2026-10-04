@@ -17,8 +17,9 @@ import { useMatch } from '@/hooks/useMatch';
 import { useMatchClock } from '@/hooks/useMatchClock';
 import { useCollection } from '@/hooks/useCollection';
 import type { Player } from '@/types/player';
-import { ArrowLeft, MapPin, Zap, Trophy, Sparkles, Radio } from 'lucide-react';
+import { ArrowLeft, MapPin, Zap, Trophy, Sparkles, Radio, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { CommentaryBanner } from '@/components/commentary/CommentaryBanner';
 
 interface LiveMoment {
   icon: string;
@@ -37,7 +38,9 @@ export const MatchDetail: React.FC = () => {
   const [showFinalCelebration, setShowFinalCelebration] = useState(false);
 
   const [moment, setMoment] = useState<LiveMoment | null>(null);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
   const seenSeqRef = useRef<number>(0);
+  const speechSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
   const { formattedTime: liveClock } = useMatchClock({
     startedAt: liveMatch?.startedAt,
@@ -605,6 +608,23 @@ export const MatchDetail: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <CommentaryBanner
+        commentary={(liveMatch?.liveState as any)?.latestCommentary || null}
+        voiceEnabled={voiceEnabled && speechSupported}
+        onToggleVoice={() => {
+          if (!speechSupported) return;
+          if (!voiceEnabled) {
+            const utterance = new SpeechSynthesisUtterance('');
+            try {
+              window.speechSynthesis.speak(utterance);
+            } catch (e) {
+              // ignore
+            }
+          }
+          setVoiceEnabled((v) => !v);
+        }}
+      />
 
       <Footer />
     </div>

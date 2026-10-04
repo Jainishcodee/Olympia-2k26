@@ -30,7 +30,7 @@ export const getFixtures = async (): Promise<Fixture[]> => {
   if (!isFirebaseConfigured || !db) return [];
   try {
     const snapshot = await getDocs(collection(db, FIXTURES_COLLECTION));
-    return snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() } as Fixture));
+    return snapshot.docs.map(entry => ({ ...entry.data(), id: entry.id } as Fixture));
   } catch (error) {
     console.error('Error getting fixtures', error);
     return [];
@@ -42,7 +42,7 @@ export const getFixturesByTournament = async (tournamentId: string): Promise<Fix
   try {
     const q = query(collection(db, FIXTURES_COLLECTION), where('tournamentId', '==', tournamentId));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() } as Fixture));
+    return snapshot.docs.map(entry => ({ ...entry.data(), id: entry.id } as Fixture));
   } catch (error) {
     console.error('Error getting fixtures by tournament', error);
     return [];
@@ -55,7 +55,7 @@ export const getFixture = async (id: string): Promise<Fixture | null> => {
     const docRef = doc(db, FIXTURES_COLLECTION, id);
     const snapshot = await getDoc(docRef);
     if (snapshot.exists()) {
-      return { id: snapshot.id, ...snapshot.data() } as Fixture;
+      return { ...snapshot.data(), id: snapshot.id } as Fixture;
     }
     return null;
   } catch (error) {

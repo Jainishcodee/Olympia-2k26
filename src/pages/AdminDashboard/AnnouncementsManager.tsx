@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Timestamp } from 'firebase/firestore';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useCollection } from '@/hooks/useCollection';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { deleteAnnouncement, updateAnnouncement } from '@/services/announcements/announcementService';
@@ -17,13 +16,18 @@ import {
   SearchInput,
   StatTile,
   StatusPill,
+  TBody,
+  Td,
+  THead,
+  Th,
+  TableShell,
   Toolbar,
+  TRow,
 } from '@/components/admin/kit';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import type { Announcement } from '@/types';
 import toast from 'react-hot-toast';
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi';
-import { cn } from '@/utils/cn';
 
 /* ============================================================================
  *  Announcements — publish / unpublish / archive.
@@ -71,7 +75,6 @@ const truncate = (text: string, length = 110): string =>
   text.length > length ? `${text.slice(0, length)}…` : text;
 
 const AnnouncementsManager: React.FC = () => {
-  const { isDay } = useTheme();
   const navigate = useNavigate();
   const { log } = useAuditLog();
 
@@ -160,25 +163,15 @@ const AnnouncementsManager: React.FC = () => {
 
   const priorityChip = (priority?: number) =>
     priority === 1 ? (
-      <span className={cn(
-        'inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
-        isDay
-          ? 'border border-amber-300 bg-amber-50 text-amber-800'
-          : 'border border-[#F0DFB8]/30 bg-[#FFF7E6]/10 text-[#FFD21F]'
-      )}>
+      <span className="inline-flex items-center rounded border border-[#D9A441]/30 bg-[#D9A441]/12 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gold-ink">
         P1 · Headline
       </span>
     ) : priority ? (
-      <span className={cn(
-        'inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
-        isDay
-          ? 'border border-slate-200 bg-slate-100 text-slate-700'
-          : 'border border-white/10 bg-white/[0.04] text-slate-300'
-      )}>
+      <span className="inline-flex items-center rounded border border-line bg-surface-soft-2 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-ink-muted">
         P{priority}
       </span>
     ) : (
-      <span className={isDay ? 'text-slate-400' : 'text-slate-500'}>—</span>
+      <span className="text-ink-faint">—</span>
     );
 
   return (
@@ -227,7 +220,7 @@ const AnnouncementsManager: React.FC = () => {
             { value: '3', label: 'Priority 3' },
           ]}
         />
-        <span className={cn('ml-auto text-[12px] tabular-nums', isDay ? 'text-slate-500' : 'text-slate-400')}>
+        <span className="ml-auto text-[12px] font-bold tabular-nums text-ink-muted">
           {rows.length} of {announcements.data.length}
         </span>
       </Toolbar>
@@ -256,107 +249,92 @@ const AnnouncementsManager: React.FC = () => {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px] border-collapse text-left">
-              <thead>
-                <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
-                  {['Title', 'Description', 'Image', 'Priority', 'Publish date', 'Expiry date', 'Status', 'Actions'].map(
-                    (heading) => (
-                      <th
-                        key={heading}
-                        className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-slate-400')}
-                      >
-                        {heading}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
-              <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
-                {rows.map((item) => {
-                  const status = statusOf(item, now);
-                  const archived = Boolean(item.archived);
-                  const isActive = item.active !== false;
-                  const busy = busyId === item.id;
-                  return (
-                    <tr key={item.id} className={cn('transition-colors', isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.02]')}>
-                      <td className="max-w-[240px] px-3 py-2.5">
-                        <span className={cn('block truncate text-[13px] font-semibold', isDay ? 'text-slate-900' : 'text-white')}>
-                          {item.title || 'Untitled'}
-                        </span>
-                      </td>
-                      <td className={cn('max-w-[300px] px-3 py-2.5 text-[12px] leading-relaxed', isDay ? 'text-slate-600' : 'text-slate-400')}>
-                        {truncate(item.description ?? '') || '—'}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
-                        {item.image ? (
-                          <img
-                            src={item.image}
-                            alt=""
-                            className={cn('h-9 w-14 rounded border object-cover', isDay ? 'border-slate-200' : 'border-white/10')}
-                          />
-                        ) : (
-                          <span className={isDay ? 'text-slate-400' : 'text-slate-500'}>—</span>
-                        )}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">{priorityChip(item.priority)}</td>
-                      <td className={cn('whitespace-nowrap px-3 py-2.5 text-[12px]', isDay ? 'text-slate-700' : 'text-slate-300')}>
-                        {formatDate(item.date)}
-                      </td>
-                      <td className={cn('whitespace-nowrap px-3 py-2.5 text-[12px]', isDay ? 'text-slate-700' : 'text-slate-300')}>
-                        {formatDate(item.expiresAt)}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
-                        <StatusPill value={status} />
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <ActionIcon
-                            label="View announcement"
-                            onClick={() => navigate(`/admin/announcements/${item.id}`)}
-                          >
-                            <FiEye className="h-3.5 w-3.5" />
-                          </ActionIcon>
-                          <ActionIcon
-                            label="Edit announcement"
-                            onClick={() => navigate(`/admin/announcements/${item.id}/edit`)}
-                          >
-                            <FiEdit2 className="h-3.5 w-3.5" />
-                          </ActionIcon>
-                          {isActive && !archived ? (
-                            <Btn
-                              size="xs"
-                              disabled={busy}
-                              onClick={() => unpublish(item)}
-                            >
-                              Unpublish
-                            </Btn>
-                          ) : (
-                            <Btn
-                              size="xs"
-                              variant="primary"
-                              disabled={busy}
-                              onClick={() => publish(item)}
-                            >
-                              Publish
-                            </Btn>
-                          )}
-                          <ActionIcon
-                            label="Delete announcement"
-                            danger
+          <TableShell minW={1100}>
+            <THead>
+              <tr>
+                {['Title', 'Description', 'Image', 'Priority', 'Publish date', 'Expiry date', 'Status', 'Actions'].map(
+                  (heading) => (
+                    <Th key={heading}>{heading}</Th>
+                  ),
+                )}
+              </tr>
+            </THead>
+            <TBody>
+              {rows.map((item) => {
+                const status = statusOf(item, now);
+                const archived = Boolean(item.archived);
+                const isActive = item.active !== false;
+                const busy = busyId === item.id;
+                return (
+                  <TRow key={item.id}>
+                    <Td strong className="max-w-[240px]">
+                      <span className="block truncate font-bold">{item.title || 'Untitled'}</span>
+                    </Td>
+                    <Td className="max-w-[300px] truncate">{truncate(item.description ?? '') || '—'}</Td>
+                    <Td>
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt=""
+                          className="h-9 w-14 rounded border border-line object-cover"
+                        />
+                      ) : (
+                        <span className="text-ink-faint">—</span>
+                      )}
+                    </Td>
+                    <Td>{priorityChip(item.priority)}</Td>
+                    <Td className="whitespace-nowrap">{formatDate(item.date)}</Td>
+                    <Td className="whitespace-nowrap">{formatDate(item.expiresAt)}</Td>
+                    <Td>
+                      <StatusPill value={status} />
+                    </Td>
+                    <Td className="whitespace-nowrap text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <ActionIcon
+                          label="View announcement"
+                          onClick={() => navigate(`/admin/announcements/${item.id}`)}
+                        >
+                          <FiEye className="h-3.5 w-3.5" />
+                        </ActionIcon>
+                        <ActionIcon
+                          label="Edit announcement"
+                          onClick={() => navigate(`/admin/announcements/${item.id}/edit`)}
+                        >
+                          <FiEdit2 className="h-3.5 w-3.5" />
+                        </ActionIcon>
+                        {isActive && !archived ? (
+                          <Btn
+                            size="xs"
                             disabled={busy}
-                            onClick={() => setDeletePending(item)}
+                            onClick={() => unpublish(item)}
                           >
-                            <FiTrash2 className="h-3.5 w-3.5" />
-                          </ActionIcon>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                            Unpublish
+                          </Btn>
+                        ) : (
+                          <Btn
+                            size="xs"
+                            variant="primary"
+                            disabled={busy}
+                            onClick={() => publish(item)}
+                          >
+                            Publish
+                          </Btn>
+                        )}
+                        <ActionIcon
+                          label="Delete announcement"
+                          danger
+                          disabled={busy}
+                          onClick={() => setDeletePending(item)}
+                        >
+                          <FiTrash2 className="h-3.5 w-3.5" />
+                        </ActionIcon>
+                      </div>
+                    </Td>
+                  </TRow>
+                );
+              })}
+            </TBody>
+          </TableShell>
         )}
       </Card>
 

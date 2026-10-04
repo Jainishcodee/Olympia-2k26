@@ -69,7 +69,7 @@ export const subscribeToAudit = (
       q,
       (snapshot) => {
         callback(
-          snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as AuditEntry),
+          snapshot.docs.map((d) => ({ ...d.data(), id: d.id }) as AuditEntry),
         );
       },
       (error) => {

@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import { useCollection, useCollectionGroup } from '@/hooks/useCollection';
-import { useTheme } from '@/contexts/ThemeContext';
 import {
   AdminHeader,
   Btn,
@@ -10,9 +9,15 @@ import {
   LoadingRows,
   SearchInput,
   StatTile,
+  SubLine,
+  TBody,
+  Td,
+  THead,
+  Th,
+  TableShell,
   Toolbar,
+  TRow,
 } from '@/components/admin/kit';
-import { cn } from '@/utils/cn';
 import type { Match, Player, Rating, Sport } from '@/types';
 
 /* ============================================================================
@@ -49,7 +54,7 @@ const Stars: React.FC<{ value: number }> = ({ value }) => {
         {[1, 2, 3, 4, 5].map((step) => (
           <span
             key={step}
-            className={`text-[13px] leading-none ${step <= filled ? 'text-[#D9A441]' : 'text-slate-300'}`}
+            className={`text-[13px] leading-none ${step <= filled ? 'text-[#D9A441]' : 'text-ink-faint'}`}
           >
             {step <= filled ? '★' : '☆'}
           </span>
@@ -65,9 +70,9 @@ const Stars: React.FC<{ value: number }> = ({ value }) => {
 /** 1–5 histogram as one thin stacked bar. */
 const Distribution: React.FC<{ dist: number[]; count: number }> = ({ dist, count }) => {
   const tones = ['bg-red-400', 'bg-amber-300', 'bg-[#D9A441]', 'bg-sky-400', 'bg-[#1264FF]'];
-  if (!count) return <span className="text-[12px] text-slate-400">—</span>;
+  if (!count) return <span className="text-[12px] text-ink-faint">—</span>;
   return (
-    <span className="flex h-2 w-32 overflow-hidden rounded-full bg-slate-200/60" title="1★ → 5★">
+    <span className="flex h-2 w-32 overflow-hidden rounded-full bg-surface-soft-2" title="1★ → 5★">
       {dist.map((value, index) => (
         <span
           key={index}
@@ -92,7 +97,6 @@ interface PlayerRow {
 }
 
 const RatingsManager: React.FC = () => {
-  const { isDay } = useTheme();
   const ratings = useCollectionGroup<Rating>('ratings', { sortBy: 'createdAt', direction: 'desc' });
   const matches = useCollection<Match>('matches', { sortBy: 'scheduledAt', direction: 'desc' });
   const players = useCollection<Player>('players', { sortBy: 'name' });
@@ -208,13 +212,10 @@ const RatingsManager: React.FC = () => {
       </div>
 
       {/* ------------------------------------------------ read-only notice */}
-      <div className={cn(
-        'mb-4 flex flex-wrap items-start justify-between gap-3 rounded-lg border px-4 py-3',
-        isDay ? 'border-slate-200 bg-white/90 shadow-sm' : 'border-white/10 bg-white/[0.02]'
-      )}>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3 rounded-lg border border-line bg-surface px-4 py-3 shadow-sm">
         <div className="min-w-0">
-          <p className={cn('text-[13px] font-bold', isDay ? 'text-slate-900' : 'text-slate-100')}>Ratings are user-submitted and read-only.</p>
-          <p className={cn('mt-0.5 max-w-3xl text-[12px] leading-relaxed', isDay ? 'text-slate-600' : 'text-slate-400')}>
+          <p className="text-[13px] font-bold text-ink">Ratings are user-submitted and read-only.</p>
+          <p className="mt-0.5 max-w-3xl text-[12px] leading-relaxed text-ink-muted">
             Nothing on this screen edits a public score. Abusive or spam feedback can only be moderated
             through the Reviews screen, where written reviews are hidden or deleted.
           </p>
@@ -231,7 +232,7 @@ const RatingsManager: React.FC = () => {
           placeholder="Search player…"
           className="w-full sm:w-72"
         />
-        <span className={cn('ml-auto text-[12px] tabular-nums', isDay ? 'text-slate-500' : 'text-slate-400')}>
+        <span className="ml-auto text-[12px] font-bold tabular-nums text-ink-muted">
           {rows.length} of {playerById.size} players
         </span>
       </Toolbar>
@@ -253,68 +254,53 @@ const RatingsManager: React.FC = () => {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[940px] border-collapse text-left">
-              <thead>
-                <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
-                  {['Player', 'Match', 'Sport', 'Average rating', 'Ratings', 'Distribution'].map((heading) => (
-                    <th
-                      key={heading}
-                      className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-slate-400')}
-                    >
-                      {heading}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
-                {rows.map((row) => {
-                  const player = playerById.get(row.playerId);
-                  const latestMatch = matchById.get(row.latestMatchId);
-                  return (
-                    <tr key={row.playerId} className={cn('transition-colors', isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.02]')}>
-                      <td className="max-w-[220px] px-3 py-2.5">
-                        <span className={cn('block truncate text-[13px] font-semibold', isDay ? 'text-slate-900' : 'text-white')}>
-                          {player?.name ?? row.playerId}
+          <TableShell minW={940}>
+            <THead>
+              <tr>
+                {['Player', 'Match', 'Sport', 'Average rating', 'Ratings', 'Distribution'].map((heading) => (
+                  <Th key={heading}>{heading}</Th>
+                ))}
+              </tr>
+            </THead>
+            <TBody>
+              {rows.map((row) => {
+                const player = playerById.get(row.playerId);
+                const latestMatch = matchById.get(row.latestMatchId);
+                return (
+                  <TRow key={row.playerId}>
+                    <Td strong className="max-w-[220px]">
+                      <span className="block truncate font-bold">{player?.name ?? row.playerId}</span>
+                      <SubLine>
+                        {player?.jerseyNumber ? `#${player.jerseyNumber} · ` : ''}
+                        {row.playerId.slice(0, 12)}
+                      </SubLine>
+                    </Td>
+                    <Td className="max-w-[240px]">
+                      <span className="block truncate text-[13px] text-ink">{matchLabel(latestMatch)}</span>
+                      {row.matchIds.size > 1 && (
+                        <span className="block text-[11px] text-ink-faint">
+                          {row.matchIds.size} matches rated
                         </span>
-                        <span className={cn('block truncate text-[11px]', isDay ? 'text-slate-500' : 'text-slate-400')}>
-                          {player?.jerseyNumber ? `#${player.jerseyNumber} · ` : ''}
-                          {row.playerId.slice(0, 12)}
-                        </span>
-                      </td>
-                      <td className="max-w-[240px] px-3 py-2.5">
-                        <span className={cn('block truncate text-[13px]', isDay ? 'text-slate-800' : 'text-slate-200')}>
-                          {matchLabel(latestMatch)}
-                        </span>
-                        {row.matchIds.size > 1 && (
-                          <span className={cn('block text-[11px]', isDay ? 'text-slate-500' : 'text-slate-400')}>
-                            {row.matchIds.size} matches rated
-                          </span>
-                        )}
-                      </td>
-                      <td className={cn('whitespace-nowrap px-3 py-2.5 text-[13px]', isDay ? 'text-slate-700' : 'text-slate-300')}>
-                        {sportOf(row)}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
-                        <Stars value={row.average} />
-                      </td>
-                      <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
-                        {row.count}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
-                        <Distribution dist={row.dist} count={row.count} />
-                        <span className={cn('mt-1 block font-mono text-[10px] tabular-nums', isDay ? 'text-slate-500' : 'text-slate-400')}>
-                          {row.dist
-                            .map((value, index) => `${index + 1}★${value}`)
-                            .join('  ')}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      )}
+                    </Td>
+                    <Td className="whitespace-nowrap font-semibold text-ink">{sportOf(row)}</Td>
+                    <Td className="whitespace-nowrap">
+                      <Stars value={row.average} />
+                    </Td>
+                    <Td numeric>{row.count}</Td>
+                    <Td className="whitespace-nowrap">
+                      <Distribution dist={row.dist} count={row.count} />
+                      <span className="mt-1 block font-mono text-[10px] tabular-nums text-ink-faint">
+                        {row.dist
+                          .map((value, index) => `${index + 1}★${value}`)
+                          .join('  ')}
+                      </span>
+                    </Td>
+                  </TRow>
+                );
+              })}
+            </TBody>
+          </TableShell>
         )}
       </Card>
     </>

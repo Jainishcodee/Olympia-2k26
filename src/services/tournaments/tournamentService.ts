@@ -17,7 +17,7 @@ export const getTournaments = async (): Promise<Tournament[]> => {
   if (!isFirebaseConfigured || !db) return [];
   try {
     const snapshot = await getDocs(collection(db, TOURNAMENTS_COLLECTION));
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Tournament));
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Tournament));
   } catch (error) {
     console.error('Error getting tournaments', error);
     return [];
@@ -30,7 +30,7 @@ export const getTournament = async (id: string): Promise<Tournament | null> => {
     const docRef = doc(db, TOURNAMENTS_COLLECTION, id);
     const snapshot = await getDoc(docRef);
     if (snapshot.exists()) {
-      return { id: snapshot.id, ...snapshot.data() } as Tournament;
+      return { ...snapshot.data(), id: snapshot.id } as Tournament;
     }
     return null;
   } catch (error) {

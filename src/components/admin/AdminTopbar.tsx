@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
 import { lookupAdminTitle } from './adminNav';
-import { FiMenu, FiChevronsLeft, FiChevronsRight, FiExternalLink, FiCpu, FiRadio, FiSun, FiMoon } from 'react-icons/fi';
+import { FiMenu, FiChevronsLeft, FiChevronsRight, FiExternalLink, FiCpu, FiSun, FiMoon, FiRadio } from 'react-icons/fi';
 import { cn } from '@/utils/cn';
 
 interface Props {
@@ -13,35 +13,21 @@ interface Props {
   onToggleCollapse: () => void;
 }
 
-/**
- * High-Class Operational Bar supporting both Day & Night themes.
- */
+/** Operational top bar — status, section context and global destinations. */
 const AdminTopbar: React.FC<Props> = ({ onMenu, collapsed, onToggleCollapse }) => {
   const { pathname } = useLocation();
-  const { user, admin } = useAuth();
+  const { admin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const isDay = theme === 'day';
   const { title, section } = lookupAdminTitle(pathname);
 
+  const iconBtn =
+    'rounded-lg border border-transparent p-1.5 text-ink-muted transition-colors hover:border-line hover:bg-surface-soft hover:text-ink cursor-pointer';
+
   return (
-    <header
-      className={cn(
-        'flex h-16 shrink-0 items-center justify-between gap-3 px-4 transition-colors duration-300 md:px-6',
-        isDay
-          ? 'border-b border-slate-200 bg-[#FCFBFA]/90 text-slate-800 backdrop-blur-xl shadow-xs'
-          : 'border-b border-white/10 bg-[#060E1C]/80 text-white backdrop-blur-2xl',
-      )}
-    >
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onMenu}
-          aria-label="Open navigation"
-          className={cn(
-            'rounded-lg p-2 transition-colors md:hidden',
-            isDay ? 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-400 hover:bg-white/10 hover:text-white',
-          )}
-        >
+    <header className="z-20 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-line bg-surface/85 px-3 backdrop-blur-xl md:h-16 md:px-5">
+      <div className="flex min-w-0 items-center gap-2">
+        <button type="button" onClick={onMenu} aria-label="Open navigation" className={cn(iconBtn, 'md:hidden')}>
           <FiMenu className="h-5 w-5" />
         </button>
 
@@ -49,81 +35,59 @@ const AdminTopbar: React.FC<Props> = ({ onMenu, collapsed, onToggleCollapse }) =
           type="button"
           onClick={onToggleCollapse}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className={cn(
-            'hidden rounded-lg p-2 transition-colors md:block',
-            isDay ? 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-400 hover:bg-white/10 hover:text-white',
-          )}
+          className={cn(iconBtn, 'hidden md:block')}
         >
           {collapsed ? <FiChevronsRight className="h-4 w-4" /> : <FiChevronsLeft className="h-4 w-4" />}
         </button>
 
         <div className="ml-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span
-              className={cn(
-                'hidden text-[10px] font-black uppercase tracking-[0.24em] sm:block',
-                isDay ? 'text-[#A9761B]' : 'text-[#D9A441]',
-              )}
-            >
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="hidden text-[9.5px] font-black uppercase tracking-[0.24em] text-gold-ink sm:block">
               {section}
             </span>
-            <span className={isDay ? 'hidden text-slate-300 sm:block' : 'hidden text-slate-600 sm:block'}>/</span>
-            <span
-              className={cn(
-                'truncate text-xs md:text-sm font-bold tracking-wide',
-                isDay ? 'text-slate-900' : 'text-white',
-              )}
-            >
+            <span className="hidden text-line-strong sm:block">/</span>
+            <span className="truncate font-display text-[13px] font-bold tracking-tight text-ink md:text-[14.5px]">
               {title}
             </span>
+            {admin?.displayName && (
+              <span className="hidden truncate text-[11px] font-semibold text-ink-faint lg:block">
+                · {admin.displayName}
+              </span>
+            )}
           </div>
         </div>
       </div>
 
       {/* Right controls & live status badge */}
-      <div className="flex items-center gap-2.5 md:gap-3.5">
+      <div className="flex shrink-0 items-center gap-2 md:gap-2.5">
         {/* Day / Night Theme Switcher */}
         <motion.button
-          whileHover={{ scale: 1.05 }}
+          whileHover={{ y: -1 }}
           whileTap={{ scale: 0.95 }}
           type="button"
           onClick={toggleTheme}
           title={isDay ? 'Switch to Night Mode' : 'Switch to Day Mode'}
           aria-label={isDay ? 'Switch to Night Mode' : 'Switch to Day Mode'}
-          className={cn(
-            'flex h-8.5 w-8.5 items-center justify-center rounded-lg border transition-colors cursor-pointer',
-            isDay
-              ? 'border-slate-200 bg-white text-slate-700 shadow-2xs hover:bg-slate-50'
-              : 'border-slate-700 bg-slate-800 text-slate-300 shadow-2xs hover:bg-slate-700 hover:text-white',
-          )}
+          className="flex h-8.5 w-8.5 cursor-pointer items-center justify-center rounded-lg border border-line bg-surface-2 text-ink-muted shadow-xs transition-colors hover:border-line-strong hover:text-ink"
         >
-          {isDay ? <FiMoon className="h-4 w-4 text-slate-700" /> : <FiSun className="h-4 w-4 text-amber-300" />}
+          {isDay ? <FiMoon className="h-4 w-4" /> : <FiSun className="h-4 w-4 text-amber-300" />}
         </motion.button>
 
         {/* System Pulse */}
-        <div
-          className={cn(
-            'hidden items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-medium tracking-wide md:flex transition-colors',
-            isDay
-              ? 'border-slate-200 bg-slate-50 text-slate-600'
-              : 'border-slate-700/80 bg-slate-800/80 text-slate-400',
-          )}
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          <span className="uppercase text-[9px] tracking-wider">SYNC ACTIVE</span>
+        <div className="hidden items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 text-ink-muted md:flex">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-70" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          </span>
+          <span className="text-[9.5px] font-black uppercase tracking-[0.16em]">Sync active</span>
         </div>
 
         {/* Scoring Simulator quick link */}
         <Link
           to="/admin/scoring-simulator"
-          className={cn(
-            'hidden items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium tracking-wide transition-colors lg:flex',
-            isDay
-              ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
-              : 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white shadow-2xs',
-          )}
+          className="hidden items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-[12px] font-semibold text-ink-muted shadow-xs transition-colors hover:border-line-strong hover:text-ink lg:flex"
         >
-          <FiCpu className="h-3.5 w-3.5 text-blue-500" />
+          <FiCpu className="h-3.5 w-3.5 text-[#1264FF]" />
           <span>Formula Sandbox</span>
         </Link>
 
@@ -133,7 +97,7 @@ const AdminTopbar: React.FC<Props> = ({ onMenu, collapsed, onToggleCollapse }) =
             to="/"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1.5 rounded-lg border border-blue-600 bg-blue-600 hover:bg-blue-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-2xs transition-colors"
+            className="flex items-center gap-1.5 rounded-lg border border-[#1264FF] bg-[#1264FF] px-3 py-1.5 text-[12px] font-semibold text-white shadow-[0_1px_2px_rgba(18,100,255,0.35)] transition-colors hover:bg-[#0E55DE]"
           >
             <FiRadio className="h-3.5 w-3.5" />
             <span>Public Arena</span>

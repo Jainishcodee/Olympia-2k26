@@ -55,7 +55,7 @@ export const getAdminProfile = async (uid: string): Promise<Admin | null> => {
   try {
     const adminDoc = await getDoc(doc(db, 'admins', uid));
     if (adminDoc.exists()) {
-      return { uid: adminDoc.id, ...adminDoc.data() } as unknown as Admin;
+      return { ...adminDoc.data(), uid: adminDoc.id } as unknown as Admin;
     }
     return null;
   } catch (error) {

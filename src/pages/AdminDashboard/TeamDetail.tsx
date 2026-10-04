@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useCollection, useDoc } from '@/hooks/useCollection';
-import { useTheme } from '@/contexts/ThemeContext';
 import {
   addPlayerToTeam,
   deleteTeam,
@@ -26,6 +25,14 @@ import {
   PageLoading,
   StatTile,
   StatusPill,
+  SubLine,
+  TBody,
+  Td,
+  THead,
+  Th,
+  TableLink,
+  TableShell,
+  TRow,
 } from '@/components/admin/kit';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { getTeamLogo } from '@/utils/teamLogos';
@@ -65,14 +72,14 @@ const TeamMark: React.FC<{ name: string; logo?: string; large?: boolean; teamId?
       src={finalLogo}
       alt={name}
       className={cn(
-        'shrink-0 rounded-md border border-slate-200 bg-white object-cover',
+        'shrink-0 rounded-md border border-line bg-surface-2 object-cover',
         large ? 'h-14 w-14' : 'h-8 w-8',
       )}
     />
   ) : (
     <span
       className={cn(
-        'flex shrink-0 items-center justify-center rounded-md bg-[#071426] font-bold tracking-wide text-[#D9A441]',
+        'flex shrink-0 items-center justify-center rounded-md border border-line bg-surface-2 font-bold tracking-wide text-gold-ink',
         large ? 'h-14 w-14 text-lg' : 'h-8 w-8 text-[11px]',
       )}
     >
@@ -84,15 +91,15 @@ const TeamMark: React.FC<{ name: string; logo?: string; large?: boolean; teamId?
 const ResultBadge: React.FC<{ outcome: 'W' | 'D' | 'L' }> = ({ outcome }) => {
   const tone =
     outcome === 'W'
-      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+      ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
       : outcome === 'L'
-        ? 'border-red-200 bg-red-50 text-red-700'
-        : 'border-slate-200 bg-slate-100 text-slate-600';
+        ? 'border-rose-500/25 bg-rose-500/10 text-rose-600 dark:text-rose-300'
+        : 'border-line bg-surface-soft-2 text-ink-muted';
   const label = outcome === 'W' ? 'Won' : outcome === 'L' ? 'Lost' : 'Draw';
   return (
     <span
       className={cn(
-        'inline-flex min-w-[54px] items-center justify-center rounded border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+        'inline-flex min-w-[54px] items-center justify-center rounded-md border px-2 py-[3px] text-[10px] font-black uppercase tracking-[0.12em]',
         tone,
       )}
     >
@@ -119,8 +126,6 @@ const TeamDetail: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { log } = useAuditLog();
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
 
   // `/admin/teams/:id/roster` opens straight on the roster tab.
   const [tab, setTab] = useState<string>(location.pathname.endsWith('/roster') ? 'roster' : 'overview');
@@ -371,10 +376,10 @@ const TeamDetail: React.FC = () => {
             <div className="flex flex-wrap items-center gap-4">
               <TeamMark name={team.name} logo={team.logo} large teamId={team.id} />
               <div className="min-w-0">
-                <h2 className={cn('truncate text-lg font-bold', isDay ? 'text-slate-900' : 'text-white')}>{team.name}</h2>
-                <p className={cn('mt-1 text-[13px]', isDay ? 'text-slate-500' : 'text-white/60')}>
+                <h2 className="truncate font-display text-[15px] font-bold tracking-tight text-ink">{team.name}</h2>
+                <p className="mt-1 text-[13px] text-ink-muted">
                   {sportName(team.sportId)} · Short name{' '}
-                  <span className={cn('font-mono font-bold uppercase', isDay ? 'text-slate-700' : 'text-[#D9A441]')}>{team.shortName || '—'}</span>
+                  <span className="font-mono font-bold uppercase text-gold-ink">{team.shortName || '—'}</span>
                 </p>
               </div>
               <div className="ml-auto">
@@ -407,7 +412,7 @@ const TeamDetail: React.FC = () => {
       {tab === 'roster' && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className={cn('text-[13px]', isDay ? 'text-slate-600' : 'text-white/60')}>
+            <p className="text-[13px] text-ink-muted">
               {roster.length} registered {roster.length === 1 ? 'player' : 'players'}
             </p>
             <Btn to={addPlayerTo} variant="primary" icon={<FiPlus className="h-4 w-4" />}>
@@ -445,107 +450,91 @@ const TeamDetail: React.FC = () => {
                 }
               />
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px] border-collapse text-left">
-                  <thead>
-                    <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
-                      {['Player', 'Jersey', 'Role', 'Position', 'Status', ''].map((heading) => (
-                        <th
-                          key={heading}
-                          className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-white/60')}
-                        >
-                          {heading}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
-                    {roster.map((player) => {
-                      const isCaptain = team.captainId === player.id;
-                      const isVice = team.viceCaptainId === player.id;
-                      return (
-                        <tr key={player.id} className={isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]'}>
-                          <td className="px-3 py-2.5">
-                            <div className="flex items-center gap-2.5">
-                              {player.photo ? (
-                                <img
-                                  src={player.photo}
-                                  alt={player.name}
-                                  className={cn('h-8 w-8 shrink-0 rounded-md border object-cover', isDay ? 'border-slate-200 bg-white' : 'border-white/10 bg-white/[0.05]')}
-                                />
-                              ) : (
-                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#071426] text-[11px] font-bold text-[#D9A441]">
-                                  {initialsOf(player.name)}
+              <TableShell minW={900}>
+                <THead>
+                  <tr>
+                    {['Player', 'Jersey', 'Role', 'Position', 'Status', ''].map((heading) => (
+                      <Th key={heading}>{heading}</Th>
+                    ))}
+                  </tr>
+                </THead>
+                <TBody>
+                  {roster.map((player) => {
+                    const isCaptain = team.captainId === player.id;
+                    const isVice = team.viceCaptainId === player.id;
+                    return (
+                      <TRow key={player.id}>
+                        <Td className="min-w-[200px]">
+                          <div className="flex items-center gap-2.5">
+                            {player.photo ? (
+                              <img
+                                src={player.photo}
+                                alt={player.name}
+                                className="h-8 w-8 shrink-0 rounded-md border border-line bg-surface-2 object-cover"
+                              />
+                            ) : (
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-line bg-surface-2 text-[11px] font-bold text-gold-ink">
+                                {initialsOf(player.name)}
+                              </span>
+                            )}
+                            <div className="min-w-0">
+                              <TableLink to={`/admin/players/${player.id}`}>{player.name}</TableLink>
+                              {isCaptain && (
+                                <span className="text-[10px] font-black uppercase tracking-[0.14em] text-gold-ink">
+                                  Captain
                                 </span>
                               )}
-                              <div className="min-w-0">
-                                <Link
-                                  to={`/admin/players/${player.id}`}
-                                  className={cn('block truncate text-[13px] font-bold transition-colors hover:text-[#1264FF]', isDay ? 'text-slate-800' : 'text-white')}
-                                >
-                                  {player.name}
-                                </Link>
-                                {isCaptain && (
-                                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#D9A441]">
-                                    Captain
-                                  </span>
-                                )}
-                                {isVice && (
-                                  <span className={cn('text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-400' : 'text-white/40')}>
-                                    Vice captain
-                                  </span>
-                                )}
-                              </div>
+                              {isVice && (
+                                <span className="text-[10px] font-black uppercase tracking-[0.14em] text-ink-faint">
+                                  Vice captain
+                                </span>
+                              )}
                             </div>
-                          </td>
-                          <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-700' : 'text-white/80')}>
-                            {player.jerseyNumber ?? '—'}
-                          </td>
-                          <td className={cn('whitespace-nowrap px-3 py-2.5 text-[13px]', isDay ? 'text-slate-600' : 'text-white/70')}>
-                            {String(player.role ?? 'player').replace('_', ' ')}
-                          </td>
-                          <td className={cn('whitespace-nowrap px-3 py-2.5 text-[13px]', isDay ? 'text-slate-600' : 'text-white/70')}>
-                            {player.position || '—'}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-2.5">
-                            <StatusPill value={player.active !== false ? 'active' : 'inactive'} />
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-2.5">
-                            <div className="flex items-center justify-end gap-1">
-                              <Btn
-                                size="xs"
-                                disabled={isCaptain || busy}
-                                onClick={() => makeCaptain(player)}
-                              >
-                                Captain
-                              </Btn>
-                              <Btn
-                                size="xs"
-                                disabled={isVice || busy}
-                                onClick={() => makeViceCaptain(player)}
-                              >
-                                Vice
-                              </Btn>
-                              <Btn to={`/admin/players/${player.id}`} size="xs">
-                                Edit
-                              </Btn>
-                              <Btn
-                                size="xs"
-                                variant="danger"
-                                disabled={busy}
-                                onClick={() => setConfirm({ kind: 'remove', player })}
-                                icon={<FiTrash2 className="h-3 w-3" />}
-                              >
-                                Remove
-                              </Btn>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                          </div>
+                        </Td>
+                        <Td numeric>{player.jerseyNumber ?? '—'}</Td>
+                        <Td className="whitespace-nowrap">
+                          {String(player.role ?? 'player').replace('_', ' ')}
+                        </Td>
+                        <Td className="whitespace-nowrap">{player.position || '—'}</Td>
+                        <Td>
+                          <StatusPill value={player.active !== false ? 'active' : 'inactive'} />
+                        </Td>
+                        <Td className="whitespace-nowrap text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Btn
+                              size="xs"
+                              disabled={isCaptain || busy}
+                              onClick={() => makeCaptain(player)}
+                            >
+                              Captain
+                            </Btn>
+                            <Btn
+                              size="xs"
+                              disabled={isVice || busy}
+                              onClick={() => makeViceCaptain(player)}
+                            >
+                              Vice
+                            </Btn>
+                            <Btn to={`/admin/players/${player.id}`} size="xs">
+                              Edit
+                            </Btn>
+                            <Btn
+                              size="xs"
+                              variant="danger"
+                              disabled={busy}
+                              onClick={() => setConfirm({ kind: 'remove', player })}
+                              icon={<FiTrash2 className="h-3 w-3" />}
+                            >
+                              Remove
+                            </Btn>
+                          </div>
+                        </Td>
+                      </TRow>
+                    );
+                  })}
+                </TBody>
+              </TableShell>
             )}
           </Card>
         </div>
@@ -562,56 +551,45 @@ const TeamDetail: React.FC = () => {
               action={<Btn to="/admin/matches/create">Create match</Btn>}
             />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] border-collapse text-left">
-                <thead>
-                  <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
-                    {['Match', 'Date', 'Score', 'Status', ''].map((heading) => (
-                      <th
-                        key={heading}
-                        className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-white/60')}
-                      >
-                        {heading}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
-                  {teamMatches.map((match) => (
-                    <tr key={match.id} className={isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]'}>
-                      <td className="px-3 py-2.5">
-                        <span className={cn('block text-[13px] font-bold', isDay ? 'text-slate-800' : 'text-white')}>
-                          vs {opponentOf(match)}
-                        </span>
-                        <span className={cn('block text-[11px]', isDay ? 'text-slate-400' : 'text-white/40')}>
-                          {match.matchNumber ? `Match #${match.matchNumber} · ` : ''}
-                          {sportName(match.sportId)}
-                        </span>
-                      </td>
-                      <td className={cn('whitespace-nowrap px-3 py-2.5 text-[12px]', isDay ? 'text-slate-600' : 'text-white/70')}>
-                        {cellDate(match.scheduledAt)}
-                      </td>
-                      <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-white')}>
-                        {scoreOf(match)}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
-                        <StatusPill value={match.status} />
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-right">
-                        <Btn
-                          to={`/admin/matches/${match.id}/scoring`}
-                          size="xs"
-                          variant="primary"
-                          icon={<FiPlay className="h-3 w-3" />}
-                        >
-                          Open scoring
-                        </Btn>
-                      </td>
-                    </tr>
+            <TableShell minW={900}>
+              <THead>
+                <tr>
+                  {['Match', 'Date', 'Score', 'Status', ''].map((heading) => (
+                    <Th key={heading}>{heading}</Th>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </tr>
+              </THead>
+              <TBody>
+                {teamMatches.map((match) => (
+                  <TRow key={match.id}>
+                    <Td strong className="min-w-[200px]">
+                      <span className="block truncate text-[13px] font-bold text-ink">
+                        vs {opponentOf(match)}
+                      </span>
+                      <SubLine>
+                        {match.matchNumber ? `Match #${match.matchNumber} · ` : ''}
+                        {sportName(match.sportId)}
+                      </SubLine>
+                    </Td>
+                    <Td className="whitespace-nowrap">{cellDate(match.scheduledAt)}</Td>
+                    <Td numeric>{scoreOf(match)}</Td>
+                    <Td>
+                      <StatusPill value={match.status} />
+                    </Td>
+                    <Td className="whitespace-nowrap text-right">
+                      <Btn
+                        to={`/admin/matches/${match.id}/scoring`}
+                        size="xs"
+                        variant="primary"
+                        icon={<FiPlay className="h-3 w-3" />}
+                      >
+                        Open scoring
+                      </Btn>
+                    </Td>
+                  </TRow>
+                ))}
+              </TBody>
+            </TableShell>
           )}
         </Card>
       )}
@@ -626,43 +604,30 @@ const TeamDetail: React.FC = () => {
               message="Once a match involving this team is completed it lands here with a win, draw or loss badge."
             />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] border-collapse text-left">
-                <thead>
-                  <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
-                    {['Result', 'Opponent', 'Date', 'Score', 'Sport'].map((heading) => (
-                      <th
-                        key={heading}
-                        className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-white/60')}
-                      >
-                        {heading}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
-                  {results.map((match) => (
-                    <tr key={match.id} className={isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]'}>
-                      <td className="px-3 py-2.5">
-                        <ResultBadge outcome={outcomeOf(match)} />
-                      </td>
-                      <td className={cn('max-w-[240px] truncate px-3 py-2.5 text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-white')}>
-                        {opponentOf(match)}
-                      </td>
-                      <td className={cn('whitespace-nowrap px-3 py-2.5 text-[12px]', isDay ? 'text-slate-600' : 'text-white/70')}>
-                        {cellDate(match.scheduledAt)}
-                      </td>
-                      <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-white')}>
-                        {scoreOf(match)}
-                      </td>
-                      <td className={cn('whitespace-nowrap px-3 py-2.5 text-[13px]', isDay ? 'text-slate-600' : 'text-white/70')}>
-                        {sportName(match.sportId)}
-                      </td>
-                    </tr>
+            <TableShell minW={760}>
+              <THead>
+                <tr>
+                  {['Result', 'Opponent', 'Date', 'Score', 'Sport'].map((heading) => (
+                    <Th key={heading}>{heading}</Th>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </tr>
+              </THead>
+              <TBody>
+                {results.map((match) => (
+                  <TRow key={match.id}>
+                    <Td>
+                      <ResultBadge outcome={outcomeOf(match)} />
+                    </Td>
+                    <Td strong className="max-w-[240px] truncate">
+                      {opponentOf(match)}
+                    </Td>
+                    <Td className="whitespace-nowrap">{cellDate(match.scheduledAt)}</Td>
+                    <Td numeric>{scoreOf(match)}</Td>
+                    <Td className="whitespace-nowrap">{sportName(match.sportId)}</Td>
+                  </TRow>
+                ))}
+              </TBody>
+            </TableShell>
           )}
         </Card>
       )}
@@ -696,41 +661,38 @@ const TeamDetail: React.FC = () => {
                 message="Statistics fill in as soon as this team finishes a match."
               />
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] border-collapse text-left">
-                  <thead>
-                    <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
-                      {['Sport', 'Played', 'Won', 'Drawn', 'Lost', 'GF', 'GA', 'GD'].map((heading) => (
-                        <th
-                          key={heading}
-                          className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-white/60')}
-                        >
-                          {heading}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
-                    {stats.bySport.map(([sportId, tally]) => (
-                      <tr key={sportId} className={isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]'}>
-                        <td className={cn('px-3 py-2.5 text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-white')}>
-                          {sportName(sportId)}
-                        </td>
-                        <td className={cn('px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-700' : 'text-white/80')}>{tally.played}</td>
-                        <td className={cn('px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-emerald-700' : 'text-emerald-400')}>{tally.won}</td>
-                        <td className={cn('px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-600' : 'text-white/60')}>{tally.drawn}</td>
-                        <td className={cn('px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-red-600' : 'text-rose-400')}>{tally.lost}</td>
-                        <td className={cn('px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-700' : 'text-white/80')}>{tally.gf}</td>
-                        <td className={cn('px-3 py-2.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-700' : 'text-white/80')}>{tally.ga}</td>
-                        <td className={cn('px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-white')}>
-                          {tally.gf - tally.ga > 0 ? '+' : ''}
-                          {tally.gf - tally.ga}
-                        </td>
-                      </tr>
+              <TableShell minW={720}>
+                <THead>
+                  <tr>
+                    {['Sport', 'Played', 'Won', 'Drawn', 'Lost', 'GF', 'GA', 'GD'].map((heading) => (
+                      <Th key={heading}>{heading}</Th>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </tr>
+                </THead>
+                <TBody>
+                  {stats.bySport.map(([sportId, tally]) => (
+                    <TRow key={sportId}>
+                      <Td strong className="whitespace-nowrap">
+                        {sportName(sportId)}
+                      </Td>
+                      <Td numeric>{tally.played}</Td>
+                      <Td numeric className="text-emerald-600 dark:text-emerald-400">
+                        {tally.won}
+                      </Td>
+                      <Td numeric>{tally.drawn}</Td>
+                      <Td numeric className="text-rose-600 dark:text-rose-400">
+                        {tally.lost}
+                      </Td>
+                      <Td numeric>{tally.gf}</Td>
+                      <Td numeric>{tally.ga}</Td>
+                      <Td numeric>
+                        {tally.gf - tally.ga > 0 ? '+' : ''}
+                        {tally.gf - tally.ga}
+                      </Td>
+                    </TRow>
+                  ))}
+                </TBody>
+              </TableShell>
             )}
           </Card>
         </div>

@@ -12,12 +12,18 @@ import {
   LoadingRows,
   SearchInput,
   StatusPill,
+  SubLine,
+  TBody,
+  Td,
+  THead,
+  Th,
+  TableShell,
   Toolbar,
+  TRow,
 } from '@/components/admin/kit';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { useCollection, useDoc } from '@/hooks/useCollection';
 import { useAuditLog } from '@/hooks/useAuditLog';
-import { useTheme } from '@/contexts/ThemeContext';
 import { deleteFixture, reorderFixtures, updateFixture } from '@/services/fixtures/fixtureService';
 import { createMatch, updateMatch } from '@/services/matches/matchService';
 import { saveSettings } from '@/services/settings/settingsService';
@@ -88,14 +94,13 @@ const dateOf = (value: unknown) => {
 
 const chipTone = (status?: string) => {
   const key = (status ?? 'scheduled').toLowerCase();
-  if (key === 'live') return 'border-red-200 bg-red-50 text-red-700';
-  if (key === 'completed') return 'border-emerald-200 bg-emerald-50 text-emerald-700';
-  if (key === 'cancelled') return 'border-slate-200 bg-slate-100 text-slate-500';
-  return 'border-blue-200 bg-blue-50 text-blue-700';
+  if (key === 'live') return 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400';
+  if (key === 'completed') return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400';
+  if (key === 'cancelled') return 'border-line bg-surface-soft text-ink-faint';
+  return 'border-[#1264FF]/25 bg-[#1264FF]/10 text-[#1264FF]';
 };
 
 const FixturesManager: React.FC = () => {
-  const { isDay } = useTheme();
   const { log } = useAuditLog();
   const navigate = useNavigate();
 
@@ -498,32 +503,29 @@ const FixturesManager: React.FC = () => {
   /* -------------------------------------------------------------- views */
 
   const renderTimeline = () => (
-    <div className={cn('divide-y', isDay ? 'divide-slate-200' : 'divide-white/10')}>
+    <div className="divide-y divide-line">
       {days.map((day) => (
         <div key={day.key}>
-          <div className={cn(
-            'flex items-center justify-between gap-3 px-4 py-2',
-            isDay ? 'bg-slate-100/80' : 'bg-white/[0.04]'
-          )}>
-            <span className={cn('text-[11px] font-bold uppercase tracking-wider', isDay ? 'text-slate-700' : 'text-slate-300')}>
+          <div className="flex items-center justify-between gap-3 bg-surface-soft/70 px-4 py-2">
+            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-ink">
               {day.label}
             </span>
-            <span className={cn('text-[11px] tabular-nums', isDay ? 'text-slate-500' : 'text-slate-400')}>
+            <span className="text-[12px] font-bold tabular-nums text-ink-muted">
               {day.items.length} {day.items.length === 1 ? 'fixture' : 'fixtures'}
             </span>
           </div>
-          <ul className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
+          <ul className="divide-y divide-line">
             {day.items.map((fixture) => (
-              <li key={fixture.id} className={cn('flex flex-wrap items-center gap-3 px-4 py-3 transition-colors', isDay ? 'hover:bg-slate-50' : 'hover:bg-white/[0.02]')}>
-                <span className={cn('w-12 shrink-0 font-mono text-[12px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
+              <li key={fixture.id} className="flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-soft/50">
+                <span className="w-12 shrink-0 font-mono text-[12.5px] font-bold tabular-nums text-ink">
                   {timeOf(fixture.scheduledAt)}
                 </span>
                 <span className="h-2 w-2 shrink-0 rounded-full bg-[#1264FF]" />
                 <span className="min-w-[180px] flex-1">
-                  <span className={cn('block truncate text-[13px] font-semibold', isDay ? 'text-slate-900' : 'text-white')}>
+                  <span className="block truncate text-[13px] font-bold text-ink">
                     {label(fixture)}
                   </span>
-                  <span className={cn('block truncate text-[11px]', isDay ? 'text-slate-500' : 'text-slate-400')}>
+                  <span className="block truncate text-[12px] text-ink-muted">
                     {fixture.round || 'Fixture'} · {lookups.tournament(fixture.tournamentId)} ·{' '}
                     {lookups.venue(fixture.venueId)}
                   </span>
@@ -563,7 +565,7 @@ const FixturesManager: React.FC = () => {
             >
               <FiChevronRight className="h-3.5 w-3.5" />
             </ActionIcon>
-            <span className={cn('ml-2 text-[13px] font-bold', isDay ? 'text-slate-900' : 'text-white')}>
+            <span className="ml-2 text-[13px] font-bold text-ink">
               {month.toLocaleDateString([], { month: 'long', year: 'numeric' })}
             </span>
           </div>
@@ -572,11 +574,11 @@ const FixturesManager: React.FC = () => {
           </Btn>
         </div>
 
-        <div className={cn('grid grid-cols-7 border-b', isDay ? 'border-slate-200' : 'border-white/10')}>
+        <div className="grid grid-cols-7 border-b border-line">
           {WEEKDAYS.map((day) => (
             <div
               key={day}
-              className={cn('px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-500' : 'text-slate-400')}
+              className="px-2 py-1.5 text-center text-[10px] font-black uppercase tracking-[0.14em] text-ink-muted"
             >
               {day}
             </div>
@@ -589,7 +591,7 @@ const FixturesManager: React.FC = () => {
               return (
                 <div
                   key={`blank-${index}`}
-                  className={cn('min-h-[92px] border-b border-r', isDay ? 'border-slate-100 bg-slate-50/60' : 'border-white/5 bg-white/[0.01]')}
+                  className="min-h-[92px] border-b border-r border-line bg-surface-soft/40"
                 />
               );
             }
@@ -597,13 +599,13 @@ const FixturesManager: React.FC = () => {
             const items = byDay.get(key) ?? [];
             const isToday = dayKey(today) === key;
             return (
-              <div key={key} className={cn('min-h-[92px] border-b border-r p-1.5', isDay ? 'border-slate-100' : 'border-white/5')}>
+              <div key={key} className="min-h-[92px] border-b border-r border-line p-1.5">
                 <span
                   className={cn(
                     'inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold tabular-nums',
                     isToday
-                      ? 'bg-blue-600 text-white font-extrabold'
-                      : isDay ? 'text-slate-600' : 'text-slate-400',
+                      ? 'bg-[#1264FF] text-white font-extrabold'
+                      : 'text-ink-muted',
                   )}
                 >
                   {date.getDate()}
@@ -615,7 +617,7 @@ const FixturesManager: React.FC = () => {
                       to={`/admin/fixtures/${fixture.id}`}
                       title={label(fixture)}
                       className={cn(
-                        'block truncate rounded border px-1.5 py-1 text-[11px] font-semibold transition-colors',
+                        'block truncate rounded-md border px-1.5 py-1 text-[11px] font-semibold transition-colors',
                         chipTone(fixture.status),
                       )}
                     >
@@ -623,7 +625,7 @@ const FixturesManager: React.FC = () => {
                     </Link>
                   ))}
                   {items.length > 3 && (
-                    <span className={cn('block text-[10px] font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>
+                    <span className="block text-[10px] font-bold text-ink-muted">
                       +{items.length - 3} more
                     </span>
                   )}
@@ -637,72 +639,47 @@ const FixturesManager: React.FC = () => {
   };
 
   const renderTable = () => (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[1120px] border-collapse text-left">
-        <thead>
-          <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
-            {['Round', 'Tournament', 'Teams', 'Date', 'Time', 'Venue', 'Status'].map((heading) => (
-              <th
-                key={heading}
-                className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-slate-400')}
-              >
-                {heading}
-              </th>
-            ))}
-            <th className={cn('whitespace-nowrap px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-slate-400')}>
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
-          {rows.map((fixture) => (
-            <tr key={fixture.id} className={cn('transition-colors', isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.02]')}>
-              <td className="px-3 py-2.5">
-                <span className={cn('block text-[13px] font-bold', isDay ? 'text-slate-900' : 'text-white')}>
-                  {fixture.round || '—'}
-                </span>
-                <span className={cn('block text-[11px]', isDay ? 'text-slate-500' : 'text-slate-400')}>
-                  Order {fixture.order ?? '—'}
-                </span>
-              </td>
-              <td className={cn('max-w-[160px] truncate px-3 py-2.5 text-[13px]', isDay ? 'text-slate-700' : 'text-slate-300')}>
-                {lookups.tournament(fixture.tournamentId)}
-              </td>
-              <td className="max-w-[260px] px-3 py-2.5">
-                <span className={cn('block truncate text-[13px] font-semibold', isDay ? 'text-slate-900' : 'text-white')}>
-                  {label(fixture)}
-                </span>
-                {fixture.matchId && (
-                  <span className={cn('block truncate text-[11px]', isDay ? 'text-slate-500' : 'text-slate-400')}>
-                    Linked match {fixture.matchId}
+    <TableShell minW={1120}>
+      <THead>
+        <tr>
+          {['Round', 'Tournament', 'Teams', 'Date', 'Time', 'Venue', 'Status'].map((heading) => (
+            <Th key={heading}>{heading}</Th>
+          ))}
+          <Th className="text-right">Actions</Th>
+        </tr>
+      </THead>
+      <TBody>
+        {rows.map((fixture) => (
+          <TRow key={fixture.id}>
+            <Td strong>
+              <span className="block font-bold">{fixture.round || '—'}</span>
+              <SubLine>Order {fixture.order ?? '—'}</SubLine>
+            </Td>
+            <Td className="max-w-[160px] truncate">{lookups.tournament(fixture.tournamentId)}</Td>
+            <Td strong className="max-w-[260px]">
+              <span className="block truncate font-bold">{label(fixture)}</span>
+              {fixture.matchId && (
+                <SubLine>Linked match {fixture.matchId}</SubLine>
+              )}
+            </Td>
+            <Td className="whitespace-nowrap">{dateOf(fixture.scheduledAt)}</Td>
+            <Td numeric>{timeOf(fixture.scheduledAt)}</Td>
+            <Td className="max-w-[150px] truncate">{lookups.venue(fixture.venueId)}</Td>
+            <Td className="whitespace-nowrap">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <StatusPill value={fixture.status ?? 'scheduled'} />
+                {fixture.isHidden && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                    <FiEyeOff className="h-3 w-3" /> Hidden
                   </span>
                 )}
-              </td>
-              <td className={cn('whitespace-nowrap px-3 py-2.5 text-[12px]', isDay ? 'text-slate-700' : 'text-slate-300')}>
-                {dateOf(fixture.scheduledAt)}
-              </td>
-              <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[12px] tabular-nums', isDay ? 'text-slate-800' : 'text-slate-300')}>
-                {timeOf(fixture.scheduledAt)}
-              </td>
-              <td className={cn('max-w-[150px] truncate px-3 py-2.5 text-[13px]', isDay ? 'text-slate-700' : 'text-slate-300')}>
-                {lookups.venue(fixture.venueId)}
-              </td>
-              <td className="whitespace-nowrap px-3 py-2.5">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <StatusPill value={fixture.status ?? 'scheduled'} />
-                  {fixture.isHidden && (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                      <FiEyeOff className="h-3 w-3" /> Hidden
-                    </span>
-                  )}
-                </div>
-              </td>
-              <td className="whitespace-nowrap px-3 py-2.5">{rowActions(fixture, true)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+              </div>
+            </Td>
+            <Td className="whitespace-nowrap text-right">{rowActions(fixture, true)}</Td>
+          </TRow>
+        ))}
+      </TBody>
+    </TableShell>
   );
 
   /* --------------------------------------------------------------- view */
@@ -773,24 +750,20 @@ const FixturesManager: React.FC = () => {
             <span className="hidden xl:inline">Show Filtered</span>
           </Btn>
         </div>
-        <span className={cn('ml-auto text-[12px] tabular-nums', isDay ? 'text-slate-500' : 'text-slate-400')}>
+        <span className="ml-auto text-[12px] font-bold tabular-nums text-ink-muted">
           {rows.length} of {fixtures.data.length}
         </span>
-        <div className={cn('inline-flex rounded-md p-0.5 border', isDay ? 'border-slate-300 bg-slate-100' : 'border-white/10 bg-white/[0.04]')}>
+        <div className="inline-flex rounded-lg border border-line bg-surface-2 p-0.5">
           {VIEW_TABS.map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setView(tab.id)}
               className={cn(
-                'h-8 rounded px-3 text-[11px] font-bold uppercase tracking-wider transition-colors',
+                'h-8 rounded-md px-3 text-[11px] font-bold uppercase tracking-wider transition-colors',
                 view === tab.id
-                  ? isDay
-                    ? 'bg-slate-900 text-white shadow-2xs'
-                    : 'bg-blue-600 text-white shadow-2xs'
-                  : isDay
-                    ? 'text-slate-600 hover:text-slate-900'
-                    : 'text-slate-400 hover:text-white',
+                  ? 'bg-[#1264FF] text-white shadow-xs'
+                  : 'text-ink-muted hover:text-ink',
               )}
             >
               {tab.label}

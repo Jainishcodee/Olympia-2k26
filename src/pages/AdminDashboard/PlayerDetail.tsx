@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useCollection, useDoc, eq } from '@/hooks/useCollection';
-import { useTheme } from '@/contexts/ThemeContext';
 import { deletePlayer } from '@/services/players/playerService';
 import {
   AdminHeader,
@@ -17,6 +16,12 @@ import {
   PageLoading,
   StatTile,
   StatusPill,
+  TBody,
+  Td,
+  THead,
+  Th,
+  TableShell,
+  TRow,
 } from '@/components/admin/kit';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { cn } from '@/utils/cn';
@@ -65,8 +70,6 @@ const PlayerDetail: React.FC = () => {
   const { playerId } = useParams();
   const navigate = useNavigate();
   const { log } = useAuditLog();
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
 
   const playerDoc = useDoc<Player>('players', playerId);
   const teams = useCollection<Team>('teams', { sortBy: 'name' });
@@ -224,34 +227,34 @@ const PlayerDetail: React.FC = () => {
             <img
               src={player.photo}
               alt={player.name}
-              className={cn('h-16 w-16 shrink-0 rounded-xl border object-cover', isDay ? 'border-slate-200 bg-white' : 'border-slate-800 bg-slate-800/40')}
+              className="h-16 w-16 shrink-0 rounded-xl border border-line bg-surface-2 object-cover"
             />
           ) : (
-            <span className={cn('flex h-16 w-16 shrink-0 items-center justify-center rounded-xl text-xl font-bold border', isDay ? 'border-slate-200 bg-slate-100 text-slate-700' : 'border-slate-800 bg-slate-800/80 text-slate-200')}>
+            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-line bg-surface-2 text-xl font-bold text-gold-ink">
               {initialsOf(player.name)}
             </span>
           )}
           <div className="min-w-0">
             <div className="flex items-center gap-2.5">
-              <span className={cn('flex h-9 min-w-9 items-center justify-center rounded-lg px-2 font-mono text-sm font-bold tabular-nums border', isDay ? 'border-slate-200 bg-slate-100 text-slate-800' : 'border-slate-800 bg-slate-800 text-slate-100')}>
+              <span className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-line bg-surface-2 px-2 font-mono text-[12.5px] font-bold tabular-nums text-ink">
                 {player.jerseyNumber ?? '—'}
               </span>
-              <h2 className={cn('truncate text-lg font-bold', isDay ? 'text-slate-900' : 'text-white')}>{player.name}</h2>
+              <h2 className="truncate font-display text-[15px] font-bold tracking-tight text-ink">{player.name}</h2>
             </div>
-            <p className={cn('mt-1 text-[13px]', isDay ? 'text-slate-500' : 'text-white/60')}>
+            <p className="mt-1 text-[13px] text-ink-muted">
               {team ? (
                 <Link
                   to={`/admin/teams/${team.id}`}
-                  className={cn('font-semibold transition-colors hover:text-blue-600', isDay ? 'text-slate-700' : 'text-white/80')}
+                  className="font-semibold text-ink transition-colors hover:text-[#1264FF]"
                 >
                   {team.name}
                 </Link>
               ) : (
-                <span className={cn('font-semibold', isDay ? 'text-slate-400' : 'text-white/40')}>Free agent</span>
+                <span className="font-semibold text-ink-faint">Free agent</span>
               )}
-              <span className={cn('mx-1.5', isDay ? 'text-slate-300' : 'text-white/20')}>·</span>
+              <span className="mx-1.5 text-ink-faint">·</span>
               {sportNames(sportId)}
-              <span className={cn('mx-1.5', isDay ? 'text-slate-300' : 'text-white/20')}>·</span>
+              <span className="mx-1.5 text-ink-faint">·</span>
               {roleLabel(player.role)}
             </p>
           </div>
@@ -293,11 +296,11 @@ const PlayerDetail: React.FC = () => {
                 <div className="min-w-0">
                   <Link
                     to={`/admin/teams/${team.id}`}
-                    className={cn('block text-[15px] font-bold transition-colors hover:text-[#1264FF]', isDay ? 'text-slate-900' : 'text-white')}
+                    className="block font-display text-[15px] font-bold tracking-tight text-ink transition-colors hover:text-[#1264FF]"
                   >
                     {team.name}
                   </Link>
-                  <p className={cn('mt-0.5 text-[13px]', isDay ? 'text-slate-500' : 'text-white/60')}>
+                  <p className="mt-0.5 text-[13px] text-ink-muted">
                     {sportNames(team.sportId)} · {team.shortName || '—'}
                   </p>
                 </div>
@@ -329,30 +332,30 @@ const PlayerDetail: React.FC = () => {
             ) : squadMates.length === 0 ? (
               <EmptyNotice title="No squad-mates" message="Nobody else is on this roster yet." />
             ) : (
-              <ul className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
+              <ul className="divide-y divide-line">
                 {squadMates.map((mate) => (
-                  <li key={mate.id} className={cn('flex items-center gap-3 px-4 py-2.5 transition-colors', isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]')}>
+                  <li key={mate.id} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-soft/70">
                     {mate.photo ? (
                       <img
                         src={mate.photo}
                         alt={mate.name}
-                        className={cn('h-7 w-7 shrink-0 rounded-md border object-cover', isDay ? 'border-slate-200 bg-white' : 'border-white/10 bg-white/[0.05]')}
+                        className="h-7 w-7 shrink-0 rounded-md border border-line bg-surface-2 object-cover"
                       />
                     ) : (
-                      <span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[10px] font-bold border', isDay ? 'border-slate-200 bg-slate-100 text-slate-700' : 'border-slate-800 bg-slate-800 text-slate-300')}>
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line bg-surface-2 text-[10px] font-bold text-gold-ink">
                         {initialsOf(mate.name)}
                       </span>
                     )}
                     <Link
                       to={`/admin/players/${mate.id}`}
-                      className={cn('min-w-0 flex-1 truncate text-[13px] font-semibold transition-colors hover:text-blue-600', isDay ? 'text-slate-800' : 'text-white')}
+                      className="min-w-0 flex-1 truncate text-[13px] font-semibold text-ink transition-colors hover:text-[#1264FF]"
                     >
                       {mate.name}
                     </Link>
-                    <span className={cn('font-mono text-[12px] tabular-nums', isDay ? 'text-slate-400' : 'text-white/40')}>
+                    <span className="font-mono text-[12.5px] font-bold tabular-nums text-ink">
                       {mate.jerseyNumber ?? '—'}
                     </span>
-                    <span className={cn('w-24 truncate text-right text-[12px]', isDay ? 'text-slate-500' : 'text-white/60')}>
+                    <span className="w-24 truncate text-right text-[13px] text-ink-muted">
                       {mate.position || roleLabel(mate.role)}
                     </span>
                   </li>
@@ -405,50 +408,39 @@ const PlayerDetail: React.FC = () => {
               message="Fixtures appear here as soon as the team is added to a match."
             />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] border-collapse text-left">
-                <thead>
-                  <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
-                    {['Opponent', 'Date', 'Score', 'Status', ''].map((heading) => (
-                      <th
-                        key={heading}
-                        className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-white/60')}
-                      >
-                        {heading}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
-                  {teamMatches.map((match) => (
-                    <tr key={match.id} className={isDay ? 'hover:bg-slate-50/70' : 'hover:bg-white/[0.03]'}>
-                      <td className={cn('px-3 py-2.5 text-[13px] font-semibold', isDay ? 'text-slate-800' : 'text-white')}>
-                        vs {opponentOf(match)}
-                      </td>
-                      <td className={cn('whitespace-nowrap px-3 py-2.5 text-[12px]', isDay ? 'text-slate-600' : 'text-white/70')}>
-                        {cellDate(match.scheduledAt)}
-                      </td>
-                      <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-white')}>
-                        {scoreOf(match)}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
-                        <StatusPill value={match.status} />
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-right">
-                        <Btn
-                          to={`/admin/matches/${match.id}/scoring`}
-                          size="xs"
-                          variant="primary"
-                          icon={<FiPlay className="h-3 w-3" />}
-                        >
-                          Open scoring
-                        </Btn>
-                      </td>
-                    </tr>
+            <TableShell minW={760}>
+              <THead>
+                <tr>
+                  {['Opponent', 'Date', 'Score', 'Status', ''].map((heading) => (
+                    <Th key={heading}>{heading}</Th>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </tr>
+              </THead>
+              <TBody>
+                {teamMatches.map((match) => (
+                  <TRow key={match.id}>
+                    <Td strong className="whitespace-nowrap">
+                      vs {opponentOf(match)}
+                    </Td>
+                    <Td className="whitespace-nowrap">{cellDate(match.scheduledAt)}</Td>
+                    <Td numeric>{scoreOf(match)}</Td>
+                    <Td>
+                      <StatusPill value={match.status} />
+                    </Td>
+                    <Td className="whitespace-nowrap text-right">
+                      <Btn
+                        to={`/admin/matches/${match.id}/scoring`}
+                        size="xs"
+                        variant="primary"
+                        icon={<FiPlay className="h-3 w-3" />}
+                      >
+                        Open scoring
+                      </Btn>
+                    </Td>
+                  </TRow>
+                ))}
+              </TBody>
+            </TableShell>
           )}
         </Card>
       )}
@@ -490,19 +482,19 @@ const PlayerDetail: React.FC = () => {
                   const pct = ratingSummary.count > 0 ? Math.round((count / ratingSummary.count) * 100) : 0;
                   return (
                     <div key={star} className="flex items-center gap-3">
-                      <span className={cn('w-8 shrink-0 text-right text-[11px] font-bold tabular-nums', isDay ? 'text-slate-500' : 'text-white/60')}>
+                      <span className="w-8 shrink-0 text-right font-mono text-[12.5px] font-bold tabular-nums text-ink-muted">
                         {star}★
                       </span>
-                      <div className={cn('h-3 flex-1 overflow-hidden rounded-sm', isDay ? 'bg-slate-100' : 'bg-white/10')}>
+                      <div className="h-3 flex-1 overflow-hidden rounded-full bg-surface-soft-2">
                         <div
                           className={cn(
-                            'h-3 rounded-sm transition-colors',
-                            star >= 4 ? 'bg-[#D9A441]' : star === 3 ? 'bg-slate-400' : 'bg-red-400',
+                            'h-3 rounded-full transition-colors',
+                            star >= 4 ? 'bg-[#D9A441]' : star === 3 ? 'bg-slate-400' : 'bg-[#FF4D3D]',
                           )}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                      <span className={cn('w-20 shrink-0 text-right text-[11px] tabular-nums', isDay ? 'text-slate-400' : 'text-white/40')}>
+                      <span className="w-20 shrink-0 text-right font-mono text-[12.5px] font-bold tabular-nums text-ink">
                         {count} · {pct}%
                       </span>
                     </div>

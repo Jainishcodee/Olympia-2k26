@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useCollection, useCollectionGroup } from '@/hooks/useCollection';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import {
@@ -17,7 +16,13 @@ import {
   SearchInput,
   StatTile,
   StatusPill,
+  TBody,
+  Td,
+  THead,
+  Th,
+  TableShell,
   Toolbar,
+  TRow,
 } from '@/components/admin/kit';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import type { Match, Review } from '@/types';
@@ -80,7 +85,7 @@ const Stars: React.FC<{ value: number }> = ({ value }) => {
       {[1, 2, 3, 4, 5].map((step) => (
         <span
           key={step}
-          className={`text-[12px] leading-none ${step <= filled ? 'text-[#D9A441]' : 'text-slate-300'}`}
+          className={`text-[12px] leading-none ${step <= filled ? 'text-[#D9A441]' : 'text-ink-faint'}`}
         >
           {step <= filled ? '★' : '☆'}
         </span>
@@ -90,7 +95,6 @@ const Stars: React.FC<{ value: number }> = ({ value }) => {
 };
 
 const ReviewsManager: React.FC = () => {
-  const { isDay } = useTheme();
   const { log } = useAuditLog();
 
   const reviews = useCollectionGroup<ReviewDoc>('reviews', { sortBy: 'createdAt', direction: 'desc' });
@@ -301,17 +305,14 @@ const ReviewsManager: React.FC = () => {
             { value: '1', label: '1★ and up' },
           ]}
         />
-        <span className={cn('ml-auto text-[12px] tabular-nums', isDay ? 'text-slate-500' : 'text-slate-400')}>
+        <span className="ml-auto text-[12px] font-bold tabular-nums text-ink-muted">
           {rows.length} of {reviews.data.length}
         </span>
       </Toolbar>
 
       {selectedIds.size > 0 && (
-        <div className={cn(
-          'mb-4 flex flex-wrap items-center gap-3 rounded-lg border px-3.5 py-2.5',
-          isDay ? 'border-amber-200 bg-amber-50' : 'border-[#F0DFB8]/30 bg-[#FFF7E6]/10'
-        )}>
-          <span className={cn('text-[13px] font-bold', isDay ? 'text-amber-900' : 'text-[#FFD21F]')}>
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-amber-500/35 bg-amber-500/12 px-3.5 py-2.5">
+          <span className="text-[13px] font-bold text-amber-700 dark:text-amber-200">
             {selectedIds.size} selected
           </span>
           <Btn variant="warn" size="sm" onClick={hideSelected} disabled={busy} icon={<FiEyeOff className="h-3.5 w-3.5" />}>
@@ -340,86 +341,76 @@ const ReviewsManager: React.FC = () => {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1080px] border-collapse text-left">
-              <thead>
-                <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
-                  <th className="w-9 px-3 py-2.5">
-                    <input
-                      type="checkbox"
-                      checked={allVisibleSelected}
-                      onChange={toggleAll}
-                      aria-label="Select all visible reviews"
-                      className="h-3.5 w-3.5 rounded border-slate-300 accent-[#1264FF]"
-                    />
-                  </th>
-                  {['Reviewer', 'Match', 'Rating', 'Review', 'Created at', 'Status', ''].map((heading) => (
-                    <th
-                      key={heading}
-                      className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-slate-400')}
-                    >
-                      {heading}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
+          <TableShell minW={1080}>
+            <THead>
+              <tr>
+                <Th className="w-9">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleAll}
+                    aria-label="Select all visible reviews"
+                    className="h-3.5 w-3.5 rounded border-line accent-[#1264FF]"
+                  />
+                </Th>
+                {['Reviewer', 'Match', 'Rating', 'Review', 'Created at', 'Status', ''].map((heading) => (
+                  <Th key={heading}>{heading}</Th>
+                ))}
+              </tr>
+            </THead>
+            <TBody>
                 {rows.map((review) => {
                   const hidden = isHidden(review);
                   const created = toDate(review.createdAt) ?? toDate(review.updatedAt);
                   const expanded = expandedId === review.id;
                   return (
                     <React.Fragment key={review.id}>
-                      <tr
+                      <TRow
                         onClick={() => setExpandedId(expanded ? null : review.id)}
-                        className={cn(
-                          'cursor-pointer transition-colors',
-                          isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.02]',
-                          hidden && (isDay ? 'bg-amber-50/60' : 'bg-amber-950/20'),
-                        )}
+                        className={hidden ? 'bg-amber-500/[0.07]' : undefined}
                       >
-                        <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(review.id)}
-                            onChange={() => toggleSelect(review.id)}
-                            aria-label="Select review"
-                            className="h-3.5 w-3.5 rounded border-slate-300 accent-[#1264FF]"
-                          />
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2.5">
-                          <span className={cn('block font-mono text-[12px] font-semibold', isDay ? 'text-slate-700' : 'text-slate-300')}>
+                        <Td className="w-9">
+                          <span onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(review.id)}
+                              onChange={() => toggleSelect(review.id)}
+                              aria-label="Select review"
+                              className="h-3.5 w-3.5 rounded border-line accent-[#1264FF]"
+                            />
+                          </span>
+                        </Td>
+                        <Td className="whitespace-nowrap">
+                          <span className="block font-mono text-[12px] font-semibold text-ink">
                             {anonymise(review.userId ?? review.id)}
                           </span>
-                        </td>
-                        <td className="max-w-[200px] px-3 py-2.5">
-                          <span className={cn('block truncate text-[13px]', isDay ? 'text-slate-800' : 'text-slate-200')}>
+                        </Td>
+                        <Td className="max-w-[200px]">
+                          <span className="block truncate text-[13px] text-ink">
                             {matchTitle(review.matchId)}
                           </span>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2.5">
+                        </Td>
+                        <Td className="whitespace-nowrap">
                           <Stars value={Number(review.rating) || 0} />
-                        </td>
-                        <td className="max-w-[340px] px-3 py-2.5">
+                        </Td>
+                        <Td className="max-w-[340px]">
                           <span
                             className={cn(
                               'block text-[13px] leading-relaxed',
-                              expanded
-                                ? isDay ? 'whitespace-pre-wrap text-slate-800' : 'whitespace-pre-wrap text-slate-200'
-                                : isDay ? 'truncate text-slate-600' : 'truncate text-slate-400',
+                              expanded ? 'whitespace-pre-wrap text-ink' : 'truncate text-ink-muted',
                             )}
                           >
                             {review.content || '—'}
                           </span>
                           {!expanded && (
-                            <span className={cn('block text-[11px]', isDay ? 'text-slate-400' : 'text-slate-500')}>Click to expand</span>
+                            <span className="block text-[11px] text-ink-faint">Click to expand</span>
                           )}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2.5">
-                          <span className={cn('block text-[12px] font-medium', isDay ? 'text-slate-700' : 'text-slate-300')}>
+                        </Td>
+                        <Td className="whitespace-nowrap">
+                          <span className="block text-[12px] font-medium text-ink-muted">
                             {relative(created)}
                           </span>
-                          <span className={cn('block font-mono text-[11px] tabular-nums', isDay ? 'text-slate-400' : 'text-slate-500')}>
+                          <span className="block font-mono text-[11px] tabular-nums text-ink-faint">
                             {created
                               ? created.toLocaleString([], {
                                   day: '2-digit',
@@ -430,12 +421,15 @@ const ReviewsManager: React.FC = () => {
                                 })
                               : '—'}
                           </span>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2.5">
+                        </Td>
+                        <Td className="whitespace-nowrap">
                           <StatusPill value={hidden ? 'hidden' : 'visible'} />
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1">
+                        </Td>
+                        <Td className="whitespace-nowrap text-right">
+                          <div
+                            className="flex items-center justify-end gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <ActionIcon
                               label="View review"
                               onClick={() => setSelected(review)}
@@ -469,23 +463,22 @@ const ReviewsManager: React.FC = () => {
                               <FiTrash2 className="h-3.5 w-3.5" />
                             </ActionIcon>
                           </div>
-                        </td>
-                      </tr>
+                        </Td>
+                      </TRow>
                       {expanded && (
-                        <tr className={isDay ? 'bg-slate-50/80' : 'bg-white/[0.02]'}>
-                          <td colSpan={8} className="px-3 py-3">
-                            <p className={cn('whitespace-pre-wrap text-[13px] leading-relaxed', isDay ? 'text-slate-800' : 'text-slate-200')}>
+                        <TRow className="bg-surface-2">
+                          <Td colSpan={8} className="px-3 py-3">
+                            <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-ink-muted">
                               {review.content || 'Empty review body.'}
                             </p>
-                          </td>
-                        </tr>
+                          </Td>
+                        </TRow>
                       )}
                     </React.Fragment>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
+              </TBody>
+          </TableShell>
         )}
       </Card>
 
@@ -498,19 +491,13 @@ const ReviewsManager: React.FC = () => {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setSelected(null)}
           />
-          <aside className={cn(
-            'relative flex h-full w-full max-w-md flex-col shadow-2xl border-l',
-            isDay ? 'bg-white border-slate-200' : 'bg-[#071426] border-white/10'
-          )}>
-            <header className={cn(
-              'flex items-start justify-between gap-3 border-b px-5 py-4',
-              isDay ? 'border-slate-200' : 'border-white/10'
-            )}>
+          <aside className="relative flex h-full w-full max-w-md flex-col border-l border-line bg-surface shadow-2xl">
+            <header className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
               <div className="min-w-0">
-                <p className={cn('text-[11px] font-bold uppercase tracking-[0.14em]', isDay ? 'text-slate-500' : 'text-slate-400')}>
+                <p className="text-[11px] font-bold uppercase tracking-[.14em] text-ink-muted">
                   Review detail
                 </p>
-                <h2 className={cn('mt-1 truncate text-[15px] font-bold', isDay ? 'text-slate-900' : 'text-white')}>
+                <h2 className="mt-1 truncate text-[15px] font-bold text-ink">
                   {matchTitle(selected.matchId)}
                 </h2>
               </div>
@@ -518,17 +505,14 @@ const ReviewsManager: React.FC = () => {
                 type="button"
                 onClick={() => setSelected(null)}
                 aria-label="Close"
-                className={cn('rounded-md p-1.5 transition-colors', isDay ? 'text-slate-400 hover:bg-slate-100 hover:text-slate-900' : 'text-slate-400 hover:bg-white/10 hover:text-white')}
+                className="rounded-md p-1.5 text-ink-muted transition-colors hover:bg-surface-soft hover:text-ink"
               >
                 <FiX className="h-4 w-4" />
               </button>
             </header>
 
             <div className="flex-1 overflow-y-auto px-5 py-4">
-              <div className={cn(
-                'mb-4 rounded-lg border px-3.5 py-3',
-                isDay ? 'border-slate-200 bg-slate-50 text-slate-700' : 'border-white/10 bg-white/[0.03] text-slate-300'
-              )}>
+              <div className="mb-4 rounded-lg border border-line bg-surface-soft px-3.5 py-3 text-ink">
                 <p className="text-[12px] leading-relaxed">{selected.content || 'Empty review body.'}</p>
               </div>
 
@@ -538,7 +522,7 @@ const ReviewsManager: React.FC = () => {
                 <MetaRow label="Rating">
                   <span className="inline-flex items-center gap-2">
                     <Stars value={Number(selected.rating) || 0} />
-                    <span className={cn('font-mono text-[12px]', isDay ? 'text-slate-500' : 'text-slate-400')}>{selected.rating}/5</span>
+                    <span className="font-mono text-[12px] text-ink-muted">{selected.rating}/5</span>
                   </span>
                 </MetaRow>
                 <MetaRow label="Created">
@@ -558,16 +542,13 @@ const ReviewsManager: React.FC = () => {
                 </MetaRow>
               </dl>
 
-              <p className={cn('mt-4 text-[12px] leading-relaxed', isDay ? 'text-slate-500' : 'text-slate-400')}>
+              <p className="mt-4 text-[12px] leading-relaxed text-ink-faint">
                 The reviewer's identity stays in Firebase Authentication. This panel only ever shows a
                 pseudonymised reference.
               </p>
             </div>
 
-            <footer className={cn(
-              'flex items-center justify-end gap-2 border-t px-5 py-3',
-              isDay ? 'border-slate-200' : 'border-white/10'
-            )}>
+            <footer className="flex items-center justify-end gap-2 border-t border-line px-5 py-3">
               <Btn onClick={() => setSelected(null)}>Close</Btn>
               <Btn
                 variant="danger"

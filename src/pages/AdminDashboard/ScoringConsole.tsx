@@ -53,7 +53,7 @@ const TONES: Record<Tone, string> = {
   gold: 'bg-amber-600 hover:bg-amber-500 text-white border-amber-500/60 shadow-xs font-semibold',
   red: 'bg-rose-700 hover:bg-rose-600 text-white border-rose-600/60 shadow-xs font-semibold',
   yellow: 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-400/60 shadow-xs font-semibold',
-  slate: 'bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 border-slate-700/80 shadow-xs font-medium',
+  slate: 'bg-[var(--sc-chip)]/90 hover:bg-[var(--sc-line)]/90 text-[var(--sc-ink)] border-[var(--sc-line)]/80 shadow-xs font-medium',
   green: 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/60 shadow-xs font-semibold',
   violet: 'bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-500/60 shadow-xs font-semibold',
 };
@@ -92,9 +92,9 @@ const Pad: React.FC<
 
 const PanelLabel: React.FC<{ children: React.ReactNode; hint?: string }> = ({ children, hint }) => (
   <div className="mb-3 flex items-baseline gap-3">
-    <h4 className="text-[10px] font-black uppercase tracking-[0.34em] text-[#D9A441]">{children}</h4>
-    <span className="h-px flex-1 bg-[#1A2440]" />
-    {hint && <span className="text-[9px] font-black uppercase tracking-[0.24em] text-[#4C5B75]">{hint}</span>}
+    <h4 className="text-[10px] font-black uppercase tracking-[0.34em] text-[var(--sc-gold)]">{children}</h4>
+    <span className="h-px flex-1 bg-[var(--sc-line-strong)]" />
+    {hint && <span className="text-[9px] font-black uppercase tracking-[0.24em] text-[var(--sc-ink-4)]">{hint}</span>}
   </div>
 );
 
@@ -176,7 +176,7 @@ const ScoringConsole: React.FC = () => {
     const matchRef = doc(db, 'matches', matchId);
     const unsubMatch = onSnapshot(matchRef, (snap) => {
       if (snap.exists()) {
-        setLiveMatch({ id: snap.id, ...snap.data() } as Match);
+        setLiveMatch({ ...snap.data(), id: snap.id } as Match);
       }
       setIsLoading(false);
     });
@@ -532,6 +532,7 @@ const ScoringConsole: React.FC = () => {
       await recordEvent({
         type: 'match_resume',
         description: `Match resumed at ${elapsedTime}`,
+        newLiveState: { isHalfTime: false },
         newScore: (liveMatch?.score || {}) as Record<string, unknown>,
       });
       toast.success('Match resumed');
@@ -1526,12 +1527,12 @@ const ScoringConsole: React.FC = () => {
       return (
         <div className="space-y-6">
           {/* Batting Team & Innings Progression Banner */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-[#1E2A45] bg-[#101A2E]/80">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-[var(--sc-line)] bg-[var(--sc-chip)]/80">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#8FA0BC] block">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--sc-ink-2)] block">
                 {isInn2 ? '2nd Innings Batting' : '1st Innings Batting'}
               </span>
-              <span className="text-sm font-black uppercase text-[#EEF2F7]">
+              <span className="text-sm font-black uppercase text-[var(--sc-ink)]">
                 🏏 {battingTeamInfo.name} ({battingTeamInfo.shortName})
               </span>
             </div>
@@ -1549,10 +1550,10 @@ const ScoringConsole: React.FC = () => {
               )}
               {isInn2 && (
                 <div className="text-right">
-                  <span className="text-[10px] font-bold uppercase text-amber-400 block">
+                  <span className="text-[10px] font-bold uppercase text-[var(--sc-gold)] block">
                     Target: {currentCricket.targetRuns ?? '—'}
                   </span>
-                  <span className="text-xs font-black text-slate-300">
+                  <span className="text-xs font-black text-[var(--sc-ink)]">
                     Need {currentCricket.requiredRuns ?? '—'} in {currentCricket.ballsRemaining ?? '—'}b
                   </span>
                 </div>
@@ -1561,15 +1562,15 @@ const ScoringConsole: React.FC = () => {
           </div>
 
           {/* Active Batsmen & Bowler Crease Telemetry */}
-          <div className="p-3.5 rounded-lg border border-[#1E2A45] bg-[#070B14]">
-            <div className="flex items-center justify-between mb-3 border-b border-[#1E2A45] pb-2">
+          <div className="p-3.5 rounded-lg border border-[var(--sc-line)] bg-[var(--sc-elev)]">
+            <div className="flex items-center justify-between mb-3 border-b border-[var(--sc-line)] pb-2">
               <PanelLabel hint="on-field telemetry">Crease & Bowling Attack</PanelLabel>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleSwapStrike}
                   disabled={isBusy}
-                  className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded border border-[#4B90FF]/40 bg-[#1264FF]/15 text-[#4B90FF] hover:bg-[#1264FF]/30 transition-colors"
+                  className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded border border-[var(--sc-blue-2)]/40 bg-[#1264FF]/15 text-[var(--sc-blue-2)] hover:bg-[#1264FF]/30 transition-colors"
                 >
                   ⇄ Swap Strike
                 </button>
@@ -1581,7 +1582,7 @@ const ScoringConsole: React.FC = () => {
                     setLineupBowler(currentCricket.currentBowlerName || '');
                     setLineupModal(true);
                   }}
-                  className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors"
+                  className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded border border-white/10 bg-white/5 text-[var(--sc-ink)] hover:bg-white/10 transition-colors"
                 >
                   ✎ Set Lineup
                 </button>
@@ -1589,32 +1590,32 @@ const ScoringConsole: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="p-2.5 rounded bg-[#101A2E] border border-emerald-500/30">
-                <span className="text-[10px] font-bold uppercase text-emerald-400 block">Striker *</span>
-                <span className="font-black text-sm text-white truncate block">
+              <div className="p-2.5 rounded bg-[var(--sc-chip)] border border-emerald-500/30">
+                <span className="text-[10px] font-bold uppercase text-[var(--sc-green)] block">Striker *</span>
+                <span className="font-black text-sm text-[var(--sc-ink)] truncate block">
                   {currentCricket.strikerName ? `${currentCricket.strikerName}*` : 'Not assigned'}
                 </span>
-                <span className="text-[11px] font-mono text-slate-400">
+                <span className="text-[11px] font-mono text-[var(--sc-ink-2)]">
                   {currentCricket.strikerRuns} ({currentCricket.strikerBalls}b)
                 </span>
               </div>
 
-              <div className="p-2.5 rounded bg-[#101A2E] border border-white/10">
-                <span className="text-[10px] font-bold uppercase text-slate-400 block">Non-Striker</span>
-                <span className="font-black text-sm text-white truncate block">
+              <div className="p-2.5 rounded bg-[var(--sc-chip)] border border-white/10">
+                <span className="text-[10px] font-bold uppercase text-[var(--sc-ink-2)] block">Non-Striker</span>
+                <span className="font-black text-sm text-[var(--sc-ink)] truncate block">
                   {currentCricket.nonStrikerName || 'Not assigned'}
                 </span>
-                <span className="text-[11px] font-mono text-slate-400">
+                <span className="text-[11px] font-mono text-[var(--sc-ink-2)]">
                   {currentCricket.nonStrikerRuns} ({currentCricket.nonStrikerBalls}b)
                 </span>
               </div>
 
-              <div className="p-2.5 rounded bg-[#101A2E] border border-rose-500/30">
-                <span className="text-[10px] font-bold uppercase text-rose-400 block">Current Bowler</span>
-                <span className="font-black text-sm text-white truncate block">
+              <div className="p-2.5 rounded bg-[var(--sc-chip)] border border-rose-500/30">
+                <span className="text-[10px] font-bold uppercase text-[var(--sc-coral-2)] block">Current Bowler</span>
+                <span className="font-black text-sm text-[var(--sc-ink)] truncate block">
                   {currentCricket.currentBowlerName || 'Not assigned'}
                 </span>
-                <span className="text-[11px] font-mono text-slate-400">
+                <span className="text-[11px] font-mono text-[var(--sc-ink-2)]">
                   {currentCricket.bowlerWickets}/{currentCricket.bowlerRunsConceded} ({currentCricket.bowlerOvers}.{currentCricket.bowlerBalls} ov)
                 </span>
               </div>
@@ -1690,12 +1691,12 @@ const ScoringConsole: React.FC = () => {
           </div>
 
           {/* Custom Overs Quota Control */}
-          <div className="flex flex-wrap items-center justify-between gap-2 border border-[#1A2440] bg-[#050B14] p-3 rounded-lg">
+          <div className="flex flex-wrap items-center justify-between gap-2 border border-[var(--sc-line-strong)] bg-[var(--sc-panel-deep)] p-3 rounded-lg">
             <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#8FA0BC] block">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[var(--sc-ink-2)] block">
                 Match Overs Quota
               </span>
-              <span className="text-xs font-mono font-bold text-[#D9A441]">
+              <span className="text-xs font-mono font-bold text-[var(--sc-gold)]">
                 {matchMaxOvers > 0 ? `${matchMaxOvers} Overs` : 'Open / Unlimited Overs'}
               </span>
             </div>
@@ -1707,10 +1708,10 @@ const ScoringConsole: React.FC = () => {
                   disabled={isBusy}
                   onClick={() => handleUpdateCricketOvers(ov)}
                   className={cn(
-                    'px-2 py-1 text-[11px] font-bold rounded border transition-colors',
+                    'px-2.5 py-2 text-[11px] font-bold rounded border transition-colors sm:px-2 sm:py-1',
                     matchMaxOvers === ov
-                      ? 'border-[#D9A441] bg-[#D9A441]/20 text-[#D9A441] font-black'
-                      : 'border-[#1E2A45] bg-[#101A2E] text-slate-300 hover:bg-[#1E2A45]'
+                      ? 'border-[var(--sc-gold)] bg-[var(--sc-gold)]/20 text-[var(--sc-gold)] font-black'
+                      : 'border-[var(--sc-line)] bg-[var(--sc-chip)] text-[var(--sc-ink)] hover:bg-[var(--sc-line)]'
                   )}
                 >
                   {ov} ov
@@ -1728,7 +1729,7 @@ const ScoringConsole: React.FC = () => {
                     }
                   }
                 }}
-                className="px-2.5 py-1 text-[11px] font-bold rounded border border-[#1E2A45] bg-[#101A2E] text-slate-300 hover:bg-[#1E2A45]"
+                className="px-2.5 py-2 text-[11px] font-bold rounded border border-[var(--sc-line)] bg-[var(--sc-chip)] text-[var(--sc-ink)] hover:bg-[var(--sc-line)] sm:py-1"
               >
                 ✎ Custom
               </button>
@@ -1760,42 +1761,42 @@ const ScoringConsole: React.FC = () => {
         return (
           <div className="space-y-6">
             {/* Shootout Header Plate */}
-            <div className="rounded-xl border p-4 bg-slate-900/90 border-slate-800 space-y-3">
+            <div className="rounded-xl border p-4 bg-[var(--sc-chip)]/90 border-[var(--sc-line-strong)] space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="flex h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse" />
-                  <span className="text-xs font-black uppercase tracking-wider text-amber-400">
+                  <span className="text-xs font-black uppercase tracking-wider text-[var(--sc-gold)]">
                     Penalty Shootout (Decider)
                   </span>
                 </div>
-                <span className="text-xs font-bold text-slate-400">
+                <span className="text-xs font-bold text-[var(--sc-ink-2)]">
                   Round {penalties.round || Math.ceil((kicks.length + 1) / 2)} · {totalRounds > 5 ? 'Sudden Death' : 'Best of 5'}
                 </span>
               </div>
 
               {/* Shootout scoreboard */}
-              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-2 border-y border-slate-800">
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-2 border-y border-[var(--sc-line-strong)]">
                 <div className="text-right">
-                  <span className="text-xs font-bold text-slate-400 block">{teamAInfo.name}</span>
-                  <span className="text-2xl sm:text-3xl font-black text-blue-400 tabular-nums">{penA}</span>
+                  <span className="text-xs font-bold text-[var(--sc-ink-2)] block">{teamAInfo.name}</span>
+                  <span className="text-2xl sm:text-3xl font-black text-[var(--sc-blue-2)] tabular-nums">{penA}</span>
                 </div>
-                <div className="text-center px-3 py-1 rounded bg-slate-800/80 border border-slate-700">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">FT: {regularScoreA} - {regularScoreB}</span>
-                  <span className="text-xs font-black uppercase tracking-wider text-amber-400">PENS</span>
+                <div className="text-center px-3 py-1 rounded bg-[var(--sc-chip)]/80 border border-[var(--sc-line)]">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[var(--sc-ink-2)] block">FT: {regularScoreA} - {regularScoreB}</span>
+                  <span className="text-xs font-black uppercase tracking-wider text-[var(--sc-gold)]">PENS</span>
                 </div>
                 <div className="text-left">
-                  <span className="text-xs font-bold text-slate-400 block">{teamBInfo.name}</span>
-                  <span className="text-2xl sm:text-3xl font-black text-rose-400 tabular-nums">{penB}</span>
+                  <span className="text-xs font-bold text-[var(--sc-ink-2)] block">{teamBInfo.name}</span>
+                  <span className="text-2xl sm:text-3xl font-black text-[var(--sc-coral-2)] tabular-nums">{penB}</span>
                 </div>
               </div>
 
               {/* Visual Kicks Indicators for Team A and Team B */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 {/* Team A Kicks */}
-                <div className="p-2.5 rounded-lg border border-slate-800/80 bg-slate-950/60">
+                <div className="p-2.5 rounded-lg border border-[var(--sc-line-strong)]/80 bg-[var(--sc-chip)]/60">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-bold text-slate-300">{teamAInfo.shortName} Kicks</span>
-                    <span className="text-[11px] font-black text-blue-400 tabular-nums">{penA} Scored</span>
+                    <span className="text-[11px] font-bold text-[var(--sc-ink)]">{teamAInfo.shortName} Kicks</span>
+                    <span className="text-[11px] font-black text-[var(--sc-blue-2)] tabular-nums">{penA} Scored</span>
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {Array.from({ length: totalRounds }).map((_, i) => {
@@ -1804,10 +1805,10 @@ const ScoringConsole: React.FC = () => {
                         <div
                           key={`kickA-${i}`}
                           className={cn(
-                            "h-7 min-w-[28px] px-1.5 rounded flex items-center justify-center text-xs font-black border transition-all",
-                            !k && "border-slate-800 bg-slate-900 text-slate-600",
-                            k && k.scored && "border-emerald-500/50 bg-emerald-500/20 text-emerald-400",
-                            k && !k.scored && "border-rose-500/50 bg-rose-500/20 text-rose-400"
+                            "h-9 min-w-[36px] px-2 rounded flex items-center justify-center text-xs font-black border transition-all sm:h-7 sm:min-w-[28px] sm:px-1.5",
+                            !k && "border-[var(--sc-line-strong)] bg-[var(--sc-chip)] text-[var(--sc-ink-3)]",
+                            k && k.scored && "border-emerald-500/50 bg-emerald-500/20 text-[var(--sc-green)]",
+                            k && !k.scored && "border-rose-500/50 bg-rose-500/20 text-[var(--sc-coral-2)]"
                           )}
                           title={k ? `${k.playerName || 'Player'} (${k.scored ? 'Scored' : 'Missed'})` : `Kick ${i + 1} Pending`}
                         >
@@ -1819,10 +1820,10 @@ const ScoringConsole: React.FC = () => {
                 </div>
 
                 {/* Team B Kicks */}
-                <div className="p-2.5 rounded-lg border border-slate-800/80 bg-slate-950/60">
+                <div className="p-2.5 rounded-lg border border-[var(--sc-line-strong)]/80 bg-[var(--sc-chip)]/60">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-bold text-slate-300">{teamBInfo.shortName} Kicks</span>
-                    <span className="text-[11px] font-black text-rose-400 tabular-nums">{penB} Scored</span>
+                    <span className="text-[11px] font-bold text-[var(--sc-ink)]">{teamBInfo.shortName} Kicks</span>
+                    <span className="text-[11px] font-black text-[var(--sc-coral-2)] tabular-nums">{penB} Scored</span>
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {Array.from({ length: totalRounds }).map((_, i) => {
@@ -1831,10 +1832,10 @@ const ScoringConsole: React.FC = () => {
                         <div
                           key={`kickB-${i}`}
                           className={cn(
-                            "h-7 min-w-[28px] px-1.5 rounded flex items-center justify-center text-xs font-black border transition-all",
-                            !k && "border-slate-800 bg-slate-900 text-slate-600",
-                            k && k.scored && "border-emerald-500/50 bg-emerald-500/20 text-emerald-400",
-                            k && !k.scored && "border-rose-500/50 bg-rose-500/20 text-rose-400"
+                            "h-9 min-w-[36px] px-2 rounded flex items-center justify-center text-xs font-black border transition-all sm:h-7 sm:min-w-[28px] sm:px-1.5",
+                            !k && "border-[var(--sc-line-strong)] bg-[var(--sc-chip)] text-[var(--sc-ink-3)]",
+                            k && k.scored && "border-emerald-500/50 bg-emerald-500/20 text-[var(--sc-green)]",
+                            k && !k.scored && "border-rose-500/50 bg-rose-500/20 text-[var(--sc-coral-2)]"
                           )}
                           title={k ? `${k.playerName || 'Player'} (${k.scored ? 'Scored' : 'Missed'})` : `Kick ${i + 1} Pending`}
                         >
@@ -1858,7 +1859,7 @@ const ScoringConsole: React.FC = () => {
                     "p-2.5 rounded-lg text-xs font-black uppercase tracking-wider border transition-all cursor-pointer",
                     activeShootoutTeam === 'teamA'
                       ? "border-blue-500 bg-blue-500/20 text-blue-300 ring-1 ring-blue-500"
-                      : "border-slate-800 bg-slate-900 text-slate-400 hover:text-white"
+                      : "border-[var(--sc-line-strong)] bg-[var(--sc-chip)] text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)]"
                   )}
                 >
                   Shooting: {teamAInfo.name}
@@ -1870,7 +1871,7 @@ const ScoringConsole: React.FC = () => {
                     "p-2.5 rounded-lg text-xs font-black uppercase tracking-wider border transition-all cursor-pointer",
                     activeShootoutTeam === 'teamB'
                       ? "border-rose-500 bg-rose-500/20 text-rose-300 ring-1 ring-rose-500"
-                      : "border-slate-800 bg-slate-900 text-slate-400 hover:text-white"
+                      : "border-[var(--sc-line-strong)] bg-[var(--sc-chip)] text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)]"
                   )}
                 >
                   Shooting: {teamBInfo.name}
@@ -1878,14 +1879,14 @@ const ScoringConsole: React.FC = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--sc-ink-2)] block">
                   Penalty Taker ({activeSide.name})
                 </label>
                 {activePlayers.length > 0 ? (
                   <select
                     value={footballShootoutKicker}
                     onChange={(e) => setFootballShootoutKicker(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 text-slate-100 text-xs p-2.5 rounded-lg focus:border-blue-500 outline-none"
+                    className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line-strong)] text-[var(--sc-ink)] text-xs p-2.5 rounded-lg focus:border-blue-500 outline-none"
                   >
                     <option value="">-- Select penalty kicker --</option>
                     {activePlayers.map((p) => (
@@ -1900,7 +1901,7 @@ const ScoringConsole: React.FC = () => {
                   placeholder="Or enter kicker name..."
                   value={footballShootoutKicker}
                   onChange={(e) => setFootballShootoutKicker(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 text-slate-100 text-xs p-2.5 rounded-lg focus:border-blue-500 outline-none placeholder-slate-600"
+                  className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line-strong)] text-[var(--sc-ink)] text-xs p-2.5 rounded-lg focus:border-blue-500 outline-none placeholder-slate-600"
                 />
               </div>
             </div>
@@ -1990,7 +1991,7 @@ const ScoringConsole: React.FC = () => {
                 ⚽ Shootout {regularScoreA === regularScoreB ? '(Tied)' : ''}
               </Pad>
 
-              <div className="flex items-center justify-center border border-slate-200 dark:border-[#1E2A45] bg-slate-100 dark:bg-[#101A2E] text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-[#8FA0BC] px-3 py-2 rounded-lg">
+              <div className="flex items-center justify-center border border-[var(--sc-line)] dark:border-[var(--sc-line)] bg-[var(--sc-sunken)] dark:bg-[var(--sc-chip)] text-[11px] font-black uppercase tracking-wider text-[var(--sc-ink-2)] dark:text-[var(--sc-ink-2)] px-3 py-2 rounded-lg">
                 {isHT ? 'Half Time' : isPeriod2 ? '2nd Half (2H)' : '1st Half (1H)'}
               </div>
             </div>
@@ -2008,8 +2009,8 @@ const ScoringConsole: React.FC = () => {
                   className={cn(
                     "px-3 py-1.5 text-xs font-mono font-bold rounded border transition-colors",
                     footballAddedTime === mins
-                      ? "bg-[#D9A441] text-[#05070C] border-[#D9A441] shadow-sm"
-                      : "bg-[#101A2E] text-[#8FA0BC] border-[#1E2A45] hover:text-white hover:border-[#4B90FF]"
+                      ? "bg-[var(--sc-gold)] text-[var(--sc-bg)] border-[var(--sc-gold)] shadow-sm"
+                      : "bg-[var(--sc-chip)] text-[var(--sc-ink-2)] border-[var(--sc-line)] hover:text-[var(--sc-ink)] hover:border-[var(--sc-blue-2)]"
                   )}
                 >
                   {mins === 0 ? '+0' : `+${mins}'`}
@@ -2113,30 +2114,30 @@ const ScoringConsole: React.FC = () => {
       return (
         <div className="space-y-5">
           {/* Volleyball Match HUD */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#1E2A45] bg-[#101A2E] p-3 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--sc-line)] bg-[var(--sc-chip)] p-3 text-xs">
             <div className="flex items-center gap-2">
-              <span className="font-mono font-black text-[#D9A441] text-sm uppercase">
+              <span className="font-mono font-black text-[var(--sc-gold)] text-sm uppercase">
                 SET {currentSet} {isDeciding && '(Deciding Set)'}
               </span>
-              <span className="text-[#8FA0BC]">· Target: {targetPoints} pts (Win by 2)</span>
+              <span className="text-[var(--sc-ink-2)]">· Target: {targetPoints} pts (Win by 2)</span>
             </div>
             <div className="flex items-center gap-3 font-mono font-bold">
-              <span className="text-blue-400">{teamAInfo.shortName}: {setsWonA} sets</span>
-              <span className="text-[#5E6E86]">—</span>
-              <span className="text-[#FF4D3D]">{teamBInfo.shortName}: {setsWonB} sets</span>
+              <span className="text-[var(--sc-blue-2)]">{teamAInfo.shortName}: {setsWonA} sets</span>
+              <span className="text-[var(--sc-ink-3)]">—</span>
+              <span className="text-[var(--sc-coral)]">{teamBInfo.shortName}: {setsWonB} sets</span>
             </div>
           </div>
 
           {/* Current Set Big Score Readout */}
-          <div className="flex items-center justify-center gap-6 rounded-xl border border-[#1A2440] bg-[#070D18] py-4">
+          <div className="flex items-center justify-center gap-6 rounded-xl border border-[var(--sc-line-strong)] bg-[var(--sc-sunken)] py-4">
             <div className="text-center">
-              <span className="block text-xs font-black uppercase tracking-wider text-blue-400">{teamAInfo.shortName}</span>
-              <span className="text-4xl font-mono font-black text-white tabular-nums">{curPtsA}</span>
+              <span className="block text-xs font-black uppercase tracking-wider text-[var(--sc-blue-2)]">{teamAInfo.shortName}</span>
+              <span className="text-4xl font-mono font-black text-[var(--sc-ink)] tabular-nums">{curPtsA}</span>
             </div>
-            <span className="text-2xl font-black text-[#3B4D6B]">:</span>
+            <span className="text-2xl font-black text-[var(--sc-ink-5)]">:</span>
             <div className="text-center">
-              <span className="block text-xs font-black uppercase tracking-wider text-[#FF4D3D]">{teamBInfo.shortName}</span>
-              <span className="text-4xl font-mono font-black text-white tabular-nums">{curPtsB}</span>
+              <span className="block text-xs font-black uppercase tracking-wider text-[var(--sc-coral)]">{teamBInfo.shortName}</span>
+              <span className="text-4xl font-mono font-black text-[var(--sc-ink)] tabular-nums">{curPtsB}</span>
             </div>
           </div>
 
@@ -2182,7 +2183,7 @@ const ScoringConsole: React.FC = () => {
           </div>
 
           {/* Optional Player Attribution (Non-blocking) */}
-          <div className="rounded-lg border border-[#1A2440] bg-[#0E1726]/60 p-3">
+          <div className="rounded-lg border border-[var(--sc-line-strong)] bg-[var(--sc-panel-alt2)]/60 p-3">
             <PanelLabel hint="optional — point can be recorded without player">Player Attribution (Optional)</PanelLabel>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -2191,7 +2192,7 @@ const ScoringConsole: React.FC = () => {
                   placeholder={`${teamAInfo.shortName} Player (Optional)`}
                   value={volleyballPlayerA}
                   onChange={(e) => setVolleyballPlayerA(e.target.value)}
-                  className="w-full rounded border border-[#1E2A45] bg-[#101A2E] px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded border border-[var(--sc-line)] bg-[var(--sc-chip)] px-2.5 py-1.5 text-xs text-[var(--sc-ink)] placeholder-slate-500 focus:border-blue-500 focus:outline-none"
                 />
               </div>
               <div>
@@ -2200,7 +2201,7 @@ const ScoringConsole: React.FC = () => {
                   placeholder={`${teamBInfo.shortName} Player (Optional)`}
                   value={volleyballPlayerB}
                   onChange={(e) => setVolleyballPlayerB(e.target.value)}
-                  className="w-full rounded border border-[#1E2A45] bg-[#101A2E] px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:border-[#FF4D3D] focus:outline-none"
+                  className="w-full rounded border border-[var(--sc-line)] bg-[var(--sc-chip)] px-2.5 py-1.5 text-xs text-[var(--sc-ink)] placeholder-slate-500 focus:border-[var(--sc-coral)] focus:outline-none"
                 />
               </div>
             </div>
@@ -2254,17 +2255,17 @@ const ScoringConsole: React.FC = () => {
 
           {/* Completed Sets History Pills */}
           {completedSets.length > 0 && (
-            <div className="rounded-lg border border-[#1E2A45] bg-[#101A2E] p-3">
-              <span className="block text-[10px] font-black uppercase tracking-wider text-[#8FA0BC] mb-2">
+            <div className="rounded-lg border border-[var(--sc-line)] bg-[var(--sc-chip)] p-3">
+              <span className="block text-[10px] font-black uppercase tracking-wider text-[var(--sc-ink-2)] mb-2">
                 Completed Sets History
               </span>
               <div className="flex flex-wrap gap-2">
                 {completedSets.map((s, idx) => (
                   <span
                     key={idx}
-                    className="px-2.5 py-1 rounded bg-[#070D18] border border-[#1A2440] font-mono text-xs text-slate-300"
+                    className="px-2.5 py-1 rounded bg-[var(--sc-sunken)] border border-[var(--sc-line-strong)] font-mono text-xs text-[var(--sc-ink)]"
                   >
-                    Set {s.set}: <strong className="text-white">{s.teamA}–{s.teamB}</strong>
+                    Set {s.set}: <strong className="text-[var(--sc-ink)]">{s.teamA}–{s.teamB}</strong>
                   </span>
                 ))}
               </div>
@@ -2290,30 +2291,30 @@ const ScoringConsole: React.FC = () => {
       return (
         <div className="space-y-5">
           {/* HUD Banner */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#1E2A45] bg-[#101A2E] p-3 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--sc-line)] bg-[var(--sc-chip)] p-3 text-xs">
             <div className="flex items-center gap-2">
-              <span className="font-mono font-black text-[#D9A441] text-sm uppercase">
+              <span className="font-mono font-black text-[var(--sc-gold)] text-sm uppercase">
                 {emoji} GAME {currentSet}
               </span>
-              <span className="text-[#8FA0BC]">· Target: {targetPoints} pts (Win by 2)</span>
+              <span className="text-[var(--sc-ink-2)]">· Target: {targetPoints} pts (Win by 2)</span>
             </div>
             <div className="flex items-center gap-3 font-mono font-bold">
-              <span className="text-blue-400">{teamAInfo.shortName}: {gamesWonA} games</span>
-              <span className="text-[#5E6E86]">—</span>
-              <span className="text-[#FF4D3D]">{teamBInfo.shortName}: {gamesWonB} games</span>
+              <span className="text-[var(--sc-blue-2)]">{teamAInfo.shortName}: {gamesWonA} games</span>
+              <span className="text-[var(--sc-ink-3)]">—</span>
+              <span className="text-[var(--sc-coral)]">{teamBInfo.shortName}: {gamesWonB} games</span>
             </div>
           </div>
 
           {/* Current Game Score Readout */}
-          <div className="flex items-center justify-center gap-6 rounded-xl border border-[#1A2440] bg-[#070D18] py-4">
+          <div className="flex items-center justify-center gap-6 rounded-xl border border-[var(--sc-line-strong)] bg-[var(--sc-sunken)] py-4">
             <div className="text-center">
-              <span className="block text-xs font-black uppercase tracking-wider text-blue-400">{teamAInfo.shortName}</span>
-              <span className="text-4xl font-mono font-black text-white tabular-nums">{curPtsA}</span>
+              <span className="block text-xs font-black uppercase tracking-wider text-[var(--sc-blue-2)]">{teamAInfo.shortName}</span>
+              <span className="text-4xl font-mono font-black text-[var(--sc-ink)] tabular-nums">{curPtsA}</span>
             </div>
-            <span className="text-2xl font-black text-[#3B4D6B]">:</span>
+            <span className="text-2xl font-black text-[var(--sc-ink-5)]">:</span>
             <div className="text-center">
-              <span className="block text-xs font-black uppercase tracking-wider text-[#FF4D3D]">{teamBInfo.shortName}</span>
-              <span className="text-4xl font-mono font-black text-white tabular-nums">{curPtsB}</span>
+              <span className="block text-xs font-black uppercase tracking-wider text-[var(--sc-coral)]">{teamBInfo.shortName}</span>
+              <span className="text-4xl font-mono font-black text-[var(--sc-ink)] tabular-nums">{curPtsB}</span>
             </div>
           </div>
 
@@ -2403,17 +2404,17 @@ const ScoringConsole: React.FC = () => {
 
           {/* Completed Games History */}
           {completedGames.length > 0 && (
-            <div className="rounded-lg border border-[#1E2A45] bg-[#101A2E] p-3">
-              <span className="block text-[10px] font-black uppercase tracking-wider text-[#8FA0BC] mb-2">
+            <div className="rounded-lg border border-[var(--sc-line)] bg-[var(--sc-chip)] p-3">
+              <span className="block text-[10px] font-black uppercase tracking-wider text-[var(--sc-ink-2)] mb-2">
                 Completed Games
               </span>
               <div className="flex flex-wrap gap-2">
                 {completedGames.map((g, idx) => (
                   <span
                     key={idx}
-                    className="px-2.5 py-1 rounded bg-[#070D18] border border-[#1A2440] font-mono text-xs text-slate-300"
+                    className="px-2.5 py-1 rounded bg-[var(--sc-sunken)] border border-[var(--sc-line-strong)] font-mono text-xs text-[var(--sc-ink)]"
                   >
-                    Game {g.set}: <strong className="text-white">{g.teamA}–{g.teamB}</strong>
+                    Game {g.set}: <strong className="text-[var(--sc-ink)]">{g.teamA}–{g.teamB}</strong>
                   </span>
                 ))}
               </div>
@@ -2432,30 +2433,30 @@ const ScoringConsole: React.FC = () => {
       return (
         <div className="space-y-5">
           {/* CS Match HUD */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#1E2A45] bg-[#101A2E] p-3 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--sc-line)] bg-[var(--sc-chip)] p-3 text-xs">
             <div className="flex items-center gap-2">
-              <span className="font-mono font-black text-orange-400 text-sm uppercase">
+              <span className="font-mono font-black text-[var(--sc-orange)] text-sm uppercase">
                 🔫 ROUND {curRound} / 24
               </span>
-              <span className="text-[#8FA0BC]">· MR12 (Target: {targetRounds} Rounds)</span>
+              <span className="text-[var(--sc-ink-2)]">· MR12 (Target: {targetRounds} Rounds)</span>
             </div>
             <div className="flex items-center gap-3 font-mono font-bold">
-              <span className="text-blue-400">{teamAInfo.shortName}: {roundsA}</span>
-              <span className="text-[#5E6E86]">—</span>
-              <span className="text-amber-400">{teamBInfo.shortName}: {roundsB}</span>
+              <span className="text-[var(--sc-blue-2)]">{teamAInfo.shortName}: {roundsA}</span>
+              <span className="text-[var(--sc-ink-3)]">—</span>
+              <span className="text-[var(--sc-gold)]">{teamBInfo.shortName}: {roundsB}</span>
             </div>
           </div>
 
           {/* Big Rounds Readout */}
-          <div className="flex items-center justify-center gap-6 rounded-xl border border-[#1A2440] bg-[#070D18] py-4">
+          <div className="flex items-center justify-center gap-6 rounded-xl border border-[var(--sc-line-strong)] bg-[var(--sc-sunken)] py-4">
             <div className="text-center">
-              <span className="block text-xs font-black uppercase tracking-wider text-blue-400">{teamAInfo.shortName} (CT)</span>
-              <span className="text-4xl font-mono font-black text-white tabular-nums">{roundsA}</span>
+              <span className="block text-xs font-black uppercase tracking-wider text-[var(--sc-blue-2)]">{teamAInfo.shortName} (CT)</span>
+              <span className="text-4xl font-mono font-black text-[var(--sc-ink)] tabular-nums">{roundsA}</span>
             </div>
-            <span className="text-2xl font-black text-[#3B4D6B]">:</span>
+            <span className="text-2xl font-black text-[var(--sc-ink-5)]">:</span>
             <div className="text-center">
-              <span className="block text-xs font-black uppercase tracking-wider text-amber-400">{teamBInfo.shortName} (T)</span>
-              <span className="text-4xl font-mono font-black text-white tabular-nums">{roundsB}</span>
+              <span className="block text-xs font-black uppercase tracking-wider text-[var(--sc-gold)]">{teamBInfo.shortName} (T)</span>
+              <span className="text-4xl font-mono font-black text-[var(--sc-ink)] tabular-nums">{roundsB}</span>
             </div>
           </div>
 
@@ -2555,24 +2556,24 @@ const ScoringConsole: React.FC = () => {
       return (
         <div className="space-y-5">
           {/* Carrom HUD */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#1E2A45] bg-[#101A2E] p-3 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--sc-line)] bg-[var(--sc-chip)] p-3 text-xs">
             <div className="flex items-center gap-2">
-              <span className="font-mono font-black text-amber-400 text-sm uppercase">
+              <span className="font-mono font-black text-[var(--sc-gold)] text-sm uppercase">
                 🎯 BOARD {curBoard}
               </span>
-              <span className="text-[#8FA0BC]">· First to {targetPoints} points wins</span>
+              <span className="text-[var(--sc-ink-2)]">· First to {targetPoints} points wins</span>
             </div>
             <div className="flex items-center gap-3 font-mono font-bold">
-              <span className="text-blue-400">{teamAInfo.shortName}: {scoreA} pts</span>
-              <span className="text-[#5E6E86]">—</span>
-              <span className="text-[#FF4D3D]">{teamBInfo.shortName}: {scoreB} pts</span>
+              <span className="text-[var(--sc-blue-2)]">{teamAInfo.shortName}: {scoreA} pts</span>
+              <span className="text-[var(--sc-ink-3)]">—</span>
+              <span className="text-[var(--sc-coral)]">{teamBInfo.shortName}: {scoreB} pts</span>
             </div>
           </div>
 
           {/* Team A Scoring Controls */}
           <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3.5 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase text-blue-400">{teamAInfo.name} ({scoreA} pts)</span>
+              <span className="text-xs font-black uppercase text-[var(--sc-blue-2)]">{teamAInfo.name} ({scoreA} pts)</span>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <Pad tone="blue" size="md" onClick={() => handleCarromScore('teamA', 1)} disabled={isBusy}>
@@ -2590,7 +2591,7 @@ const ScoringConsole: React.FC = () => {
           {/* Team B Scoring Controls */}
           <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-3.5 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase text-rose-400">{teamBInfo.name} ({scoreB} pts)</span>
+              <span className="text-xs font-black uppercase text-[var(--sc-coral-2)]">{teamBInfo.name} ({scoreB} pts)</span>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <Pad tone="coral" size="md" onClick={() => handleCarromScore('teamB', 1)} disabled={isBusy}>
@@ -2622,15 +2623,15 @@ const ScoringConsole: React.FC = () => {
       return (
         <div className="space-y-5">
           {/* Smash Karts Arena HUD */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#1E2A45] bg-[#101A2E] p-3 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--sc-line)] bg-[var(--sc-chip)] p-3 text-xs">
             <div className="flex items-center gap-2">
               <span className="font-mono font-black text-cyan-400 text-sm uppercase">
                 🏎️ ARENA BATTLE
               </span>
-              <span className="text-[#8FA0BC]">· Target: {targetPoints} Elims to Win</span>
+              <span className="text-[var(--sc-ink-2)]">· Target: {targetPoints} Elims to Win</span>
             </div>
             {mvp && (
-              <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 font-bold text-[11px]">
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-[var(--sc-gold)] font-bold text-[11px]">
                 ⭐ MVP: {mvp}
               </span>
             )}
@@ -2639,7 +2640,7 @@ const ScoringConsole: React.FC = () => {
           {/* Optional Player Attribution */}
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>
-              <label className="text-[10px] font-bold uppercase text-blue-400 block mb-1">
+              <label className="text-[10px] font-bold uppercase text-[var(--sc-blue-2)] block mb-1">
                 {teamAInfo.shortName} Player (Optional for MVP)
               </label>
               <input
@@ -2647,11 +2648,11 @@ const ScoringConsole: React.FC = () => {
                 value={kartPlayerA}
                 onChange={(e) => setKartPlayerA(e.target.value)}
                 placeholder="Player tag..."
-                className="w-full rounded border border-[#1E2A45] bg-[#101A2E] px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded border border-[var(--sc-line)] bg-[var(--sc-chip)] px-2.5 py-1.5 text-xs text-[var(--sc-ink)] placeholder-slate-500 focus:border-blue-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase text-rose-400 block mb-1">
+              <label className="text-[10px] font-bold uppercase text-[var(--sc-coral-2)] block mb-1">
                 {teamBInfo.shortName} Player (Optional for MVP)
               </label>
               <input
@@ -2659,7 +2660,7 @@ const ScoringConsole: React.FC = () => {
                 value={kartPlayerB}
                 onChange={(e) => setKartPlayerB(e.target.value)}
                 placeholder="Player tag..."
-                className="w-full rounded border border-[#1E2A45] bg-[#101A2E] px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:border-rose-500 focus:outline-none"
+                className="w-full rounded border border-[var(--sc-line)] bg-[var(--sc-chip)] px-2.5 py-1.5 text-xs text-[var(--sc-ink)] placeholder-slate-500 focus:border-rose-500 focus:outline-none"
               />
             </div>
           </div>
@@ -2735,17 +2736,17 @@ const ScoringConsole: React.FC = () => {
       return (
         <div className="space-y-5">
           {/* Chess HUD */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#1E2A45] bg-[#101A2E] p-3 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--sc-line)] bg-[var(--sc-chip)] p-3 text-xs">
             <div className="flex items-center gap-2">
-              <span className="font-mono font-black text-[#D9A441] text-sm uppercase">
+              <span className="font-mono font-black text-[var(--sc-gold)] text-sm uppercase">
                 ♔ MOVE {curMove}
               </span>
-              {lastMove && <span className="text-[#8FA0BC]">· Last: {lastMove}</span>}
+              {lastMove && <span className="text-[var(--sc-ink-2)]">· Last: {lastMove}</span>}
             </div>
             <div className="flex items-center gap-3 font-mono font-bold">
-              <span className="text-white">White: {teamAInfo.name}</span>
-              <span className="text-[#5E6E86]">vs</span>
-              <span className="text-slate-400">Black: {teamBInfo.name}</span>
+              <span className="text-[var(--sc-ink)]">White: {teamAInfo.name}</span>
+              <span className="text-[var(--sc-ink-3)]">vs</span>
+              <span className="text-[var(--sc-ink-2)]">Black: {teamBInfo.name}</span>
             </div>
           </div>
 
@@ -2757,7 +2758,7 @@ const ScoringConsole: React.FC = () => {
                 size="lg"
                 onClick={() => handleChessResult('white_wins')}
                 disabled={isBusy || liveMatch?.status === 'completed'}
-                style={{ background: '#EEF2F7', color: '#080A0F' }}
+                style={{ background: 'var(--sc-ink)', color: 'var(--sc-onlight)' }}
               >
                 ♔ White wins (1–0)
               </Pad>
@@ -2773,7 +2774,7 @@ const ScoringConsole: React.FC = () => {
                 size="lg"
                 onClick={() => handleChessResult('black_wins')}
                 disabled={isBusy || liveMatch?.status === 'completed'}
-                style={{ background: '#111827', color: '#EEF2F7', border: '1px solid #374151' }}
+                style={{ background: 'var(--sc-darkchip)', color: 'var(--sc-ink)', border: '1px solid var(--sc-line-soft)' }}
               >
                 ♚ Black wins (0–1)
               </Pad>
@@ -2781,7 +2782,7 @@ const ScoringConsole: React.FC = () => {
           </div>
 
           {/* Optional Quick Move Tracker */}
-          <div className="rounded-xl border border-[#1A2440] bg-[#070D18] p-3 space-y-2">
+          <div className="rounded-xl border border-[var(--sc-line-strong)] bg-[var(--sc-sunken)] p-3 space-y-2">
             <PanelLabel hint="optional move notation tracker">Move Telemetry</PanelLabel>
             <div className="flex gap-2">
               <input
@@ -2789,7 +2790,7 @@ const ScoringConsole: React.FC = () => {
                 value={chessMoveText}
                 onChange={(e) => setChessMoveText(e.target.value)}
                 placeholder={`e.g. e4, Nf3, O-O (Move ${curMove})`}
-                className="flex-1 rounded border border-[#1E2A45] bg-[#101A2E] px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
+                className="flex-1 rounded border border-[var(--sc-line)] bg-[var(--sc-chip)] px-3 py-1.5 text-xs text-[var(--sc-ink)] placeholder-slate-500 focus:border-amber-400 focus:outline-none"
               />
               <Pad tone="gold" size="sm" onClick={handleChessMove} disabled={isBusy}>
                 ♟ Record Move
@@ -2896,41 +2897,41 @@ const ScoringConsole: React.FC = () => {
             : { x: 0, y: 0 }
         }
         transition={{ duration: 0.42, ease: 'easeOut' }}
-        className="min-h-[calc(100vh-4rem)] bg-[#05070C] text-[#EEF2F7]"
+        className="min-h-[calc(100vh-4rem)] bg-[var(--sc-bg)] text-[var(--sc-ink)]"
       >
         {/* Header Telemetry */}
-        <header className="sticky top-0 z-30 border-b border-[#1A2440] bg-[#070B14]/95 backdrop-blur">
+        <header className="relative z-10 border-b border-[var(--sc-line-strong)] bg-[var(--sc-elev)]/95 backdrop-blur">
           <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
             <button
               onClick={() => navigate('/admin/live')}
-              className="text-[11px] font-black uppercase tracking-[0.24em] text-[#5E6E86] transition-colors hover:text-[#D9A441]"
+              className="px-1 py-2 text-[11px] font-black uppercase tracking-[0.24em] text-[var(--sc-ink-3)] transition-colors hover:text-[var(--sc-gold)]"
             >
               ← Back
             </button>
 
-            <span className="border border-[#1E2A45] bg-[#101A2E] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-[#8FA0BC]">
+            <span className="border border-[var(--sc-line)] bg-[var(--sc-chip)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--sc-ink-2)]">
               {sportName}
             </span>
 
-            <span className="flex items-center gap-2 border border-[#1E2A45] px-2.5 py-1">
+            <span className="flex items-center gap-2 border border-[var(--sc-line)] px-2.5 py-1">
               <motion.span
-                className={cn('h-1.5 w-1.5 rounded-full', isLive ? 'bg-[#FF3B3B]' : 'bg-[#4C5B75]')}
+                className={cn('h-1.5 w-1.5 rounded-full', isLive ? 'bg-[var(--sc-live)]' : 'bg-[var(--sc-ink-4)]')}
                 animate={isLive ? { opacity: [1, 0.25, 1] } : { opacity: 0.5 }}
                 transition={{ duration: 1, repeat: Infinity }}
               />
-              <span className="text-[10px] font-black uppercase tracking-[0.24em] text-[#EEF2F7]">
+              <span className="text-[10px] font-black uppercase tracking-[0.24em] text-[var(--sc-ink)]">
                 <RollingLabel value={statusLabel} />
               </span>
             </span>
 
-            <span className="text-[10px] font-bold text-slate-400 font-mono">
+            <span className="text-[10px] font-bold text-[var(--sc-ink-2)] font-mono">
               Seq #{liveMatch?.lastSequence ?? events[0]?.sequence ?? 0}
             </span>
 
             <button
               type="button"
               onClick={() => window.open('/admin/scoring-simulator', '_blank')}
-              className="border border-[#D9A441]/40 bg-[#D9A441]/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#D9A441] transition-colors hover:bg-[#D9A441]/20 ml-auto sm:ml-0"
+              className="border border-[var(--sc-gold)]/40 bg-[var(--sc-gold)]/10 px-2.5 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--sc-gold)] transition-colors hover:bg-[var(--sc-gold)]/20 sm:py-1 ml-auto sm:ml-0"
               title="Test & verify formulas in simulator"
             >
               Formula Sandbox →
@@ -2947,12 +2948,12 @@ const ScoringConsole: React.FC = () => {
                   ⏸ Pause
                 </Pad>
               )}
-              {isMatchLive && isPaused && (
+              {isPaused && (
                 <Pad tone="blue" size="sm" onClick={handleResumeMatch} className="px-3.5 sm:px-4">
                   ▶ Resume
                 </Pad>
               )}
-              {isMatchLive && (
+              {(isMatchLive || isPaused) && (
                 <Pad tone="red" size="sm" onClick={() => setShowConfirm('end')} className="px-3.5 sm:px-4">
                   ⏹ End match
                 </Pad>
@@ -2962,7 +2963,7 @@ const ScoringConsole: React.FC = () => {
         </header>
 
         {/* Score Plate / Point Card (Scrollable with page) */}
-        <div className="relative overflow-hidden border-b border-[#1A2440] bg-[#0B1220]">
+        <div className="relative overflow-hidden border-b border-[var(--sc-line-strong)] bg-[var(--sc-panel)]">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0"
@@ -2974,63 +2975,63 @@ const ScoringConsole: React.FC = () => {
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
-            style={{ background: 'linear-gradient(90deg, transparent, #D9A441, transparent)' }}
+            style={{ background: 'linear-gradient(90deg, transparent, var(--sc-gold), transparent)' }}
           />
 
-          <div className="relative grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-5 sm:px-8 sm:py-6">
+          <div className="relative grid grid-cols-[minmax(5.5rem,1fr)_auto_minmax(5.5rem,1fr)] items-center gap-2 px-4 py-5 sm:gap-3 sm:px-8 sm:py-6">
             <TeamPlate team={teamAInfo} side="left" />
 
-            <div className="flex flex-col items-center">
+            <div className="flex min-w-0 flex-col items-center">
               <div className="flex items-center justify-center gap-3 text-[clamp(2.2rem,6vw,4.2rem)] font-black leading-none tracking-tight">
                 {isCricket ? (
-                  <span className="text-[#EEF2F7]">
+                  <span className="text-[var(--sc-ink)]">
                     <RollingScore value={`${primaryScore}/${secondaryScore}`} />
                   </span>
                 ) : (
                   <>
-                    <span className="text-[#EEF2F7]">
+                    <span className="text-[var(--sc-ink)]">
                       <RollingScore value={primaryScore} />
                     </span>
-                    <span className="text-[0.5em] text-[#2C3A58]">–</span>
-                    <span className="text-[#EEF2F7]">
+                    <span className="text-[0.5em] text-[var(--sc-ink-6)]">–</span>
+                    <span className="text-[var(--sc-ink)]">
                       <RollingScore value={secondaryScore} />
                     </span>
                   </>
                 )}
               </div>
 
-              <div className="mt-3 flex items-center gap-3">
-                <span className="border border-[#1E2A45] bg-[#101A2E] px-3 py-1 font-mono text-[15px] font-bold tabular-nums text-[#8FA0BC] flex items-center gap-1.5">
-                  <FiClock className="h-3.5 w-3.5 text-amber-400" />
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                <span className="border border-[var(--sc-line)] bg-[var(--sc-chip)] px-3 py-1 font-mono text-[15px] font-bold tabular-nums text-[var(--sc-ink-2)] flex items-center gap-1.5">
+                  <FiClock className="h-3.5 w-3.5 text-[var(--sc-gold)]" />
                   {elapsedTime}
                 </span>
                 {isCricket && (
-                  <span className="border border-[#1E2A45] bg-[#101A2E] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-[#8FA0BC]">
+                  <span className="border border-[var(--sc-line)] bg-[var(--sc-chip)] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-[var(--sc-ink-2)]">
                     {currentCricket.overs}.{currentCricket.balls}{matchMaxOvers > 0 ? ` / ${matchMaxOvers}` : ''} OV · RR {runRate}
                   </span>
                 )}
                 {isSetSport && (
-                  <span className="border border-[#1E2A45] bg-[#101A2E] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-[#D9A441]">
+                  <span className="border border-[var(--sc-line)] bg-[var(--sc-chip)] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-[var(--sc-gold)]">
                     {sId.includes('volleyball') ? 'SET' : 'GAME'} {String(matchLive.currentSet || matchLive.game || 1)} · {teamAInfo.shortName} {String(matchLive.gamesWon?.teamA ?? matchLive.setsWon?.teamA ?? 0)}–{String(matchLive.gamesWon?.teamB ?? matchLive.setsWon?.teamB ?? 0)} {teamBInfo.shortName}
                   </span>
                 )}
                 {(sId.includes('counter') || sId.includes('cs') || sId.includes('strike')) && (
-                  <span className="border border-[#1E2A45] bg-[#101A2E] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-orange-400">
+                  <span className="border border-[var(--sc-line)] bg-[var(--sc-chip)] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-[var(--sc-orange)]">
                     ROUND {String(matchLive.round || (Number(liveMatch?.score?.teamA || 0) + Number(liveMatch?.score?.teamB || 0) + 1))} / 24 (MR12)
                   </span>
                 )}
                 {sId.includes('carrom') && (
-                  <span className="border border-[#1E2A45] bg-[#101A2E] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-amber-400">
+                  <span className="border border-[var(--sc-line)] bg-[var(--sc-chip)] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-[var(--sc-gold)]">
                     BOARD {String(matchLive.board || 1)} · TARGET 25
                   </span>
                 )}
                 {(sId.includes('smash') || sId.includes('kart')) && (
-                  <span className="border border-[#1E2A45] bg-[#101A2E] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-cyan-400">
+                  <span className="border border-[var(--sc-line)] bg-[var(--sc-chip)] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-cyan-400">
                     ARENA BATTLE{matchLive.mvp ? ` · ${String(matchLive.mvp)}` : ''}
                   </span>
                 )}
                 {sId.includes('chess') && (
-                  <span className="border border-[#1E2A45] bg-[#101A2E] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-yellow-400">
+                  <span className="border border-[var(--sc-line)] bg-[var(--sc-chip)] px-3 py-1 text-[11px] font-black tracking-[0.14em] text-[var(--sc-yellow)]">
                     MOVE {String(matchLive.move || 1)}
                   </span>
                 )}
@@ -3044,12 +3045,12 @@ const ScoringConsole: React.FC = () => {
         {/* Workspace */}
         <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_420px] lg:p-6">
           {/* Scoring Controls */}
-          <section className="min-w-0 border border-[#1A2440] bg-[#0B1220] p-5">
+          <section className="min-w-0 border border-[var(--sc-line-strong)] bg-[var(--sc-panel)] p-5">
             <div className="mb-5 flex items-baseline justify-between">
-              <h3 className="text-[11px] font-black uppercase tracking-[0.34em] text-[#EEF2F7]">
+              <h3 className="text-[11px] font-black uppercase tracking-[0.34em] text-[var(--sc-ink)]">
                 Live Scoring Console (Single Source of Truth)
               </h3>
-              <span className="text-[9px] font-black uppercase tracking-[0.24em] text-[#4C5B75]">
+              <span className="text-[9px] font-black uppercase tracking-[0.24em] text-[var(--sc-ink-4)]">
                 {sportName}
               </span>
             </div>
@@ -3058,15 +3059,15 @@ const ScoringConsole: React.FC = () => {
             <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <FiZap className="h-4 w-4 text-amber-400" />
-                  <span className="text-xs font-black uppercase tracking-wider text-amber-400">
+                  <FiZap className="h-4 w-4 text-[var(--sc-gold)]" />
+                  <span className="text-xs font-black uppercase tracking-wider text-[var(--sc-gold)]">
                     Fast Post-Match & Quick Score Overwrite
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowFastScorePanel(!showFastScorePanel)}
-                  className="flex items-center gap-1.5 rounded border border-[#1E2A45] bg-[#101A2E] px-2.5 py-1 text-[11px] font-bold text-slate-300 hover:text-white transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 rounded border border-[var(--sc-line)] bg-[var(--sc-chip)] px-2.5 py-1 text-[11px] font-bold text-[var(--sc-ink)] hover:text-[var(--sc-ink)] transition-colors cursor-pointer"
                 >
                   <span>{showFastScorePanel ? 'Collapse' : 'Open Quick Overwrite'}</span>
                   {showFastScorePanel ? <FiChevronUp className="h-3.5 w-3.5" /> : <FiChevronDown className="h-3.5 w-3.5" />}
@@ -3074,15 +3075,15 @@ const ScoringConsole: React.FC = () => {
               </div>
 
               {showFastScorePanel && (
-                <div className="mt-4 pt-4 border-t border-[#1E2A45] space-y-4">
-                  <p className="text-[11px] text-slate-400">
+                <div className="mt-4 pt-4 border-t border-[var(--sc-line)] space-y-4">
+                  <p className="text-[11px] text-[var(--sc-ink-2)]">
                     Use this panel to instantly overwrite final match scores, select winner, or mark the match completed if it finished before live operator entry.
                   </p>
 
                   <div className="grid grid-cols-2 gap-4">
                     {/* Team A Score */}
                     <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
-                      <label className="block text-[11px] font-black uppercase text-blue-400 mb-1">
+                      <label className="block text-[11px] font-black uppercase text-[var(--sc-blue-2)] mb-1">
                         {teamAInfo.name} ({teamAInfo.shortName})
                       </label>
                       <input
@@ -3090,13 +3091,13 @@ const ScoringConsole: React.FC = () => {
                         min="0"
                         value={fastScoreTeamA}
                         onChange={(e) => setFastScoreTeamA(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                        className="w-full bg-[#101A2E] border border-blue-500/40 text-white font-mono text-xl font-black p-2 rounded outline-none"
+                        className="w-full bg-[var(--sc-chip)] border border-blue-500/40 text-[var(--sc-ink)] font-mono text-xl font-black p-2 rounded outline-none"
                       />
                     </div>
 
                     {/* Team B Score */}
                     <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3">
-                      <label className="block text-[11px] font-black uppercase text-rose-400 mb-1">
+                      <label className="block text-[11px] font-black uppercase text-[var(--sc-coral-2)] mb-1">
                         {teamBInfo.name} ({teamBInfo.shortName})
                       </label>
                       <input
@@ -3104,7 +3105,7 @@ const ScoringConsole: React.FC = () => {
                         min="0"
                         value={fastScoreTeamB}
                         onChange={(e) => setFastScoreTeamB(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                        className="w-full bg-[#101A2E] border border-rose-500/40 text-white font-mono text-xl font-black p-2 rounded outline-none"
+                        className="w-full bg-[var(--sc-chip)] border border-rose-500/40 text-[var(--sc-ink)] font-mono text-xl font-black p-2 rounded outline-none"
                       />
                     </div>
                   </div>
@@ -3112,13 +3113,13 @@ const ScoringConsole: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Match Status */}
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-wider text-[#8FA0BC] mb-1">
+                      <label className="block text-[10px] font-black uppercase tracking-wider text-[var(--sc-ink-2)] mb-1">
                         Match Status
                       </label>
                       <select
                         value={fastMatchStatus}
                         onChange={(e) => setFastMatchStatus(e.target.value as MatchStatus)}
-                        className="w-full bg-[#101A2E] border border-[#1E2A45] text-slate-200 text-xs p-2.5 rounded focus:border-amber-400 outline-none"
+                        className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2.5 rounded focus:border-amber-400 outline-none"
                       >
                         <option value="completed">Completed (Full Time / Concluded)</option>
                         <option value="live">Live (Ongoing)</option>
@@ -3129,13 +3130,13 @@ const ScoringConsole: React.FC = () => {
 
                     {/* Match Winner */}
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-wider text-[#8FA0BC] mb-1">
+                      <label className="block text-[10px] font-black uppercase tracking-wider text-[var(--sc-ink-2)] mb-1">
                         Winner
                       </label>
                       <select
                         value={fastMatchWinner}
                         onChange={(e) => setFastMatchWinner(e.target.value as any)}
-                        className="w-full bg-[#101A2E] border border-[#1E2A45] text-slate-200 text-xs p-2.5 rounded focus:border-amber-400 outline-none"
+                        className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2.5 rounded focus:border-amber-400 outline-none"
                       >
                         <option value="teamA">{teamAInfo.name} ({teamAInfo.shortName}) Win</option>
                         <option value="teamB">{teamBInfo.name} ({teamBInfo.shortName}) Win</option>
@@ -3146,7 +3147,7 @@ const ScoringConsole: React.FC = () => {
 
                   {/* Summary / Result Text */}
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-[#8FA0BC] mb-1">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-[var(--sc-ink-2)] mb-1">
                       Official Result Summary (Optional)
                     </label>
                     <input
@@ -3154,7 +3155,7 @@ const ScoringConsole: React.FC = () => {
                       placeholder={`e.g. ${teamAInfo.name} won 2–1 against ${teamBInfo.name}`}
                       value={fastResultSummary}
                       onChange={(e) => setFastResultSummary(e.target.value)}
-                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-slate-200 text-xs p-2.5 rounded outline-none placeholder-slate-600 focus:border-amber-400"
+                      className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2.5 rounded outline-none placeholder-slate-600 focus:border-amber-400"
                     />
                   </div>
 
@@ -3176,13 +3177,13 @@ const ScoringConsole: React.FC = () => {
             <div className="flex-1">{renderScoringButtons()}</div>
 
             {/* UNDO BUTTON */}
-            <div className="mt-7 border-t border-[#1A2440] pt-4">
+            <div className="mt-7 border-t border-[var(--sc-line-strong)] pt-4">
               <Pad
                 onClick={handleUndo}
                 disabled={activeEventsCount === 0 || isBusy}
                 style={{
-                  background: '#1A0F14',
-                  color: '#FF8478',
+                  background: 'var(--sc-redbg)',
+                  color: 'var(--sc-coral-2)',
                   borderColor: 'rgba(255,77,61,0.6)',
                 }}
                 className="w-full"
@@ -3197,12 +3198,12 @@ const ScoringConsole: React.FC = () => {
 
           {/* Timeline & Audit Correction Feed */}
           <aside className="flex min-w-0 flex-col gap-4">
-            <div className="flex min-h-[380px] flex-col border border-[#1A2440] bg-[#0B1220]">
-              <div className="flex items-center justify-between border-b border-[#1A2440] px-4 py-3">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D9A441]">
+            <div className="flex min-h-[380px] flex-col border border-[var(--sc-line-strong)] bg-[var(--sc-panel)]">
+              <div className="flex items-center justify-between border-b border-[var(--sc-line-strong)] px-4 py-3">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--sc-gold)]">
                   Event Stream & Audit Log
                 </h3>
-                <span className="text-[9px] font-black uppercase tracking-[0.24em] text-[#5E6E86]">
+                <span className="text-[9px] font-black uppercase tracking-[0.24em] text-[var(--sc-ink-3)]">
                   {activeEventsCount} active / {events.length} total
                 </span>
               </div>
@@ -3215,7 +3216,7 @@ const ScoringConsole: React.FC = () => {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="py-10 text-center text-[11px] font-black uppercase tracking-[0.26em] text-[#3B4763]"
+                      className="py-10 text-center text-[11px] font-black uppercase tracking-[0.26em] text-[var(--sc-line-mid)]"
                     >
                       Awaiting first scored event
                     </motion.p>
@@ -3228,37 +3229,37 @@ const ScoringConsole: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
                       className={cn(
-                        'relative overflow-hidden rounded border border-white/5 bg-[#101A2E] px-3 py-2.5 transition-colors',
-                        ev.undone && 'opacity-40 bg-[#0c1322]',
+                        'relative overflow-hidden rounded border border-white/5 bg-[var(--sc-chip)] px-3 py-2.5 transition-colors',
+                        ev.undone && 'opacity-40 bg-[var(--sc-panel-alt)]',
                         ev.isCorrection && 'border-amber-500/40 bg-amber-500/5'
                       )}
                     >
                       <div className="flex items-baseline justify-between gap-2">
                         <div className="flex items-center gap-1.5">
-                          <span className="rounded bg-black/40 px-1.5 py-0.5 font-mono text-[9px] font-bold text-[#FFD21F]">
+                          <span className="rounded bg-black/40 px-1.5 py-0.5 font-mono text-[9px] font-bold text-[var(--sc-yellow)]">
                             #{ev.sequence}
                           </span>
-                          <span className="text-[11px] font-black uppercase tracking-[0.14em] text-[#EEF2F7]">
+                          <span className="text-[11px] font-black uppercase tracking-[0.14em] text-[var(--sc-ink)]">
                             {ev.type}
                           </span>
                         </div>
-                        <span className="font-mono text-[10px] tabular-nums text-amber-400 font-bold">
+                        <span className="font-mono text-[10px] tabular-nums text-[var(--sc-gold)] font-bold">
                           {ev.positioningText || ev.matchTime || 'LIVE'}
                         </span>
                       </div>
 
-                      <div className="mt-1 text-[11px] text-[#C7D2E4] font-medium">
+                      <div className="mt-1 text-[11px] text-[var(--sc-ink-1)] font-medium">
                         {ev.description}
                       </div>
 
                       {ev.isCorrection && (
-                        <div className="mt-1 flex items-center gap-1 text-[10px] text-amber-300 font-mono">
+                        <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--sc-gold)] font-mono">
                           <span>⚠️ Correction (Replaces #{ev.replacesSequence})</span>
                         </div>
                       )}
 
                       {ev.undone && (
-                        <div className="mt-1 text-[9px] font-black uppercase tracking-wider text-red-400">
+                        <div className="mt-1 text-[9px] font-black uppercase tracking-wider text-[var(--sc-coral)]">
                           [UNDONE / ROLLED BACK] {ev.correctionNote ? `— ${ev.correctionNote}` : ''}
                         </div>
                       )}
@@ -3272,7 +3273,7 @@ const ScoringConsole: React.FC = () => {
                               setCorrectionReason('');
                               setCorrectionDelta(0);
                             }}
-                            className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-400 hover:text-amber-300 transition-colors"
+                            className="inline-flex items-center gap-1 text-[10px] font-bold text-[var(--sc-gold)] hover:text-[var(--sc-gold)] transition-colors"
                           >
                             <FiEdit3 className="h-3 w-3" /> Correct Event
                           </button>
@@ -3302,33 +3303,33 @@ const ScoringConsole: React.FC = () => {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-lg border border-[#1E2A45] bg-[#0B1220] p-6 rounded-xl shadow-2xl text-[#EEF2F7]"
+              className="w-full max-w-lg border border-[var(--sc-line)] bg-[var(--sc-panel)] p-6 rounded-xl shadow-2xl text-[var(--sc-ink)]"
             >
-              <div className="flex items-center justify-between border-b border-[#1A2440] pb-3 mb-4">
+              <div className="flex items-center justify-between border-b border-[var(--sc-line-strong)] pb-3 mb-4">
                 <div className="flex items-center gap-2">
-                  <FiAlertCircle className="h-5 w-5 text-amber-400" />
-                  <h3 className="text-sm font-black uppercase tracking-wider text-[#FFD21F]">
+                  <FiAlertCircle className="h-5 w-5 text-[var(--sc-gold)]" />
+                  <h3 className="text-sm font-black uppercase tracking-wider text-[var(--sc-yellow)]">
                     Correct Event #{correctionTarget.sequence}
                   </h3>
                 </div>
                 <button
                   onClick={() => setCorrectionTarget(null)}
-                  className="text-slate-400 hover:text-white"
+                  className="text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)]"
                 >
                   <FiX className="h-5 w-5" />
                 </button>
               </div>
 
               <div className="space-y-4 text-xs">
-                <div className="p-3 rounded bg-[#101A2E] border border-white/5">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Original Event</span>
-                  <p className="font-semibold text-white">{correctionTarget.description}</p>
-                  <span className="text-amber-400 font-mono text-[10px]">{correctionTarget.positioningText}</span>
+                <div className="p-3 rounded bg-[var(--sc-chip)] border border-white/5">
+                  <span className="text-[10px] uppercase font-bold text-[var(--sc-ink-2)] block mb-1">Original Event</span>
+                  <p className="font-semibold text-[var(--sc-ink)]">{correctionTarget.description}</p>
+                  <span className="text-[var(--sc-gold)] font-mono text-[10px]">{correctionTarget.positioningText}</span>
                 </div>
 
                 {isCricket && (
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 uppercase mb-2">
+                    <label className="block text-[11px] font-bold text-[var(--sc-ink)] uppercase mb-2">
                       Score Delta Adjustment (Runs)
                     </label>
                     <div className="grid grid-cols-5 gap-2">
@@ -3341,7 +3342,7 @@ const ScoringConsole: React.FC = () => {
                             'py-2 rounded font-mono font-bold text-xs border transition-colors',
                             correctionDelta === delta
                               ? 'bg-amber-400 text-black border-amber-300'
-                              : 'bg-[#101A2E] border-white/10 text-slate-300 hover:bg-white/10'
+                              : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)] hover:bg-white/10'
                           )}
                         >
                           {delta > 0 ? `+${delta}` : delta}
@@ -3352,7 +3353,7 @@ const ScoringConsole: React.FC = () => {
                 )}
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-300 uppercase mb-1">
+                  <label className="block text-[11px] font-bold text-[var(--sc-ink)] uppercase mb-1">
                     Audit Note / Correction Reason (Required)
                   </label>
                   <input
@@ -3360,15 +3361,15 @@ const ScoringConsole: React.FC = () => {
                     value={correctionReason}
                     onChange={(e) => setCorrectionReason(e.target.value)}
                     placeholder="e.g. Umpire review overturned 4 to 2 runs; Scorer entry typo"
-                    className="w-full rounded bg-[#101A2E] border border-[#1E2A45] p-2.5 text-xs text-white outline-none focus:border-amber-400"
+                    className="w-full rounded bg-[var(--sc-chip)] border border-[var(--sc-line)] p-2.5 text-xs text-[var(--sc-ink)] outline-none focus:border-amber-400"
                   />
                 </div>
 
-                <div className="pt-3 flex justify-end gap-2 border-t border-[#1A2440]">
+                <div className="pt-3 flex justify-end gap-2 border-t border-[var(--sc-line-strong)]">
                   <button
                     type="button"
                     onClick={() => setCorrectionTarget(null)}
-                    className="px-4 py-2 rounded text-xs text-slate-400 hover:text-white"
+                    className="px-4 py-2 rounded text-xs text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)]"
                   >
                     Cancel
                   </button>
@@ -3391,7 +3392,7 @@ const ScoringConsole: React.FC = () => {
       <AnimatePresence>
         {showConfirm && (
           <motion.div
-            className="fixed inset-0 z-[98] flex items-center justify-center bg-[#05070C]/85 p-6 backdrop-blur-sm"
+            className="fixed inset-0 z-[98] flex items-center justify-center bg-[var(--sc-bg)]/85 p-6 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -3400,18 +3401,18 @@ const ScoringConsole: React.FC = () => {
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 20, opacity: 0 }}
-              className="w-full max-w-md border border-[#1E2A45] bg-[#0B1220] p-6 rounded-xl"
+              className="w-full max-w-md border border-[var(--sc-line)] bg-[var(--sc-panel)] p-6 rounded-xl"
             >
-              <h3 className="text-lg font-black uppercase tracking-[0.14em] text-[#EEF2F7]">
+              <h3 className="text-lg font-black uppercase tracking-[0.14em] text-[var(--sc-ink)]">
                 End match?
               </h3>
-              <p className="mt-3 text-[13px] leading-relaxed text-[#8FA0BC]">
+              <p className="mt-3 text-[13px] leading-relaxed text-[var(--sc-ink-2)]">
                 The final score will be locked in Firestore and public broadcast marked Final.
               </p>
               <div className="mt-7 flex justify-end gap-3">
                 <button
                   onClick={() => setShowConfirm(null)}
-                  className="border border-[#1E2A45] px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.2em] text-[#8FA0BC] hover:text-[#EEF2F7]"
+                  className="border border-[var(--sc-line)] px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.2em] text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)]"
                 >
                   Cancel
                 </button>
@@ -3428,7 +3429,7 @@ const ScoringConsole: React.FC = () => {
       <AnimatePresence>
         {footballModal && (
           <motion.div
-            className="fixed inset-0 z-[98] flex items-center justify-center bg-[#05070C]/85 p-6 backdrop-blur-sm"
+            className="fixed inset-0 z-[98] flex items-center justify-center bg-[var(--sc-bg)]/85 p-6 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -3437,10 +3438,10 @@ const ScoringConsole: React.FC = () => {
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 20, opacity: 0 }}
-              className="w-full max-w-md border border-[#1E2A45] bg-[#0B1220] p-6 rounded-xl shadow-2xl space-y-4"
+              className="w-full max-w-md border border-[var(--sc-line)] bg-[var(--sc-panel)] p-6 rounded-xl shadow-2xl space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-[#1E2A45] pb-3">
-                <h3 className="text-base font-black uppercase tracking-[0.14em] text-[#EEF2F7]">
+              <div className="flex items-center justify-between border-b border-[var(--sc-line)] pb-3">
+                <h3 className="text-base font-black uppercase tracking-[0.14em] text-[var(--sc-ink)]">
                   {footballModal.type === 'goal' && `⚽ Record Goal · ${footballModal.team === 'teamA' ? teamAInfo.name : teamBInfo.name}`}
                   {footballModal.type === 'yellow_card' && `🟨 Yellow Card · ${footballModal.team === 'teamA' ? teamAInfo.name : teamBInfo.name}`}
                   {footballModal.type === 'red_card' && `🟥 Red Card · ${footballModal.team === 'teamA' ? teamAInfo.name : teamBInfo.name}`}
@@ -3449,16 +3450,16 @@ const ScoringConsole: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setFootballModal(null)}
-                  className="text-[#8FA0BC] hover:text-[#EEF2F7]"
+                  className="text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)]"
                 >
                   <FiX className="h-5 w-5" />
                 </button>
               </div>
 
               {/* Half & Match Minute Selection */}
-              <div className="space-y-2 rounded-lg border border-[#1E2A45] bg-[#101A2E]/60 p-3">
+              <div className="space-y-2 rounded-lg border border-[var(--sc-line)] bg-[var(--sc-chip)]/60 p-3">
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--sc-ink-2)] mb-1.5">
                     Match Half / Period
                   </label>
                   <div className="grid grid-cols-3 gap-2">
@@ -3469,7 +3470,7 @@ const ScoringConsole: React.FC = () => {
                         "py-1.5 px-2 rounded text-xs font-bold border transition-colors text-center cursor-pointer",
                         footballCustomPeriod === 1
                           ? "bg-blue-600 text-white border-blue-500 shadow-sm"
-                          : "bg-[#101A2E] border-[#1E2A45] text-slate-300 hover:bg-white/5"
+                          : "bg-[var(--sc-chip)] border-[var(--sc-line)] text-[var(--sc-ink)] hover:bg-white/5"
                       )}
                     >
                       1st Half (1H)
@@ -3481,7 +3482,7 @@ const ScoringConsole: React.FC = () => {
                         "py-1.5 px-2 rounded text-xs font-bold border transition-colors text-center cursor-pointer",
                         footballCustomPeriod === 2
                           ? "bg-blue-600 text-white border-blue-500 shadow-sm"
-                          : "bg-[#101A2E] border-[#1E2A45] text-slate-300 hover:bg-white/5"
+                          : "bg-[var(--sc-chip)] border-[var(--sc-line)] text-[var(--sc-ink)] hover:bg-white/5"
                       )}
                     >
                       2nd Half (2H)
@@ -3493,7 +3494,7 @@ const ScoringConsole: React.FC = () => {
                         "py-1.5 px-2 rounded text-xs font-bold border transition-colors text-center cursor-pointer",
                         footballCustomPeriod === 'ET'
                           ? "bg-blue-600 text-white border-blue-500 shadow-sm"
-                          : "bg-[#101A2E] border-[#1E2A45] text-slate-300 hover:bg-white/5"
+                          : "bg-[var(--sc-chip)] border-[var(--sc-line)] text-[var(--sc-ink)] hover:bg-white/5"
                       )}
                     >
                       Extra Time (ET)
@@ -3503,17 +3504,17 @@ const ScoringConsole: React.FC = () => {
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC]">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--sc-ink-2)]">
                       Match Minute (e.g. 23', 44' before HT, 67', 88')
                     </label>
-                    <span className="text-[10px] text-slate-500 font-mono">Live Clock: {elapsedTime}</span>
+                    <span className="text-[10px] text-[var(--sc-ink-3)] font-mono">Live Clock: {elapsedTime}</span>
                   </div>
                   <input
                     type="text"
                     placeholder="Type minute (e.g. 23, 44, 78)..."
                     value={footballCustomMinute}
                     onChange={(e) => setFootballCustomMinute(e.target.value)}
-                    className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded focus:border-[#4B90FF] outline-none"
+                    className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2 rounded focus:border-[var(--sc-blue-2)] outline-none"
                   />
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {[12, 23, 38, 44, 55, 68, 77, 89].map((m) => (
@@ -3528,7 +3529,7 @@ const ScoringConsole: React.FC = () => {
                           "px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition-colors cursor-pointer",
                           footballCustomMinute === String(m)
                             ? "bg-amber-400 text-black border-amber-400"
-                            : "bg-[#0B1220] border-[#1E2A45] text-slate-400 hover:text-white"
+                            : "bg-[var(--sc-panel)] border-[var(--sc-line)] text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)]"
                         )}
                       >
                         {m}'
@@ -3541,14 +3542,14 @@ const ScoringConsole: React.FC = () => {
               {footballModal.type === 'goal' && (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--sc-ink-2)] mb-1">
                       Scorer (Optional)
                     </label>
                     {(footballModal.team === 'teamA' ? teamAPlayers : teamBPlayers).length > 0 ? (
                       <select
                         value={selectedPlayer}
                         onChange={(e) => setSelectedPlayer(e.target.value)}
-                        className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none"
+                        className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2.5 rounded focus:border-[var(--sc-blue-2)] outline-none"
                       >
                         <option value="">-- Select or type below --</option>
                         {(footballModal.team === 'teamA' ? teamAPlayers : teamBPlayers).map((p) => (
@@ -3563,19 +3564,19 @@ const ScoringConsole: React.FC = () => {
                       placeholder="Type player name..."
                       value={selectedPlayer}
                       onChange={(e) => setSelectedPlayer(e.target.value)}
-                      className="mt-1.5 w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none placeholder-[#5E6E86]"
+                      className="mt-1.5 w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2.5 rounded focus:border-[var(--sc-blue-2)] outline-none placeholder-[var(--sc-ink-3)]"
                     />
                   </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--sc-ink-2)] mb-1">
                         Assist (Optional)
                       </label>
                       {(footballModal.team === 'teamA' ? teamAPlayers : teamBPlayers).length > 0 ? (
                         <select
                           value={assistPlayer}
                           onChange={(e) => setAssistPlayer(e.target.value)}
-                          className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none"
+                          className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2.5 rounded focus:border-[var(--sc-blue-2)] outline-none"
                         >
                           <option value="">-- None / No Assist --</option>
                           {(footballModal.team === 'teamA' ? teamAPlayers : teamBPlayers).map((p) => (
@@ -3590,20 +3591,20 @@ const ScoringConsole: React.FC = () => {
                         placeholder="Type assist player name (leave blank if none)..."
                         value={assistPlayer}
                         onChange={(e) => setAssistPlayer(e.target.value)}
-                        className="mt-1.5 w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none placeholder-[#5E6E86]"
+                        className="mt-1.5 w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2.5 rounded focus:border-[var(--sc-blue-2)] outline-none placeholder-[var(--sc-ink-3)]"
                       />
                     </div>
 
                   <div className="pt-1">
-                    <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-[#EEF2F7]">
+                    <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-[var(--sc-ink)]">
                       <input
                         type="checkbox"
                         checked={isPenaltyGoal}
                         onChange={(e) => setIsPenaltyGoal(e.target.checked)}
-                        className="rounded border-[#1E2A45] bg-[#101A2E] text-blue-500 focus:ring-0 w-4 h-4"
+                        className="rounded border-[var(--sc-line)] bg-[var(--sc-chip)] text-[var(--sc-blue-2)] focus:ring-0 w-4 h-4"
                       />
-                      <span className="font-semibold text-slate-300">Penalty Kick (In-Play)</span>
-                      <span className="text-[10px] text-amber-400 font-mono">⚽ (PEN)</span>
+                      <span className="font-semibold text-[var(--sc-ink)]">Penalty Kick (In-Play)</span>
+                      <span className="text-[10px] text-[var(--sc-gold)] font-mono">⚽ (PEN)</span>
                     </label>
                   </div>
                 </div>
@@ -3611,14 +3612,14 @@ const ScoringConsole: React.FC = () => {
 
               {(footballModal.type === 'yellow_card' || footballModal.type === 'red_card') && (
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--sc-ink-2)] mb-1">
                     Carded Player
                   </label>
                   {(footballModal.team === 'teamA' ? teamAPlayers : teamBPlayers).length > 0 ? (
                     <select
                       value={selectedPlayer}
                       onChange={(e) => setSelectedPlayer(e.target.value)}
-                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none"
+                      className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2.5 rounded focus:border-[var(--sc-blue-2)] outline-none"
                     >
                       <option value="">-- Select or type below --</option>
                       {(footballModal.team === 'teamA' ? teamAPlayers : teamBPlayers).map((p) => (
@@ -3633,7 +3634,7 @@ const ScoringConsole: React.FC = () => {
                     placeholder="Type player name..."
                     value={selectedPlayer}
                     onChange={(e) => setSelectedPlayer(e.target.value)}
-                    className="mt-1.5 w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none placeholder-[#5E6E86]"
+                    className="mt-1.5 w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2.5 rounded focus:border-[var(--sc-blue-2)] outline-none placeholder-[var(--sc-ink-3)]"
                   />
                 </div>
               )}
@@ -3641,7 +3642,7 @@ const ScoringConsole: React.FC = () => {
               {footballModal.type === 'substitution' && (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--sc-ink-2)] mb-1">
                       Player Leaving Pitch (OFF)
                     </label>
                     <input
@@ -3649,11 +3650,11 @@ const ScoringConsole: React.FC = () => {
                       placeholder="Player OFF name..."
                       value={subPlayerOff}
                       onChange={(e) => setSubPlayerOff(e.target.value)}
-                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none placeholder-[#5E6E86]"
+                      className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2.5 rounded focus:border-[var(--sc-blue-2)] outline-none placeholder-[var(--sc-ink-3)]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--sc-ink-2)] mb-1">
                       Player Entering Pitch (ON)
                     </label>
                     <input
@@ -3661,17 +3662,17 @@ const ScoringConsole: React.FC = () => {
                       placeholder="Player ON name..."
                       value={subPlayerOn}
                       onChange={(e) => setSubPlayerOn(e.target.value)}
-                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2.5 rounded focus:border-[#4B90FF] outline-none placeholder-[#5E6E86]"
+                      className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2.5 rounded focus:border-[var(--sc-blue-2)] outline-none placeholder-[var(--sc-ink-3)]"
                     />
                   </div>
                 </div>
               )}
 
-              <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-[#1E2A45]">
+              <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-[var(--sc-line)]">
                 <button
                   type="button"
                   onClick={() => setFootballModal(null)}
-                  className="border border-[#1E2A45] px-4 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-[#8FA0BC] hover:text-[#EEF2F7]"
+                  className="border border-[var(--sc-line)] px-4 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)]"
                 >
                   Cancel
                 </button>
@@ -3694,7 +3695,7 @@ const ScoringConsole: React.FC = () => {
       <AnimatePresence>
         {cricketWicketModal && (
           <motion.div
-            className="fixed inset-0 z-[98] flex items-center justify-center bg-[#05070C]/85 p-6 backdrop-blur-sm"
+            className="fixed inset-0 z-[98] flex items-center justify-center bg-[var(--sc-bg)]/85 p-6 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -3703,16 +3704,16 @@ const ScoringConsole: React.FC = () => {
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 20, opacity: 0 }}
-              className="w-full max-w-md border border-[#1E2A45] bg-[#0B1220] p-6 rounded-xl shadow-2xl space-y-4"
+              className="w-full max-w-md border border-[var(--sc-line)] bg-[var(--sc-panel)] p-6 rounded-xl shadow-2xl space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-[#1E2A45] pb-3">
-                <h3 className="text-base font-black uppercase tracking-[0.14em] text-red-400 flex items-center gap-2">
+              <div className="flex items-center justify-between border-b border-[var(--sc-line)] pb-3">
+                <h3 className="text-base font-black uppercase tracking-[0.14em] text-[var(--sc-coral)] flex items-center gap-2">
                   🎯 Record Wicket (#{currentCricket.wickets + 1})
                 </h3>
                 <button
                   type="button"
                   onClick={() => setCricketWicketModal(false)}
-                  className="text-[#8FA0BC] hover:text-[#EEF2F7]"
+                  className="text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)]"
                 >
                   <FiX className="h-5 w-5" />
                 </button>
@@ -3721,7 +3722,7 @@ const ScoringConsole: React.FC = () => {
               <div className="space-y-4">
                 {/* Dismissed Batsman Selection */}
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--sc-ink-2)] mb-1.5">
                     Batsman Dismissed
                   </label>
                   <div className="grid grid-cols-2 gap-2">
@@ -3731,8 +3732,8 @@ const ScoringConsole: React.FC = () => {
                       className={cn(
                         "p-2.5 rounded text-xs font-bold border transition-colors text-left",
                         wicketOutBatsman === 'striker'
-                          ? "bg-red-500/20 border-red-500 text-red-400"
-                          : "bg-[#101A2E] border-[#1E2A45] text-slate-300"
+                          ? "bg-red-500/20 border-red-500 text-[var(--sc-coral)]"
+                          : "bg-[var(--sc-chip)] border-[var(--sc-line)] text-[var(--sc-ink)]"
                       )}
                     >
                       <span className="text-[10px] block opacity-70">STRIKER *</span>
@@ -3744,8 +3745,8 @@ const ScoringConsole: React.FC = () => {
                       className={cn(
                         "p-2.5 rounded text-xs font-bold border transition-colors text-left",
                         wicketOutBatsman === 'nonStriker'
-                          ? "bg-red-500/20 border-red-500 text-red-400"
-                          : "bg-[#101A2E] border-[#1E2A45] text-slate-300"
+                          ? "bg-red-500/20 border-red-500 text-[var(--sc-coral)]"
+                          : "bg-[var(--sc-chip)] border-[var(--sc-line)] text-[var(--sc-ink)]"
                       )}
                     >
                       <span className="text-[10px] block opacity-70">NON-STRIKER</span>
@@ -3756,7 +3757,7 @@ const ScoringConsole: React.FC = () => {
 
                 {/* Dismissal Mode */}
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--sc-ink-2)] mb-1.5">
                     Dismissal Type
                   </label>
                   <div className="grid grid-cols-3 gap-1.5">
@@ -3776,7 +3777,7 @@ const ScoringConsole: React.FC = () => {
                           "py-2 px-1 text-[11px] font-bold uppercase rounded border transition-colors text-center",
                           wicketDismissalType === mode.id
                             ? "bg-amber-400 text-black border-amber-300 shadow-sm"
-                            : "bg-[#101A2E] border-[#1E2A45] text-slate-300 hover:bg-white/5"
+                            : "bg-[var(--sc-chip)] border-[var(--sc-line)] text-[var(--sc-ink)] hover:bg-white/5"
                         )}
                       >
                         {mode.label}
@@ -3788,14 +3789,14 @@ const ScoringConsole: React.FC = () => {
                 {/* Fielder Input (for Caught, Run out, Stumped) */}
                 {(wicketDismissalType === 'caught' || wicketDismissalType === 'run_out' || wicketDismissalType === 'stumped') && (
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--sc-ink-2)] mb-1">
                       {wicketDismissalType === 'caught' ? 'Catcher / Fielder' : wicketDismissalType === 'stumped' ? 'Wicketkeeper' : 'Fielder (Throw / Run out)'}
                     </label>
                     {bowlingPlayers.length > 0 && (
                       <select
                         value={wicketFielder}
                         onChange={(e) => setWicketFielder(e.target.value)}
-                        className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded mb-1 outline-none"
+                        className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2 rounded mb-1 outline-none"
                       >
                         <option value="">-- Select from fielding squad --</option>
                         {bowlingPlayers.map((p) => (
@@ -3808,21 +3809,21 @@ const ScoringConsole: React.FC = () => {
                       placeholder="Type fielder name..."
                       value={wicketFielder}
                       onChange={(e) => setWicketFielder(e.target.value)}
-                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded outline-none placeholder-[#5E6E86]"
+                      className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2 rounded outline-none placeholder-[var(--sc-ink-3)]"
                     />
                   </div>
                 )}
 
                 {/* Incoming Batsman */}
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8FA0BC] mb-1">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--sc-ink-2)] mb-1">
                     Next Batsman In (Optional)
                   </label>
                   {battingPlayers.length > 0 && (
                     <select
                       value={wicketNextBatsman}
                       onChange={(e) => setWicketNextBatsman(e.target.value)}
-                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded mb-1 outline-none"
+                      className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2 rounded mb-1 outline-none"
                     >
                       <option value="">-- Select next batsman --</option>
                       {battingPlayers
@@ -3837,16 +3838,16 @@ const ScoringConsole: React.FC = () => {
                     placeholder="Type incoming batsman name..."
                     value={wicketNextBatsman}
                     onChange={(e) => setWicketNextBatsman(e.target.value)}
-                    className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded outline-none placeholder-[#5E6E86]"
+                    className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2 rounded outline-none placeholder-[var(--sc-ink-3)]"
                   />
                 </div>
               </div>
 
-              <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-[#1E2A45]">
+              <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-[var(--sc-line)]">
                 <button
                   type="button"
                   onClick={() => setCricketWicketModal(false)}
-                  className="border border-[#1E2A45] px-4 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-[#8FA0BC] hover:text-[#EEF2F7]"
+                  className="border border-[var(--sc-line)] px-4 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)]"
                 >
                   Cancel
                 </button>
@@ -3869,7 +3870,7 @@ const ScoringConsole: React.FC = () => {
       <AnimatePresence>
         {lineupModal && (
           <motion.div
-            className="fixed inset-0 z-[98] flex items-center justify-center bg-[#05070C]/85 p-6 backdrop-blur-sm"
+            className="fixed inset-0 z-[98] flex items-center justify-center bg-[var(--sc-bg)]/85 p-6 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -3878,16 +3879,16 @@ const ScoringConsole: React.FC = () => {
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 20, opacity: 0 }}
-              className="w-full max-w-md border border-[#1E2A45] bg-[#0B1220] p-6 rounded-xl shadow-2xl space-y-4"
+              className="w-full max-w-md border border-[var(--sc-line)] bg-[var(--sc-panel)] p-6 rounded-xl shadow-2xl space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-[#1E2A45] pb-3">
-                <h3 className="text-base font-black uppercase tracking-[0.14em] text-[#EEF2F7]">
+              <div className="flex items-center justify-between border-b border-[var(--sc-line)] pb-3">
+                <h3 className="text-base font-black uppercase tracking-[0.14em] text-[var(--sc-ink)]">
                   ✎ Set Crease & Bowling Lineup
                 </h3>
                 <button
                   type="button"
                   onClick={() => setLineupModal(false)}
-                  className="text-[#8FA0BC] hover:text-[#EEF2F7]"
+                  className="text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)]"
                 >
                   <FiX className="h-5 w-5" />
                 </button>
@@ -3895,14 +3896,14 @@ const ScoringConsole: React.FC = () => {
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-emerald-400 mb-1">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--sc-green)] mb-1">
                     Striker (Facing Delivery)
                   </label>
                   {battingPlayers.length > 0 && (
                     <select
                       value={lineupStriker}
                       onChange={(e) => setLineupStriker(e.target.value)}
-                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded mb-1 outline-none"
+                      className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2 rounded mb-1 outline-none"
                     >
                       <option value="">-- Select Striker --</option>
                       {battingPlayers.map((p) => (
@@ -3915,19 +3916,19 @@ const ScoringConsole: React.FC = () => {
                     placeholder="Striker name..."
                     value={lineupStriker}
                     onChange={(e) => setLineupStriker(e.target.value)}
-                    className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded outline-none placeholder-[#5E6E86]"
+                    className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2 rounded outline-none placeholder-[var(--sc-ink-3)]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--sc-ink)] mb-1">
                     Non-Striker (Runner's End)
                   </label>
                   {battingPlayers.length > 0 && (
                     <select
                       value={lineupNonStriker}
                       onChange={(e) => setLineupNonStriker(e.target.value)}
-                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded mb-1 outline-none"
+                      className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2 rounded mb-1 outline-none"
                     >
                       <option value="">-- Select Non-Striker --</option>
                       {battingPlayers.map((p) => (
@@ -3940,19 +3941,19 @@ const ScoringConsole: React.FC = () => {
                     placeholder="Non-striker name..."
                     value={lineupNonStriker}
                     onChange={(e) => setLineupNonStriker(e.target.value)}
-                    className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded outline-none placeholder-[#5E6E86]"
+                    className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2 rounded outline-none placeholder-[var(--sc-ink-3)]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-rose-400 mb-1">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[var(--sc-coral-2)] mb-1">
                     Current Bowler
                   </label>
                   {bowlingPlayers.length > 0 && (
                     <select
                       value={lineupBowler}
                       onChange={(e) => setLineupBowler(e.target.value)}
-                      className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded mb-1 outline-none"
+                      className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2 rounded mb-1 outline-none"
                     >
                       <option value="">-- Select Bowler --</option>
                       {bowlingPlayers.map((p) => (
@@ -3965,16 +3966,16 @@ const ScoringConsole: React.FC = () => {
                     placeholder="Bowler name..."
                     value={lineupBowler}
                     onChange={(e) => setLineupBowler(e.target.value)}
-                    className="w-full bg-[#101A2E] border border-[#1E2A45] text-[#EEF2F7] text-xs p-2 rounded outline-none placeholder-[#5E6E86]"
+                    className="w-full bg-[var(--sc-chip)] border border-[var(--sc-line)] text-[var(--sc-ink)] text-xs p-2 rounded outline-none placeholder-[var(--sc-ink-3)]"
                   />
                 </div>
               </div>
 
-              <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-[#1E2A45]">
+              <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-[var(--sc-line)]">
                 <button
                   type="button"
                   onClick={() => setLineupModal(false)}
-                  className="border border-[#1E2A45] px-4 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-[#8FA0BC] hover:text-[#EEF2F7]"
+                  className="border border-[var(--sc-line)] px-4 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)]"
                 >
                   Cancel
                 </button>
@@ -4006,12 +4007,12 @@ const TeamPlate: React.FC<{
   return (
     <div
       className={cn(
-        'flex min-w-0 items-center gap-3',
+        'flex min-w-0 items-center gap-2 sm:gap-3',
         side === 'right' && 'flex-row-reverse text-right',
       )}
     >
       <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold tracking-tight sm:h-13 sm:w-13 sm:text-sm overflow-hidden border border-white/20"
+        className="hidden h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/20 text-xs font-bold tracking-tight sm:flex sm:h-13 sm:w-13 sm:text-sm"
         style={{
           background:
             side === 'left'
@@ -4026,10 +4027,10 @@ const TeamPlate: React.FC<{
         )}
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-xs sm:text-sm md:text-base font-bold uppercase tracking-wide text-[#EEF2F7]">
+        <span className="block truncate text-xs sm:text-sm md:text-base font-bold uppercase tracking-wide text-[var(--sc-ink)]">
           {team.name}
         </span>
-        <span className="block text-[9px] font-semibold uppercase tracking-wider text-slate-400">
+        <span className="block text-[9px] font-semibold uppercase tracking-wider text-[var(--sc-ink-2)]">
           {side === 'left' ? 'Home' : 'Away'}
         </span>
       </span>

@@ -2,14 +2,19 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { cn } from '@/utils/cn';
-import { useTheme } from '@/contexts/ThemeContext';
 import { FiSearch, FiAlertTriangle, FiInbox, FiChevronRight } from 'react-icons/fi';
 
 /* ============================================================================
- *  Olympia Admin — Dual-Theme Cyber-Luxury Sports Command Center Kit
+ *  Olympia Admin — Operational Design System (v2)
  *
- *  Design language: UPSCALE · CINEMATIC · GLASSMORPHIC · ANIMATED · DUAL-THEMED
- *  Dynamically adapts to Day (Sandstone/Paper) and Night (Obsidian/Glass) themes.
+ *  Principles
+ *  1. TOKENS FIRST. Colour comes from the semantic theme bridge
+ *     (`bg-surface`, `border-line`, `text-ink-muted`, …) so Day and Night stay
+ *     in sync automatically instead of branching on `isDay` in every cell.
+ *  2. DATA DENSE. Tighter controls (h-8.5), 10–11px uppercase eyebrows,
+ *     tabular numerals everywhere a number appears.
+ *  3. ONE HIERARCHY. Eyebrow → title → body → meta, identically on every page.
+ *  4. MOTION IS SUPPORT, NOT SPECTACLE. 1–2px lifts, 150–200ms, no bounce.
  * ==========================================================================*/
 
 /* ---------------------------------------------------------------- buttons */
@@ -24,34 +29,26 @@ export const Btn: React.FC<
     to?: string;
   }
 > = ({ variant = 'secondary', size = 'sm', icon, to, className, children, ...rest }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
-
   const variants: Record<Variant, string> = {
-    primary: isDay
-      ? 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white border border-blue-600 shadow-xs hover:shadow transition-colors font-semibold'
-      : 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white border border-blue-500/50 shadow-xs hover:shadow transition-colors font-semibold',
-    secondary: isDay
-      ? 'bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200/90 shadow-2xs font-medium transition-colors'
-      : 'bg-slate-800/80 hover:bg-slate-700/80 active:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 shadow-2xs font-medium backdrop-blur-md transition-colors',
-    danger: isDay
-      ? 'bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 border border-rose-200/80 shadow-2xs font-medium transition-colors'
-      : 'bg-rose-500/15 hover:bg-rose-500/25 active:bg-rose-500/35 text-rose-300 border border-rose-500/30 shadow-2xs font-medium transition-colors',
-    warn: isDay
-      ? 'bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white border border-amber-600/30 shadow-2xs font-semibold transition-colors'
-      : 'bg-amber-500/20 hover:bg-amber-500/30 active:bg-amber-500/40 text-amber-200 border border-amber-500/40 shadow-2xs font-semibold transition-colors',
-    ghost: isDay
-      ? 'bg-transparent hover:bg-slate-100/80 active:bg-slate-200/80 text-slate-600 hover:text-slate-900 border border-transparent font-medium transition-colors'
-      : 'bg-transparent hover:bg-slate-800/60 active:bg-slate-800 text-slate-400 hover:text-white border border-transparent font-medium transition-colors',
+    primary:
+      'bg-[#1264FF] hover:bg-[#0E55DE] active:bg-[#0B47BC] text-white border border-[#1264FF] shadow-[0_1px_2px_rgba(18,100,255,0.35)] hover:shadow-[0_5px_16px_rgba(18,100,255,0.30)] font-semibold',
+    secondary:
+      'bg-surface-2 hover:bg-surface-3 active:bg-surface-3 text-ink border border-line hover:border-line-strong shadow-xs font-semibold',
+    danger:
+      'bg-rose-500/10 hover:bg-rose-500/20 active:bg-rose-500/25 text-rose-600 dark:text-rose-300 border border-rose-500/25 hover:border-rose-500/45 font-semibold',
+    warn:
+      'bg-amber-500/15 hover:bg-amber-500/25 active:bg-amber-500/30 text-amber-600 dark:text-amber-200 border border-amber-500/35 hover:border-amber-500/55 font-semibold',
+    ghost:
+      'bg-transparent hover:bg-surface-soft active:bg-surface-soft-2 text-ink-muted hover:text-ink border border-transparent font-semibold',
   };
 
   const classes = cn(
-    'relative inline-flex items-center justify-center gap-2 font-medium transition-all duration-150 whitespace-nowrap disabled:pointer-events-none disabled:opacity-40 cursor-pointer select-none',
+    'relative inline-flex items-center justify-center gap-2 transition-all duration-150 whitespace-nowrap disabled:pointer-events-none disabled:opacity-40 cursor-pointer select-none',
     size === 'xs'
-      ? 'h-8 px-2.5 text-xs rounded-md'
+      ? 'h-7 px-2.5 text-[11px] rounded-md'
       : size === 'md'
-        ? 'h-10 px-4 text-sm rounded-lg'
-        : 'h-9 px-3.5 text-xs sm:text-[13px] rounded-lg',
+        ? 'h-10 px-4 text-[13px] rounded-lg'
+        : 'h-8.5 px-3 text-[12px] rounded-lg',
     variants[variant],
     className,
   );
@@ -86,6 +83,28 @@ export const Btn: React.FC<
   );
 };
 
+/* ------------------------------------------------------- shared type bits */
+
+/** 10px uppercase eyebrow — the single label style used across the admin. */
+export const Eyebrow: React.FC<{ children: React.ReactNode; className?: string; tone?: 'muted' | 'faint' | 'gold' | 'blue' }> = ({
+  children,
+  className,
+  tone = 'muted',
+}) => (
+  <span
+    className={cn(
+      'block text-[10px] font-black uppercase tracking-[0.2em]',
+      tone === 'muted' && 'text-ink-muted',
+      tone === 'faint' && 'text-ink-faint',
+      tone === 'gold' && 'text-gold-ink',
+      tone === 'blue' && 'text-[#1264FF]',
+      className,
+    )}
+  >
+    {children}
+  </span>
+);
+
 /* --------------------------------------------------------------- headers */
 
 export interface Crumb {
@@ -99,75 +118,52 @@ export const AdminHeader: React.FC<{
   breadcrumbs?: Crumb[];
   actions?: React.ReactNode;
   badge?: React.ReactNode;
-}> = ({ title, subtitle, breadcrumbs, actions, badge }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
+}> = ({ title, subtitle, breadcrumbs, actions, badge }) => (
+  <motion.header
+    initial={{ opacity: 0, y: -8 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3, ease: 'easeOut' }}
+    className="relative mb-5 flex flex-col gap-3 border-b border-line pb-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6"
+  >
+    {/* premium gold rule bleeding into the divider */}
+    <span
+      aria-hidden
+      className="pointer-events-none absolute -bottom-px left-0 h-[2px] w-24 bg-gradient-to-r from-[#D9A441] via-[#D9A441]/40 to-transparent"
+    />
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
-      className={cn(
-        'mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-5 transition-colors border-b',
-        isDay ? 'border-slate-200' : 'border-white/10',
+    <div className="min-w-0 flex-1">
+      {breadcrumbs && breadcrumbs.length > 0 && (
+        <nav className="mb-1.5 flex flex-wrap items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-ink-muted">
+          {breadcrumbs.map((crumb, index) => (
+            <React.Fragment key={`${crumb.label}-${index}`}>
+              {index > 0 && <FiChevronRight className="h-3 w-3 opacity-60" />}
+              {crumb.to ? (
+                <Link to={crumb.to} className="transition-colors hover:text-[#1264FF]">
+                  {crumb.label}
+                </Link>
+              ) : (
+                <span className="text-ink-muted">{crumb.label}</span>
+              )}
+            </React.Fragment>
+          ))}
+        </nav>
       )}
-    >
-      <div className="min-w-0 flex-1">
-        {breadcrumbs && breadcrumbs.length > 0 && (
-          <nav
-            className={cn(
-              'mb-1.5 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider',
-              isDay ? 'text-slate-500' : 'text-slate-400',
-            )}
-          >
-            {breadcrumbs.map((crumb, index) => (
-              <React.Fragment key={`${crumb.label}-${index}`}>
-                {index > 0 && <FiChevronRight className="h-3 w-3 text-slate-400" />}
-                {crumb.to ? (
-                  <Link
-                    to={crumb.to}
-                    className={cn('transition-colors', isDay ? 'hover:text-blue-600' : 'hover:text-blue-400')}
-                  >
-                    {crumb.label}
-                  </Link>
-                ) : (
-                  <span className={isDay ? 'text-slate-700' : 'text-slate-300'}>{crumb.label}</span>
-                )}
-              </React.Fragment>
-            ))}
-          </nav>
-        )}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <h1
-            className={cn(
-              'text-xl sm:text-2xl font-bold tracking-tight',
-              isDay ? 'text-slate-900' : 'text-white',
-            )}
-          >
-            {title}
-          </h1>
-          {badge}
-        </div>
-        {subtitle && (
-          <p
-            className={cn(
-              'mt-1 max-w-3xl text-xs sm:text-sm font-normal leading-relaxed',
-              isDay ? 'text-slate-500' : 'text-slate-400',
-            )}
-          >
-            {subtitle}
-          </p>
-        )}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <h1 className="font-display text-[25px] font-bold leading-none tracking-[-0.02em] text-ink sm:text-[30px]">
+          {title}
+        </h1>
+        {badge}
       </div>
-      {actions && (
-        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto mt-2 sm:mt-0 shrink-0">
-          {actions}
-        </div>
+      {subtitle && (
+        <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-ink-muted">{subtitle}</p>
       )}
-    </motion.div>
-  );
-};
+    </div>
+
+    {actions && (
+      <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">{actions}</div>
+    )}
+  </motion.header>
+);
 
 /* ----------------------------------------------------------------- cards */
 
@@ -180,86 +176,72 @@ export const Card: React.FC<{
   flush?: boolean;
   glow?: 'gold' | 'blue' | 'none';
   children: React.ReactNode;
-}> = ({ title, hint, actions, className, bodyClassName, flush, children }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
-
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
-      className={cn(
-        'relative rounded-xl border backdrop-blur-xl transition-all duration-200',
-        isDay
-          ? 'bg-white border-slate-200/90 shadow-2xs hover:border-slate-300/80 text-slate-900'
-          : 'bg-slate-900/60 border-slate-800/80 shadow-sm hover:border-slate-700/80 text-slate-100',
-        className,
-      )}
-    >
-      {(title || actions) && (
-        <header
-          className={cn(
-            'flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 transition-colors border-b',
-            isDay
-              ? 'border-slate-200/80 bg-slate-50/60'
-              : 'border-slate-800/80 bg-slate-800/20',
+}> = ({ title, hint, actions, className, bodyClassName, flush, glow = 'none', children }) => (
+  <motion.section
+    initial={{ opacity: 0, y: 8 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.35, ease: 'easeOut' }}
+    className={cn(
+      'relative overflow-hidden rounded-xl border border-line bg-surface/95 text-ink shadow-[0_1px_2px_rgba(7,20,38,0.06)] backdrop-blur-md transition-all duration-200 hover:border-line-strong',
+      className,
+    )}
+  >
+    {(title || actions) && (
+      <header className="flex items-center justify-between gap-3 border-b border-line bg-surface-soft/70 px-4 py-3 transition-colors sm:px-5">
+        <div className="flex min-w-0 items-center gap-2.5">
+          {glow !== 'none' && (
+            <span
+              aria-hidden
+              className={cn('h-3.5 w-[3px] shrink-0 rounded-full', glow === 'gold' ? 'bg-[#D9A441]' : 'bg-[#1264FF]')}
+            />
           )}
-        >
           <div className="min-w-0">
-            <h2
-              className={cn(
-                'text-xs font-semibold uppercase tracking-wider flex items-center gap-2',
-                isDay ? 'text-slate-700' : 'text-slate-300',
-              )}
-            >
+            <h2 className="truncate text-[10.5px] font-black uppercase tracking-[0.18em] text-ink-muted">
               {title}
             </h2>
-            {hint && (
-              <p className={cn('mt-0.5 text-xs font-normal', isDay ? 'text-slate-500' : 'text-slate-400')}>{hint}</p>
-            )}
+            {hint && <p className="mt-0.5 truncate text-[11px] font-medium text-ink-faint">{hint}</p>}
           </div>
-          {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
-        </header>
-      )}
-      <div className={cn(flush ? '' : 'p-4 sm:p-5', bodyClassName)}>{children}</div>
-    </motion.section>
-  );
-};
+        </div>
+        {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+      </header>
+    )}
+    <div className={cn(flush ? '' : 'p-4 sm:p-5', bodyClassName)}>{children}</div>
+  </motion.section>
+);
 
 /* ----------------------------------------------------------- status pills */
 
 const PILL_TONES: Record<string, string> = {
-  live: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25',
-  paused: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25',
-  scheduled: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/25',
+  live: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30',
+  paused: 'bg-amber-500/12 text-amber-700 dark:text-amber-400 border-amber-500/30',
+  scheduled: 'bg-[#1264FF]/10 text-[#1264FF] border-[#1264FF]/25',
   upcoming: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/25',
-  completed: 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200/90 dark:border-slate-700/60',
-  ongoing: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/25',
-  finished: 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200/90 dark:border-slate-700/60',
-  cancelled: 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/40',
-  archived: 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/40',
+  completed: 'bg-surface-soft-2 text-ink-muted border-line',
+  ongoing: 'bg-[#1264FF]/10 text-[#1264FF] border-[#1264FF]/25',
+  finished: 'bg-surface-soft-2 text-ink-muted border-line',
+  cancelled: 'bg-surface-soft text-ink-faint border-line',
+  archived: 'bg-surface-soft text-ink-faint border-line',
   active: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25',
-  inactive: 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/40',
-  disabled: 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/40',
-  open: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/25',
-  closed: 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/40',
-  hidden: 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/40',
+  inactive: 'bg-surface-soft text-ink-faint border-line',
+  disabled: 'bg-surface-soft text-ink-faint border-line',
+  open: 'bg-[#1264FF]/10 text-[#1264FF] border-[#1264FF]/25',
+  closed: 'bg-surface-soft text-ink-faint border-line',
+  hidden: 'bg-surface-soft text-ink-faint border-line',
   published: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25',
-  draft: 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/40',
-  featured: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25',
+  draft: 'bg-surface-soft text-ink-faint border-line',
+  featured: 'bg-[#D9A441]/12 text-gold-ink border-[#D9A441]/30',
 };
 
 export const StatusPill: React.FC<{ value?: string; className?: string }> = ({ value, className }) => {
   if (!value) return null;
   const key = String(value).toLowerCase();
-  const tone = PILL_TONES[key] ?? 'bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700/40';
+  const tone = PILL_TONES[key] ?? 'bg-surface-soft text-ink-muted border-line';
   const live = key === 'live';
 
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-0.5 text-[11px] font-semibold tracking-normal transition-colors',
+        'inline-flex items-center gap-1.5 rounded-md border px-2 py-[3px] text-[10px] font-black uppercase tracking-[0.12em] transition-colors',
         tone,
         className,
       )}
@@ -277,6 +259,22 @@ export const StatusPill: React.FC<{ value?: string; className?: string }> = ({ v
 
 /* ------------------------------------------------------------- stat tiles */
 
+const ACCENT_BAR: Record<string, string> = {
+  blue: 'bg-[#1264FF]',
+  gold: 'bg-[#D9A441]',
+  red: 'bg-[#FF4D3D]',
+  green: 'bg-emerald-500',
+  slate: 'bg-slate-400',
+};
+
+const ACCENT_ICON: Record<string, string> = {
+  blue: 'bg-[#1264FF]/10 text-[#1264FF]',
+  gold: 'bg-[#D9A441]/12 text-gold-ink',
+  red: 'bg-[#FF4D3D]/10 text-[#FF4D3D]',
+  green: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  slate: 'bg-surface-soft-2 text-ink-muted',
+};
+
 export const StatTile: React.FC<{
   label: string;
   value: React.ReactNode;
@@ -286,51 +284,30 @@ export const StatTile: React.FC<{
   icon?: React.ReactNode;
   to?: string;
 }> = ({ label, value, hint, accent = 'blue', isLoading, icon, to }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
-
-  const iconTones = {
-    blue: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-    gold: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-    red: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
-    green: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-    slate: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
-  }[accent];
-
   const body = (
-    <div
-      className={cn(
-        'relative overflow-hidden rounded-xl border p-4 sm:p-4.5 transition-all duration-200',
-        isDay
-          ? 'border-slate-200/90 bg-white shadow-2xs hover:shadow-xs hover:border-slate-300'
-          : 'border-slate-800/80 bg-slate-900/60 backdrop-blur-xl shadow-2xs hover:border-slate-700/80',
-      )}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <span
-          className={cn(
-            'block text-xs font-medium truncate',
-            isDay ? 'text-slate-500' : 'text-slate-400',
-          )}
-        >
+    <div className="relative overflow-hidden rounded-xl border border-line bg-surface/95 p-4 text-ink shadow-[0_1px_2px_rgba(7,20,38,0.06)] transition-all duration-200 hover:border-line-strong hover:shadow-[0_6px_18px_rgba(7,20,38,0.08)]">
+      <span aria-hidden className={cn('absolute inset-y-0 left-0 w-[3px]', ACCENT_BAR[accent])} />
+
+      <div className="flex items-start justify-between gap-2 pl-2">
+        <span className="block truncate text-[10px] font-black uppercase tracking-[0.18em] text-ink-muted">
           {label}
         </span>
         {icon && (
-          <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm transition-transform duration-150', iconTones)}>
+          <span
+            className={cn(
+              'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm transition-transform duration-150',
+              ACCENT_ICON[accent],
+            )}
+          >
             {icon}
           </span>
         )}
       </div>
 
-      <div className="mt-2 flex items-baseline gap-2">
-        <span
-          className={cn(
-            'text-2xl sm:text-3xl font-bold tabular-nums tracking-tight',
-            isDay ? 'text-slate-900' : 'text-slate-100',
-          )}
-        >
+      <div className="mt-1.5 flex items-baseline gap-2 pl-2">
+        <span className="font-display text-[26px] font-bold leading-none tabular-nums tracking-[-0.02em] text-ink sm:text-[30px]">
           {isLoading ? (
-            <span className={cn('inline-block h-8 w-14 animate-pulse rounded', isDay ? 'bg-slate-100' : 'bg-slate-800')} />
+            <span className="inline-block h-8 w-14 animate-pulse rounded bg-surface-soft-2" />
           ) : (
             value
           )}
@@ -338,9 +315,7 @@ export const StatTile: React.FC<{
       </div>
 
       {hint && (
-        <span className={cn('mt-1 block text-[11px] font-normal truncate', isDay ? 'text-slate-500' : 'text-slate-400')}>
-          {hint}
-        </span>
+        <span className="mt-1.5 block truncate pl-2 text-[11px] font-medium text-ink-faint">{hint}</span>
       )}
     </div>
   );
@@ -352,9 +327,7 @@ export const StatTile: React.FC<{
       </Link>
     </motion.div>
   ) : (
-    <motion.div whileHover={{ y: -1 }}>
-      {body}
-    </motion.div>
+    <motion.div whileHover={{ y: -1 }}>{body}</motion.div>
   );
 };
 
@@ -365,28 +338,18 @@ export const SearchInput: React.FC<{
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
-}> = ({ value, onChange, placeholder = 'Search…', className }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
-
-  return (
-    <div className={cn('relative min-w-[200px]', className)}>
-      <FiSearch className={cn('pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2', isDay ? 'text-slate-400' : 'text-slate-400')} />
-      <input
-        type="search"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className={cn(
-          'h-10 w-full rounded-lg pl-9 pr-3 text-sm outline-none backdrop-blur-md transition-all duration-150',
-          isDay
-            ? 'border border-slate-200 bg-white text-slate-900 placeholder-slate-400 shadow-2xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500/25'
-            : 'border border-slate-800 bg-slate-900/80 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/25',
-        )}
-      />
-    </div>
-  );
-};
+}> = ({ value, onChange, placeholder = 'Search…', className }) => (
+  <div className={cn('relative min-w-[200px]', className)}>
+    <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
+    <input
+      type="search"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="h-9 w-full rounded-lg border border-line bg-surface-2/70 pl-9 pr-3 text-[13px] text-ink outline-none transition-all duration-150 placeholder:text-ink-faint focus:border-[#1264FF] focus:bg-surface focus:ring-2 focus:ring-[#1264FF]/15"
+    />
+  </div>
+);
 
 export const FilterSelect: React.FC<{
   value: string;
@@ -394,67 +357,36 @@ export const FilterSelect: React.FC<{
   label?: string;
   options: { value: string; label: string }[];
   className?: string;
-}> = ({ value, onChange, label, options, className }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
-
-  return (
-    <label className={cn('inline-flex items-center gap-2 w-full sm:w-auto', className)}>
-      {label && (
-        <span
-          className={cn(
-            'whitespace-nowrap text-[11px] font-semibold uppercase tracking-wider',
-            isDay ? 'text-slate-500' : 'text-slate-400',
-          )}
-        >
-          {label}
-        </span>
-      )}
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={cn(
-          'h-10 w-full sm:w-auto rounded-lg px-3 text-xs font-semibold outline-none backdrop-blur-md transition-all duration-150 cursor-pointer',
-          isDay
-            ? 'border border-slate-200 bg-white text-slate-800 shadow-2xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500/25'
-            : 'border border-slate-800 bg-slate-900/80 text-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/25',
-        )}
-      >
-        {options.map((option) => (
-          <option
-            key={option.value}
-            value={option.value}
-            className={isDay ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}
-          >
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-};
+}> = ({ value, onChange, label, options, className }) => (
+  <label className={cn('inline-flex w-full items-center gap-2 sm:w-auto', className)}>
+    {label && <span className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.16em] text-ink-muted">{label}</span>}
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="h-9 w-full cursor-pointer rounded-lg border border-line bg-surface-2/70 px-3 text-[12px] font-semibold text-ink outline-none transition-all duration-150 focus:border-[#1264FF] focus:ring-2 focus:ring-[#1264FF]/15"
+    >
+      {options.map((option) => (
+        <option key={option.value} value={option.value} className="bg-surface text-ink">
+          {option.label}
+        </option>
+      ))}
+    </select>
+  </label>
+);
 
 export const Toolbar: React.FC<{
   children: React.ReactNode;
   className?: string;
-}> = ({ children, className }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
-
-  return (
-    <div
-      className={cn(
-        'mb-5 flex flex-wrap items-center gap-2.5 sm:gap-3 rounded-xl p-2.5 sm:p-3 transition-colors border',
-        isDay
-          ? 'border-slate-200/90 bg-white/80 text-slate-800 shadow-2xs'
-          : 'border-slate-800/80 bg-slate-900/60 backdrop-blur-md text-white shadow-2xs',
-        className,
-      )}
-    >
-      {children}
-    </div>
-  );
-};
+}> = ({ children, className }) => (
+  <div
+    className={cn(
+      'mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface/90 p-2 text-ink shadow-[0_1px_2px_rgba(7,20,38,0.05)] backdrop-blur-md sm:gap-2.5',
+      className,
+    )}
+  >
+    {children}
+  </div>
+);
 
 /* ------------------------------------------------------------------ tabs */
 
@@ -469,168 +401,218 @@ export const AdminTabs: React.FC<{
   active: string;
   onChange: (id: string) => void;
   layoutPrefix?: string;
-}> = ({ items, active, onChange, layoutPrefix = 'admin-tab' }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
-
-  return (
-    <div
-      className={cn(
-        'mb-6 flex gap-1.5 overflow-x-auto pb-px transition-colors no-scrollbar border-b',
-        isDay ? 'border-slate-200' : 'border-slate-800',
-      )}
-    >
-      {items.map((item) => {
-        const isActive = item.id === active;
-        return (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onChange(item.id)}
-            className={cn(
-              'relative flex items-center gap-2 whitespace-nowrap rounded-t-lg px-3.5 py-2.5 text-xs font-semibold tracking-wide transition-colors duration-150 cursor-pointer',
-              isActive
-                ? isDay
-                  ? 'text-blue-600 bg-blue-50/50'
-                  : 'text-blue-400 bg-blue-500/10'
-                : isDay
-                  ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40',
-            )}
-          >
-            {item.label}
-            {item.count !== undefined && (
-              <span
-                className={cn(
-                  'rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums transition-colors',
-                  isActive
-                    ? isDay
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-blue-500/20 text-blue-300'
-                    : isDay
-                      ? 'bg-slate-100 text-slate-600'
-                      : 'bg-slate-800 text-slate-400',
-                )}
-              >
-                {item.count}
-              </span>
-            )}
-            {isActive && (
-              <motion.span
-                layoutId={`${layoutPrefix}-indicator`}
-                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                className={cn(
-                  'absolute inset-x-0 bottom-0 h-[2px]',
-                  isDay ? 'bg-blue-600' : 'bg-blue-500',
-                )}
-              />
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-};
+}> = ({ items, active, onChange, layoutPrefix = 'admin-tab' }) => (
+  <div className="no-scrollbar mb-5 flex gap-1 overflow-x-auto border-b border-line pb-px">
+    {items.map((item) => {
+      const isActive = item.id === active;
+      return (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => onChange(item.id)}
+          className={cn(
+            'relative flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-t-lg px-3.5 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] transition-colors duration-150',
+            isActive
+              ? 'bg-[#1264FF]/8 text-[#1264FF]'
+              : 'text-ink-faint hover:bg-surface-soft hover:text-ink',
+          )}
+        >
+          {item.label}
+          {item.count !== undefined && (
+            <span
+              className={cn(
+                'rounded-md px-1.5 py-0.5 text-[10px] font-bold tabular-nums transition-colors',
+                isActive ? 'bg-[#1264FF]/15 text-[#1264FF]' : 'bg-surface-soft-2 text-ink-muted',
+              )}
+            >
+              {item.count}
+            </span>
+          )}
+          {isActive && (
+            <motion.span
+              layoutId={`${layoutPrefix}-indicator`}
+              transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+              className="absolute inset-x-0 bottom-0 h-[2px] rounded-t bg-[#1264FF]"
+            />
+          )}
+        </button>
+      );
+    })}
+  </div>
+);
 
 /* ------------------------------------------------------------- feedback */
 
-export const ErrorNotice: React.FC<{ message: string; className?: string }> = ({ message, className }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.96 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className={cn(
-        'flex items-start gap-3 rounded-xl px-4 py-3.5 text-xs font-medium leading-relaxed backdrop-blur-md',
-        isDay
-          ? 'border border-red-200 bg-red-50 text-red-800 shadow-xs'
-          : 'border border-red-500/30 bg-red-950/40 text-red-200 shadow-[0_0_20px_rgba(239,68,68,0.15)]',
-        className,
-      )}
-    >
-      <FiAlertTriangle className={cn('mt-0.5 h-4 w-4 shrink-0', isDay ? 'text-red-600' : 'text-red-400')} />
-      <span>{message}</span>
-    </motion.div>
-  );
-};
+export const ErrorNotice: React.FC<{ message: string; className?: string }> = ({ message, className }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.97 }}
+    animate={{ opacity: 1, scale: 1 }}
+    className={cn(
+      'flex items-start gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-[12.5px] font-medium leading-relaxed text-rose-600 dark:text-rose-200',
+      className,
+    )}
+  >
+    <FiAlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+    <span>{message}</span>
+  </motion.div>
+);
 
 export const EmptyNotice: React.FC<{
   title?: string;
   message?: string;
   action?: React.ReactNode;
-}> = ({ title = 'Nothing here yet', message, action }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
+}> = ({ title = 'Nothing here yet', message, action }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="flex flex-col items-center justify-center rounded-xl border border-dashed border-line bg-surface-soft/40 px-6 py-14 text-center"
+  >
+    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-line bg-accent-soft text-gold-ink">
+      <FiInbox className="h-5 w-5" />
+    </div>
+    <p className="font-display text-[15px] font-bold tracking-tight text-ink">{title}</p>
+    {message && <p className="mt-1.5 max-w-sm text-[12.5px] leading-relaxed text-ink-muted">{message}</p>}
+    {action && <div className="mt-5">{action}</div>}
+  </motion.div>
+);
 
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={cn(
-        'flex flex-col items-center justify-center rounded-xl px-6 py-16 text-center backdrop-blur-md transition-colors',
-        isDay
-          ? 'border border-slate-200/90 bg-white/70'
-          : 'border border-white/10 bg-[#071426]/50',
-      )}
+export const LoadingRows: React.FC<{ rows?: number; cols?: number }> = ({ rows = 6, cols = 5 }) => (
+  <div className="divide-y divide-line">
+    {Array.from({ length: rows }).map((_, rowIndex) => (
+      <div key={rowIndex} className="flex items-center gap-4 px-4 py-3">
+        {Array.from({ length: cols }).map((__, colIndex) => (
+          <span
+            key={colIndex}
+            className="h-3 animate-pulse rounded-md bg-surface-soft-2"
+            style={{ width: `${((rowIndex + colIndex) % 4) * 15 + 20}%` }}
+          />
+        ))}
+      </div>
+    ))}
+  </div>
+);
+
+export const PageLoading: React.FC<{ label?: string }> = ({ label = 'Loading Arena…' }) => (
+  <div className="flex flex-col items-center justify-center gap-4 py-24 text-ink-faint">
+    <div className="relative flex h-10 w-10 items-center justify-center">
+      <span className="absolute h-full w-full animate-ping rounded-full bg-[#1264FF]/20" />
+      <span className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-[#D9A441]" />
+    </div>
+    <span className="text-[10px] font-black uppercase tracking-[0.22em] text-gold-ink">{label}</span>
+  </div>
+);
+
+/* ---------------------------------------------------------- table system */
+
+/**
+ * Shared table primitives. Every admin table uses these so density, header
+ * treatment and hover behaviour are identical across all 34 pages — and pages
+ * no longer hand-roll `isDay ? … : …` for each cell.
+ */
+
+export const TableShell: React.FC<{
+  minW?: number | string;
+  className?: string;
+  children: React.ReactNode;
+}> = ({ minW = 900, className, children }) => (
+  <div className={cn('w-full overflow-x-auto', className)}>
+    <table
+      className="w-full border-collapse text-left"
+      style={{ minWidth: typeof minW === 'number' ? `${minW}px` : minW }}
     >
-      <div
-        className={cn(
-          'mb-4 flex h-14 w-14 items-center justify-center rounded-full border transition-colors',
-          isDay
-            ? 'bg-slate-100 border-slate-200 text-[#A9761B]'
-            : 'bg-white/5 border-white/10 text-[#D9A441] shadow-[0_0_20px_rgba(217,164,65,0.15)]',
-        )}
-      >
-        <FiInbox className="h-6 w-6" />
-      </div>
-      <p className={cn('text-base font-black tracking-wide', isDay ? 'text-slate-900' : 'text-white')}>{title}</p>
-      {message && (
-        <p className={cn('mt-1.5 max-w-sm text-xs leading-relaxed', isDay ? 'text-slate-500' : 'text-slate-400')}>
-          {message}
-        </p>
-      )}
-      {action && <div className="mt-5">{action}</div>}
-    </motion.div>
-  );
-};
+      {children}
+    </table>
+  </div>
+);
 
-export const LoadingRows: React.FC<{ rows?: number; cols?: number }> = ({ rows = 6, cols = 5 }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
+export const THead: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <thead className="bg-surface-soft/70">{children}</thead>
+);
 
-  return (
-    <div className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
-      {Array.from({ length: rows }).map((_, rowIndex) => (
-        <div key={rowIndex} className="flex items-center gap-4 px-4 py-3.5">
-          {Array.from({ length: cols }).map((__, colIndex) => (
-            <span
-              key={colIndex}
-              className={cn('h-3.5 animate-pulse rounded-md', isDay ? 'bg-slate-200' : 'bg-white/10')}
-              style={{ width: `${((rowIndex + colIndex) % 4) * 15 + 20}%` }}
-            />
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-};
+export const TRow: React.FC<{
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+  selected?: boolean;
+}> = ({ children, onClick, className, selected }) => (
+  <tr
+    onClick={onClick}
+    className={cn(
+      'group border-b border-line transition-colors last:border-b-0',
+      selected ? 'bg-[#1264FF]/[0.07]' : onClick ? 'cursor-pointer hover:bg-surface-soft/70' : 'hover:bg-surface-soft/50',
+      className,
+    )}
+  >
+    {children}
+  </tr>
+);
 
-export const PageLoading: React.FC<{ label?: string }> = ({ label = 'Loading Arena…' }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
+export const Th: React.FC<{ children?: React.ReactNode; className?: string; numeric?: boolean }> = ({
+  children,
+  className,
+  numeric,
+}) => (
+  <th
+    className={cn(
+      'whitespace-nowrap border-b border-line px-3.5 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-ink-muted',
+      numeric && 'text-right',
+      className,
+    )}
+  >
+    {children}
+  </th>
+);
 
-  return (
-    <div className="flex flex-col items-center justify-center gap-4 py-24 text-slate-400">
-      <div className="relative flex h-10 w-10 items-center justify-center">
-        <span className="absolute h-full w-full animate-ping rounded-full bg-[#1264FF]/20" />
-        <span className={cn('h-8 w-8 animate-spin rounded-full border-2 border-t-[#D9A441]', isDay ? 'border-slate-200' : 'border-white/10')} />
-      </div>
-      <span className={cn('text-xs font-black uppercase tracking-[0.2em]', isDay ? 'text-[#A9761B]' : 'text-[#D9A441]')}>{label}</span>
-    </div>
-  );
-};
+export const TBody: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <tbody className="bg-transparent">{children}</tbody>
+);
+
+export const Td: React.FC<{
+  children?: React.ReactNode;
+  className?: string;
+  /** Tabular, right-aligned numeric cell. */
+  numeric?: boolean;
+  /** Bold primary cell (row title). */
+  strong?: boolean;
+  /** Spans multiple columns (e.g. an inline expansion row). */
+  colSpan?: number;
+}> = ({ children, className, numeric, strong, colSpan }) => (
+  <td
+    colSpan={colSpan}
+    className={cn(
+      'px-3.5 py-3 align-middle text-[13px] text-ink-muted',
+      numeric && 'whitespace-nowrap text-right font-mono text-[12.5px] font-bold tabular-nums text-ink',
+      strong && 'font-semibold text-ink',
+      className,
+    )}
+  >
+    {children}
+  </td>
+);
+
+/** Primary link inside a table row (keeps the brand hover treatment). */
+export const TableLink: React.FC<{ to: string; children: React.ReactNode; className?: string }> = ({
+  to,
+  children,
+  className,
+}) => (
+  <Link
+    to={to}
+    className={cn(
+      'block truncate text-[13px] font-bold text-ink transition-colors hover:text-[#1264FF]',
+      className,
+    )}
+  >
+    {children}
+  </Link>
+);
+
+/** Secondary line under a table title (short code, id, timestamp…). */
+export const SubLine: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
+  <span className={cn('block truncate text-[10.5px] font-bold uppercase tracking-[0.12em] text-ink-faint', className)}>
+    {children}
+  </span>
+);
 
 /* ------------------------------------------------------------ form bits */
 
@@ -640,27 +622,22 @@ export const FormSection: React.FC<{
   description?: string;
   children: React.ReactNode;
   className?: string;
-}> = ({ step, title, description, children, className }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
-
-  return (
-    <div className={cn('border-b px-6 py-6 last:border-b-0', isDay ? 'border-slate-200' : 'border-white/10', className)}>
-      <div className="mb-5 flex items-baseline gap-3">
-        {step && (
-          <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[#D9A441] text-xs font-black text-[#071426] shadow-[0_0_10px_#D9A441]">
-            {step}
-          </span>
-        )}
-        <div className="min-w-0">
-          <h3 className={cn('text-base font-black tracking-wide', isDay ? 'text-slate-900' : 'text-white')}>{title}</h3>
-          {description && <p className={cn('mt-0.5 text-xs', isDay ? 'text-slate-500' : 'text-slate-400')}>{description}</p>}
-        </div>
+}> = ({ step, title, description, children, className }) => (
+  <div className={cn('border-b border-line px-5 py-5 last:border-b-0 sm:px-6', className)}>
+    <div className="mb-4 flex items-baseline gap-3">
+      {step && (
+        <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[#D9A441] text-[11px] font-black text-[#071426] shadow-[0_0_10px_rgba(217,164,65,0.55)]">
+          {step}
+        </span>
+      )}
+      <div className="min-w-0">
+        <h3 className="font-display text-[15px] font-bold tracking-tight text-ink">{title}</h3>
+        {description && <p className="mt-0.5 text-[12px] text-ink-muted">{description}</p>}
       </div>
-      {children}
     </div>
-  );
-};
+    {children}
+  </div>
+);
 
 export const FormGrid: React.FC<{
   cols?: 1 | 2 | 3;
@@ -669,7 +646,7 @@ export const FormGrid: React.FC<{
 }> = ({ cols = 2, children, className }) => (
   <div
     className={cn(
-      'grid gap-5',
+      'grid gap-4',
       cols === 1 && 'grid-cols-1',
       cols === 2 && 'sm:grid-cols-2',
       cols === 3 && 'sm:grid-cols-2 lg:grid-cols-3',
@@ -686,73 +663,49 @@ export const Toggle: React.FC<{
   label: string;
   hint?: string;
   disabled?: boolean;
-}> = ({ checked, onChange, label, hint, disabled }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
-
-  return (
-    <label
+}> = ({ checked, onChange, label, hint, disabled }) => (
+  <label
+    className={cn(
+      'flex items-start justify-between gap-4 rounded-lg px-3 py-2.5 transition-colors',
+      'hover:bg-surface-soft/60',
+      disabled ? 'opacity-40' : 'cursor-pointer',
+    )}
+  >
+    <span className="min-w-0">
+      <span className="block text-[13px] font-semibold text-ink">{label}</span>
+      {hint && <span className="mt-0.5 block text-[12px] leading-relaxed text-ink-muted">{hint}</span>}
+    </span>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
       className={cn(
-        'flex items-start justify-between gap-4 py-3 rounded-lg px-3 transition-colors',
-        isDay ? 'hover:bg-slate-100/50' : 'hover:bg-white/[0.02]',
-        disabled ? 'opacity-40' : 'cursor-pointer',
+        'relative mt-0.5 h-6 w-11 shrink-0 rounded-full border transition-all duration-200',
+        checked
+          ? 'border-transparent bg-[#1264FF] shadow-[0_2px_8px_rgba(18,100,255,0.45)]'
+          : 'border-line bg-surface-soft-2',
       )}
     >
-      <span className="min-w-0">
-        <span className={cn('block text-sm font-bold', isDay ? 'text-slate-900' : 'text-white')}>{label}</span>
-        {hint && <span className={cn('mt-0.5 block text-xs leading-relaxed', isDay ? 'text-slate-500' : 'text-slate-400')}>{hint}</span>}
-      </span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-label={label}
-        disabled={disabled}
-        onClick={() => onChange(!checked)}
+      <span
         className={cn(
-          'relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-all duration-200 border',
-          isDay ? 'border-slate-300' : 'border-white/20',
-          checked
-            ? isDay
-              ? 'bg-[#1264FF] shadow-sm'
-              : 'bg-[#D9A441] shadow-[0_0_12px_rgba(217,164,65,0.6)]'
-            : isDay
-              ? 'bg-slate-200'
-              : 'bg-slate-800',
+          'absolute top-0.5 h-4.5 w-4.5 rounded-full bg-white shadow-md transition-transform duration-200',
+          checked ? 'translate-x-5.5' : 'translate-x-0.5',
         )}
-      >
-        <span
-          className={cn(
-            'absolute top-0.5 h-4.5 w-4.5 rounded-full bg-white shadow-md transition-transform duration-200',
-            checked ? 'translate-x-5' : 'translate-x-0.5',
-          )}
-        />
-      </button>
-    </label>
-  );
-};
+      />
+    </button>
+  </label>
+);
 
 /** Two-line definition row used across detail pages. */
-export const MetaRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
-
-  return (
-    <div
-      className={cn(
-        'flex items-baseline justify-between gap-4 py-3 border-b last:border-b-0',
-        isDay ? 'border-slate-100' : 'border-white/5',
-      )}
-    >
-      <dt className={cn('shrink-0 text-xs font-bold uppercase tracking-[0.16em]', isDay ? 'text-slate-500' : 'text-slate-400')}>
-        {label}
-      </dt>
-      <dd className={cn('min-w-0 truncate text-right text-sm font-semibold', isDay ? 'text-slate-900' : 'text-white')}>
-        {children}
-      </dd>
-    </div>
-  );
-};
+export const MetaRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div className="flex items-baseline justify-between gap-4 border-b border-line py-2.5 last:border-b-0">
+    <dt className="shrink-0 text-[10px] font-black uppercase tracking-[0.16em] text-ink-faint">{label}</dt>
+    <dd className="min-w-0 truncate text-right text-[13px] font-semibold text-ink">{children}</dd>
+  </div>
+);
 
 /** Theme-aware action icon button used across admin tables. */
 export const ActionIcon: React.FC<{
@@ -762,34 +715,24 @@ export const ActionIcon: React.FC<{
   primary?: boolean;
   danger?: boolean;
   disabled?: boolean;
-}> = ({ label, onClick, children, primary, danger, disabled }) => {
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
-
-  return (
-    <motion.button
-      type="button"
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.94 }}
-      title={label}
-      aria-label={label}
-      disabled={disabled}
-      onClick={onClick}
-      className={cn(
-        'flex h-8 w-8 min-w-[32px] sm:h-7.5 sm:w-7.5 items-center justify-center rounded-md border transition-colors disabled:opacity-40 cursor-pointer',
-        primary
-          ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-500 shadow-2xs'
-          : danger
-            ? isDay
-              ? 'border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:border-rose-300'
-              : 'border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 hover:border-rose-500/50'
-            : isDay
-              ? 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50 shadow-2xs'
-              : 'border-slate-700/80 bg-slate-800/80 text-slate-300 hover:border-slate-600 hover:text-white hover:bg-slate-700/80',
-      )}
-    >
-      {children}
-    </motion.button>
-  );
-};
-
+}> = ({ label, onClick, children, primary, danger, disabled }) => (
+  <motion.button
+    type="button"
+    whileHover={{ scale: 1.06 }}
+    whileTap={{ scale: 0.94 }}
+    title={label}
+    aria-label={label}
+    disabled={disabled}
+    onClick={onClick}
+    className={cn(
+      'flex h-7.5 w-7.5 min-w-[30px] cursor-pointer items-center justify-center rounded-md border transition-colors disabled:opacity-40',
+      primary
+        ? 'border-[#1264FF] bg-[#1264FF] text-white shadow-[0_1px_2px_rgba(18,100,255,0.35)] hover:bg-[#0E55DE]'
+        : danger
+          ? 'border-rose-500/25 bg-rose-500/10 text-rose-600 dark:text-rose-300 hover:border-rose-500/45 hover:bg-rose-500/20'
+          : 'border-line bg-surface-2 text-ink-muted hover:border-line-strong hover:bg-surface-3 hover:text-ink',
+    )}
+  >
+    {children}
+  </motion.button>
+);

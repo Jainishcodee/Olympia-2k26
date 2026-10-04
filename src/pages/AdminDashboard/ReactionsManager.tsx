@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import { useCollection, useCollectionGroup } from '@/hooks/useCollection';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { updateMatch } from '@/services/matches/matchService';
 import {
@@ -13,11 +12,17 @@ import {
   LoadingRows,
   SearchInput,
   StatTile,
+  SubLine,
+  TBody,
+  Td,
+  THead,
+  Th,
+  TableShell,
   Toggle,
   Toolbar,
+  TRow,
 } from '@/components/admin/kit';
 import type { Match, Reaction, ReactionType, Sport } from '@/types';
-import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';
 import { FiArrowDown, FiArrowUp } from 'react-icons/fi';
 
@@ -73,7 +78,6 @@ const matchLabel = (match: Match): string =>
     : `Match #${match.matchNumber ?? '—'}`;
 
 const ReactionsManager: React.FC = () => {
-  const { isDay } = useTheme();
   const { log } = useAuditLog();
 
   const reactions = useCollectionGroup<Reaction>('reactions');
@@ -257,16 +261,16 @@ const ReactionsManager: React.FC = () => {
                   <span className="w-6 shrink-0 text-center text-[15px] leading-none" aria-hidden>
                     {emojiFor(type)}
                   </span>
-                  <span className={cn('w-20 shrink-0 truncate text-[12px] font-semibold', isDay ? 'text-slate-700' : 'text-slate-300')}>
+                  <span className="w-20 shrink-0 truncate text-[12px] font-semibold text-ink">
                     {labelFor(type)}
                   </span>
-                  <span className={cn('h-4 flex-1 overflow-hidden rounded', isDay ? 'bg-slate-200/60' : 'bg-white/10')}>
+                  <span className="h-4 flex-1 overflow-hidden rounded bg-surface-soft-2">
                     <span
-                      className={cn('block h-full rounded transition-[width] duration-300', isDay ? 'bg-[#1264FF]' : 'bg-[#D9A441]')}
+                      className="block h-full rounded bg-[#1264FF] transition-[width] duration-300"
                       style={{ width: `${Math.round((count / maxTypeCount) * 100)}%` }}
                     />
                   </span>
-                  <span className={cn('w-24 shrink-0 text-right font-mono text-[12px] tabular-nums', isDay ? 'text-slate-600' : 'text-slate-400')}>
+                  <span className="w-24 shrink-0 text-right font-mono text-[12.5px] font-bold tabular-nums text-ink">
                     {count} · {Math.round((count / Math.max(1, total)) * 100)}%
                   </span>
                 </li>
@@ -284,45 +288,36 @@ const ReactionsManager: React.FC = () => {
           ) : perSport.length === 0 ? (
             <EmptyNotice title="Nothing grouped yet" message="No reactions have been recorded." />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left">
-                <thead>
-                  <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/80' : 'border-white/10 bg-white/[0.04]')}>
-                    {['Sport', 'Reactions', 'Share'].map((heading) => (
-                      <th
-                        key={heading}
-                        className={cn('whitespace-nowrap px-2 py-2 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-slate-400')}
-                      >
-                        {heading}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
-                  {perSport.map(([sportId, count]) => (
-                    <tr key={sportId} className={cn('transition-colors', isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.02]')}>
-                      <td className={cn('max-w-[180px] truncate px-2 py-2 text-[13px] font-semibold', isDay ? 'text-slate-900' : 'text-white')}>
-                        {sportName.get(sportId) ?? 'Unassigned'}
-                      </td>
-                      <td className="px-2 py-2">
-                        <span className="flex items-center gap-2">
-                          <span className={cn('h-2 w-32 overflow-hidden rounded', isDay ? 'bg-slate-200/60' : 'bg-white/10')}>
-                            <span
-                              className="block h-full rounded bg-[#1264FF]"
-                              style={{ width: `${Math.round((count / maxSportCount) * 100)}%` }}
-                            />
-                          </span>
-                          <span className={cn('font-mono text-[12px] tabular-nums', isDay ? 'text-slate-700' : 'text-slate-300')}>{count}</span>
-                        </span>
-                      </td>
-                      <td className={cn('px-2 py-2 font-mono text-[12px] tabular-nums', isDay ? 'text-slate-500' : 'text-slate-400')}>
-                        {Math.round((count / Math.max(1, total)) * 100)}%
-                      </td>
-                    </tr>
+            <TableShell minW={0}>
+              <THead>
+                <tr>
+                  {['Sport', 'Reactions', 'Share'].map((heading) => (
+                    <Th key={heading}>{heading}</Th>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </tr>
+              </THead>
+              <TBody>
+                {perSport.map(([sportId, count]) => (
+                  <TRow key={sportId}>
+                    <Td className="max-w-[180px] truncate font-semibold text-ink">
+                      {sportName.get(sportId) ?? 'Unassigned'}
+                    </Td>
+                    <Td>
+                      <span className="flex items-center gap-2">
+                        <span className="h-2 w-32 overflow-hidden rounded bg-surface-soft-2">
+                          <span
+                            className="block h-full rounded bg-[#1264FF]"
+                            style={{ width: `${Math.round((count / maxSportCount) * 100)}%` }}
+                          />
+                        </span>
+                        <span className="font-mono text-[12.5px] font-bold tabular-nums text-ink">{count}</span>
+                      </span>
+                    </Td>
+                    <Td numeric>{Math.round((count / Math.max(1, total)) * 100)}%</Td>
+                  </TRow>
+                ))}
+              </TBody>
+            </TableShell>
           )}
         </Card>
       </div>
@@ -336,7 +331,7 @@ const ReactionsManager: React.FC = () => {
           className="w-full sm:w-72"
         />
         <FilterSelect value={sportFilter} onChange={setSportFilter} options={sportOptions} />
-        <span className={cn('ml-auto text-[12px] tabular-nums', isDay ? 'text-slate-500' : 'text-slate-400')}>
+        <span className="ml-auto text-[12px] font-bold tabular-nums text-ink-muted">
           {rows.length} of {matches.data.length} matches
         </span>
       </Toolbar>
@@ -358,100 +353,83 @@ const ReactionsManager: React.FC = () => {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1020px] border-collapse text-left">
-              <thead>
-                <tr className={cn('border-b', isDay ? 'border-slate-200 bg-slate-100/90' : 'border-white/10 bg-white/[0.04]')}>
-                  <th className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-slate-400')}>
-                    Match
-                  </th>
-                  <th className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-slate-400')}>
-                    Sport
-                  </th>
-                  <th className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-slate-400')}>
-                    <button
-                      type="button"
-                      onClick={() => setSortDesc((prev) => !prev)}
-                      className="inline-flex items-center gap-1 uppercase tracking-wider transition-colors hover:text-[#1264FF]"
-                      title="Sort by total"
-                    >
-                      Total
-                      {sortDesc ? <FiArrowDown className="h-3 w-3" /> : <FiArrowUp className="h-3 w-3" />}
-                    </button>
-                  </th>
-                  {['Top reaction', 'Spectators', 'Share', 'Reactions enabled'].map((heading) => (
-                    <th
-                      key={heading}
-                      className={cn('whitespace-nowrap px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider', isDay ? 'text-slate-600' : 'text-slate-400')}
-                    >
-                      {heading}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className={cn('divide-y', isDay ? 'divide-slate-100' : 'divide-white/5')}>
+          <TableShell minW={1020}>
+            <THead>
+              <tr>
+                <Th>Match</Th>
+                <Th>Sport</Th>
+                <Th>
+                  <button
+                    type="button"
+                    onClick={() => setSortDesc((prev) => !prev)}
+                    className="inline-flex items-center gap-1 uppercase tracking-wider transition-colors hover:text-[#1264FF]"
+                    title="Sort by total"
+                  >
+                    Total
+                    {sortDesc ? <FiArrowDown className="h-3 w-3" /> : <FiArrowUp className="h-3 w-3" />}
+                  </button>
+                </Th>
+                {['Top reaction', 'Spectators', 'Share', 'Reactions enabled'].map((heading) => (
+                  <Th key={heading}>{heading}</Th>
+                ))}
+              </tr>
+            </THead>
+            <TBody>
                 {rows.map(({ match, total: matchTotal, users, topType }) => {
                   const share = total > 0 ? Math.round((matchTotal / total) * 100) : 0;
                   return (
-                    <tr key={match.id} className={cn('transition-colors', isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.02]')}>
-                      <td className="max-w-[260px] px-3 py-2.5">
-                        <span className={cn('block truncate text-[13px] font-semibold', isDay ? 'text-slate-900' : 'text-white')}>
-                          {matchLabel(match)}
-                        </span>
-                        <span className={cn('block truncate text-[11px]', isDay ? 'text-slate-500' : 'text-slate-400')}>
+                    <TRow key={match.id}>
+                      <Td strong className="max-w-[260px]">
+                        <span className="block truncate font-bold">{matchLabel(match)}</span>
+                        <SubLine>
                           #{match.matchNumber ?? '—'} · {match.id.slice(0, 10)}
-                        </span>
-                      </td>
-                      <td className={cn('whitespace-nowrap px-3 py-2.5 text-[13px]', isDay ? 'text-slate-700' : 'text-slate-300')}>
+                        </SubLine>
+                      </Td>
+                      <Td className="whitespace-nowrap font-semibold text-ink">
                         {sportName.get(match.sportId) ?? '—'}
-                      </td>
-                      <td className="px-3 py-2.5">
+                      </Td>
+                      <Td>
                         <span className="flex items-center gap-2">
-                          <span className={cn('h-1.5 w-24 overflow-hidden rounded', isDay ? 'bg-slate-200/60' : 'bg-white/10')}>
+                          <span className="h-1.5 w-24 overflow-hidden rounded bg-surface-soft-2">
                             <span
-                              className={cn('block h-full rounded', isDay ? 'bg-slate-800' : 'bg-[#D9A441]')}
+                              className="block h-full rounded bg-[#1264FF]"
                               style={{ width: `${Math.round((matchTotal / maxRowTotal) * 100)}%` }}
                             />
                           </span>
-                          <span className={cn('font-mono text-[12px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
+                          <span className="font-mono text-[12.5px] font-bold tabular-nums text-ink">
                             {matchTotal}
                           </span>
                         </span>
-                      </td>
-                      <td className={cn('whitespace-nowrap px-3 py-2.5 text-[13px]', isDay ? 'text-slate-700' : 'text-slate-300')}>
+                      </Td>
+                      <Td className="whitespace-nowrap">
                         {topType ? (
                           <span className="inline-flex items-center gap-1.5">
                             <span aria-hidden>{emojiFor(topType)}</span>
                             {labelFor(topType)}
                           </span>
                         ) : (
-                          <span className={isDay ? 'text-slate-400' : 'text-slate-500'}>—</span>
+                          <span className="text-ink-faint">—</span>
                         )}
-                      </td>
-                      <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[12px] tabular-nums', isDay ? 'text-slate-600' : 'text-slate-400')}>
-                        {users}
-                      </td>
-                      <td className={cn('whitespace-nowrap px-3 py-2.5 font-mono text-[12px] tabular-nums', isDay ? 'text-slate-600' : 'text-slate-400')}>
-                        {share}%
-                      </td>
-                      <td className="px-3 py-2 w-44">
+                      </Td>
+                      <Td numeric>{users}</Td>
+                      <Td numeric>{share}%</Td>
+                      <Td className="w-44">
                         <Toggle
                           checked={Boolean(match.allowReactions)}
                           onChange={() => toggleReactions(match)}
                           label={match.allowReactions ? 'Enabled' : 'Disabled'}
                           disabled={busyId === match.id}
                         />
-                      </td>
-                    </tr>
+                      </Td>
+                    </TRow>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
+            </TBody>
+          </TableShell>
         )}
       </Card>
 
-      <p className={cn('mt-3 text-[12px] leading-relaxed', isDay ? 'text-slate-500' : 'text-slate-400')}>
+      <p className="mt-3 text-[12px] leading-relaxed text-ink-muted">
         “Spectators” counts unique anonymous spectators who sent at least one reaction — no public
         viewer count is stored, so share is measured against all {total} reactions.
       </p>

@@ -60,7 +60,7 @@ export const calculateSportStandings = async (
     const qMatches = query(matchesRef, where('status', '==', 'completed'));
     const snapshot = await getDocs(qMatches);
     const completedMatches = snapshot.docs.map(
-      (d) => ({ id: d.id, ...d.data() } as Match)
+      (d) => ({ ...d.data(), id: d.id } as Match)
     );
 
     // 2. Fetch registered teams or players for this sport

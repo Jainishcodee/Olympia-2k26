@@ -315,29 +315,29 @@ export const ScoringSimulator: React.FC = () => {
         className={cn(
           'p-6 rounded-2xl border flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors',
           isDay
-            ? 'bg-white border-slate-200 shadow-sm'
-            : 'bg-[#0B1220] border-white/10 shadow-lg'
+            ? 'bg-white border-[var(--sc-line)] shadow-sm'
+            : 'bg-[var(--sc-panel)] border-white/10 shadow-lg'
         )}
       >
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="p-2 rounded-lg bg-amber-500/10 text-[#D9A441]">
+            <span className="p-2 rounded-lg bg-amber-500/10 text-[var(--sc-gold)]">
               <HiOutlineCalculator className="w-6 h-6" />
             </span>
             <h1
               className={cn(
                 'text-2xl font-black tracking-tight',
-                isDay ? 'text-slate-900' : 'text-white'
+                isDay ? 'text-slate-900' : 'text-[var(--sc-ink)]'
               )}
             >
               Scoring Formulas & Net Score Sandbox
             </h1>
           </div>
-          <p className={cn('text-sm max-w-3xl', isDay ? 'text-slate-500' : 'text-slate-400')}>
+          <p className={cn('text-sm max-w-3xl', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>
             Configure tournament scoring formulas and use this live interactive demo sandbox to verify that{' '}
-            <strong className={isDay ? 'text-slate-800' : 'text-amber-400'}>Net Run Rate (NRR)</strong>,{' '}
-            <strong className={isDay ? 'text-slate-800' : 'text-amber-400'}>Net Goals (GD)</strong>, and{' '}
-            <strong className={isDay ? 'text-slate-800' : 'text-amber-400'}>Set/Point Ratios</strong> compute with 100% mathematical accuracy.
+            <strong className={isDay ? 'text-slate-800' : 'text-[var(--sc-gold)]'}>Net Run Rate (NRR)</strong>,{' '}
+            <strong className={isDay ? 'text-slate-800' : 'text-[var(--sc-gold)]'}>Net Goals (GD)</strong>, and{' '}
+            <strong className={isDay ? 'text-slate-800' : 'text-[var(--sc-gold)]'}>Set/Point Ratios</strong> compute with 100% mathematical accuracy.
           </p>
         </div>
 
@@ -345,7 +345,7 @@ export const ScoringSimulator: React.FC = () => {
           <button
             onClick={handleSaveFormula}
             disabled={isSaving}
-            className="px-5 py-2.5 bg-[#D9A441] hover:bg-[#c49235] text-slate-950 font-bold rounded-xl shadow-sm text-sm flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-5 py-2.5 bg-[var(--sc-gold)] hover:bg-[var(--sc-gold-dim)] text-[var(--sc-bg)] font-bold rounded-xl shadow-sm text-sm flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <HiOutlineCheckCircle className="w-5 h-5" />
             {isSaving ? 'Saving to Firestore…' : 'Save & Publish Formula'}
@@ -354,7 +354,7 @@ export const ScoringSimulator: React.FC = () => {
       </div>
 
       {/* Sport Selector Tabs */}
-      <div className={cn('flex gap-2 border-b pb-2 overflow-x-auto', isDay ? 'border-slate-200' : 'border-white/10')}>
+      <div className={cn('flex gap-2 border-b pb-2 overflow-x-auto', isDay ? 'border-[var(--sc-line)]' : 'border-white/10')}>
         {[
           { id: 'cricket', label: '🏏 Cricket (Net Run Rate)', desc: 'ICC NRR Formula' },
           { id: 'football', label: '⚽ Football (Net Goal Difference)', desc: 'GD & 3-Pt Table' },
@@ -368,11 +368,11 @@ export const ScoringSimulator: React.FC = () => {
               'px-4 py-3 rounded-xl font-bold text-sm text-left transition-all flex flex-col',
               activeTab === tab.id
                 ? isDay
-                  ? 'bg-slate-900 text-white shadow-md'
+                  ? 'bg-[var(--sc-chip)] text-[var(--sc-ink)] shadow-md'
                   : 'bg-amber-400 text-slate-950 shadow-md font-extrabold'
                 : isDay
-                ? 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                : 'bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] border border-white/10'
+                ? 'bg-white text-[var(--sc-ink-3)] hover:bg-[var(--sc-sunken)] border border-[var(--sc-line)]'
+                : 'bg-white/[0.04] text-[var(--sc-ink)] hover:bg-white/[0.08] border border-white/10'
             )}
           >
             <span>{tab.label}</span>
@@ -381,11 +381,11 @@ export const ScoringSimulator: React.FC = () => {
                 'text-[11px] font-normal',
                 activeTab === tab.id
                   ? isDay
-                    ? 'text-amber-400'
+                    ? 'text-[var(--sc-gold)]'
                     : 'text-slate-900 font-semibold'
                   : isDay
-                  ? 'text-slate-400'
-                  : 'text-slate-400'
+                  ? 'text-[var(--sc-ink-2)]'
+                  : 'text-[var(--sc-ink-2)]'
               )}
             >
               {tab.desc}
@@ -403,13 +403,13 @@ export const ScoringSimulator: React.FC = () => {
           <div
             className={cn(
               'lg:col-span-4 p-5 rounded-2xl border shadow-sm space-y-4 transition-colors',
-              isDay ? 'bg-white border-slate-200' : 'bg-[#0B1220] border-white/10'
+              isDay ? 'bg-white border-[var(--sc-line)]' : 'bg-[var(--sc-panel)] border-white/10'
             )}
           >
             <h2
               className={cn(
                 'text-base font-bold flex items-center justify-between border-b pb-2',
-                isDay ? 'text-slate-900 border-slate-200' : 'text-white border-white/10'
+                isDay ? 'text-slate-900 border-[var(--sc-line)]' : 'text-[var(--sc-ink)] border-white/10'
               )}
             >
               <span>⚙️ Formula Rules</span>
@@ -417,7 +417,7 @@ export const ScoringSimulator: React.FC = () => {
             </h2>
 
             <div>
-              <label className={cn('text-xs font-semibold uppercase', isDay ? 'text-slate-500' : 'text-slate-400')}>
+              <label className={cn('text-xs font-semibold uppercase', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>
                 Match Format (Overs Quota)
               </label>
               <select
@@ -435,25 +435,25 @@ export const ScoringSimulator: React.FC = () => {
                 }}
                 className={cn(
                   'w-full mt-1 px-3 py-2 border rounded-lg font-medium text-sm focus:ring-2 focus:ring-amber-400 outline-none',
-                  isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-white/[0.04] border-white/10 text-white'
+                  isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-white/[0.04] border-white/10 text-[var(--sc-ink)]'
                 )}
               >
-                <option value={20} className={isDay ? '' : 'bg-slate-900 text-white'}>T20 Format (20 Overs)</option>
-                <option value={50} className={isDay ? '' : 'bg-slate-900 text-white'}>One Day Format (50 Overs)</option>
-                <option value={15} className={isDay ? '' : 'bg-slate-900 text-white'}>15 Overs Match</option>
-                <option value={10} className={isDay ? '' : 'bg-slate-900 text-white'}>T10 Quick Format (10 Overs)</option>
-                <option value={6} className={isDay ? '' : 'bg-slate-900 text-white'}>Super Six (6 Overs)</option>
-                <option value={2} className={isDay ? '' : 'bg-slate-900 text-white'}>Super Over / Blitz (2 Overs)</option>
-                <option value="custom" className={isDay ? '' : 'bg-slate-900 text-white'}>⚡ Custom Overs (Manual Choice)</option>
+                <option value={20} className={isDay ? '' : 'bg-[var(--sc-chip)] text-[var(--sc-ink)]'}>T20 Format (20 Overs)</option>
+                <option value={50} className={isDay ? '' : 'bg-[var(--sc-chip)] text-[var(--sc-ink)]'}>One Day Format (50 Overs)</option>
+                <option value={15} className={isDay ? '' : 'bg-[var(--sc-chip)] text-[var(--sc-ink)]'}>15 Overs Match</option>
+                <option value={10} className={isDay ? '' : 'bg-[var(--sc-chip)] text-[var(--sc-ink)]'}>T10 Quick Format (10 Overs)</option>
+                <option value={6} className={isDay ? '' : 'bg-[var(--sc-chip)] text-[var(--sc-ink)]'}>Super Six (6 Overs)</option>
+                <option value={2} className={isDay ? '' : 'bg-[var(--sc-chip)] text-[var(--sc-ink)]'}>Super Over / Blitz (2 Overs)</option>
+                <option value="custom" className={isDay ? '' : 'bg-[var(--sc-chip)] text-[var(--sc-ink)]'}>⚡ Custom Overs (Manual Choice)</option>
               </select>
 
               {(isCustomOvers || ![20, 50, 10, 6].includes(cricketConfig.oversQuota)) && (
                 <div className="mt-2.5 p-3 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className={cn('text-xs font-bold uppercase tracking-wider', isDay ? 'text-amber-900' : 'text-amber-300')}>
+                    <label className={cn('text-xs font-bold uppercase tracking-wider', isDay ? 'text-amber-900' : 'text-[var(--sc-gold)]')}>
                       Custom Match Overs Quota
                     </label>
-                    <span className="text-[10px] font-mono text-amber-400 bg-amber-400/20 px-2 py-0.5 rounded font-bold">
+                    <span className="text-[10px] font-mono text-[var(--sc-gold)] bg-amber-400/20 px-2 py-0.5 rounded font-bold">
                       {cricketConfig.oversQuota} OV
                     </span>
                   </div>
@@ -475,15 +475,15 @@ export const ScoringSimulator: React.FC = () => {
                       }}
                       className={cn(
                         'w-28 px-3 py-1.5 border rounded-lg font-mono font-bold text-base focus:ring-2 focus:ring-amber-400 outline-none',
-                        isDay ? 'bg-white border-slate-300 text-slate-900' : 'bg-slate-950 border-white/20 text-white'
+                        isDay ? 'bg-white border-slate-300 text-slate-900' : 'bg-[var(--sc-chip)] border-white/20 text-[var(--sc-ink)]'
                       )}
                     />
-                    <span className={cn('text-xs font-semibold', isDay ? 'text-slate-600' : 'text-slate-300')}>
+                    <span className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink)]')}>
                       overs per innings (e.g. 2, 15, or as many as you want)
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                    <span className={cn('text-[10px] uppercase font-bold mr-1', isDay ? 'text-slate-500' : 'text-slate-400')}>Quick:</span>
+                    <span className={cn('text-[10px] uppercase font-bold mr-1', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Quick:</span>
                     {[2, 5, 8, 12, 15, 20, 25, 50].map(ov => (
                       <button
                         key={ov}
@@ -503,8 +503,8 @@ export const ScoringSimulator: React.FC = () => {
                           cricketConfig.oversQuota === ov
                             ? 'bg-amber-400 text-slate-950 border-amber-400 font-black shadow-sm'
                             : isDay
-                            ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                            : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
+                            ? 'bg-white text-[var(--sc-ink-2)] border-[var(--sc-line)] hover:bg-slate-50'
+                            : 'bg-white/5 text-[var(--sc-ink)] border-white/10 hover:bg-white/10'
                         )}
                       >
                         {ov} ov
@@ -517,44 +517,44 @@ export const ScoringSimulator: React.FC = () => {
 
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className={cn('text-[11px] font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Win Pts</label>
+                <label className={cn('text-[11px] font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Win Pts</label>
                 <input
                   type="number"
                   value={cricketConfig.winPoints}
                   onChange={e => setCricketConfig(c => ({ ...c, winPoints: Number(e.target.value) }))}
                   className={cn(
                     'w-full mt-1 px-2 py-1.5 border rounded-lg text-sm text-center font-bold',
-                    isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-white/[0.04] border-white/10 text-white'
+                    isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-white/[0.04] border-white/10 text-[var(--sc-ink)]'
                   )}
                 />
               </div>
               <div>
-                <label className={cn('text-[11px] font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Tie Pts</label>
+                <label className={cn('text-[11px] font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Tie Pts</label>
                 <input
                   type="number"
                   value={cricketConfig.tiePoints}
                   onChange={e => setCricketConfig(c => ({ ...c, tiePoints: Number(e.target.value) }))}
                   className={cn(
                     'w-full mt-1 px-2 py-1.5 border rounded-lg text-sm text-center font-bold',
-                    isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-white/[0.04] border-white/10 text-white'
+                    isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-white/[0.04] border-white/10 text-[var(--sc-ink)]'
                   )}
                 />
               </div>
               <div>
-                <label className={cn('text-[11px] font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Loss Pts</label>
+                <label className={cn('text-[11px] font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Loss Pts</label>
                 <input
                   type="number"
                   value={cricketConfig.lossPoints}
                   onChange={e => setCricketConfig(c => ({ ...c, lossPoints: Number(e.target.value) }))}
                   className={cn(
                     'w-full mt-1 px-2 py-1.5 border rounded-lg text-sm text-center font-bold',
-                    isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-white/[0.04] border-white/10 text-white'
+                    isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-white/[0.04] border-white/10 text-[var(--sc-ink)]'
                   )}
                 />
               </div>
             </div>
 
-            <div className={cn('p-3 rounded-xl border', isDay ? 'bg-slate-50 border-slate-200' : 'bg-white/[0.03] border-white/10')}>
+            <div className={cn('p-3 rounded-xl border', isDay ? 'bg-slate-50 border-[var(--sc-line)]' : 'bg-white/[0.03] border-white/10')}>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -562,11 +562,11 @@ export const ScoringSimulator: React.FC = () => {
                   onChange={e => setCricketConfig(c => ({ ...c, allOutFullQuota: e.target.checked }))}
                   className="w-4 h-4 text-amber-500 rounded"
                 />
-                <span className={cn('text-xs font-semibold', isDay ? 'text-slate-700' : 'text-slate-200')}>
+                <span className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-2)]' : 'text-[var(--sc-ink)]')}>
                   Count Full Quota If All Out (ICC Standard)
                 </span>
               </label>
-              <p className={cn('text-[11px] mt-1 pl-6', isDay ? 'text-slate-500' : 'text-slate-400')}>
+              <p className={cn('text-[11px] mt-1 pl-6', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>
                 Prevents teams dismissed in few overs from unfairly avoiding run rate impact.
               </p>
             </div>
@@ -579,19 +579,19 @@ export const ScoringSimulator: React.FC = () => {
                   onChange={e => setCricketConfig(c => ({ ...c, allowTenRunBall: e.target.checked }))}
                   className="w-4 h-4 text-amber-500 rounded"
                 />
-                <span className={cn('text-xs font-semibold flex items-center gap-1.5', isDay ? 'text-amber-950' : 'text-amber-300')}>
+                <span className={cn('text-xs font-semibold flex items-center gap-1.5', isDay ? 'text-amber-950' : 'text-[var(--sc-gold)]')}>
                   <span>⚡ 10-Run Special Delivery Rule</span>
                   <span className="text-[10px] bg-amber-400 text-slate-950 px-1 rounded font-black uppercase">Active</span>
                 </span>
               </label>
-              <p className={cn('text-[11px] mt-1 pl-6', isDay ? 'text-amber-800/80' : 'text-amber-300/70')}>
+              <p className={cn('text-[11px] mt-1 pl-6', isDay ? 'text-amber-800/80' : 'text-[var(--sc-gold)]/70')}>
                 Permits simulating 10-run special/bonus deliveries contributing directly to team total, Run Rate (RPO), and tournament NRR.
               </p>
             </div>
 
             {/* Presets */}
             <div>
-              <div className={cn('text-xs font-semibold uppercase mb-2', isDay ? 'text-slate-500' : 'text-slate-400')}>
+              <div className={cn('text-xs font-semibold uppercase mb-2', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>
                 Test Presets
               </div>
               <div className="flex flex-col gap-1.5">
@@ -599,17 +599,17 @@ export const ScoringSimulator: React.FC = () => {
                   onClick={() => loadCricketPreset('ten_run_jackpot')}
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-xs font-medium text-left transition-colors flex items-center justify-between',
-                    isDay ? 'bg-amber-100/70 hover:bg-amber-100 text-amber-950 border border-amber-300' : 'bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-600/40'
+                    isDay ? 'bg-amber-100/70 hover:bg-amber-100 text-amber-950 border border-amber-300' : 'bg-amber-950/40 hover:bg-amber-900/50 text-[var(--sc-gold)] border border-amber-600/40'
                   )}
                 >
                   <span className="font-bold">⚡ 10-Run Bonus Ball Simulation</span>
-                  <span className="font-mono text-[10px] bg-amber-400/20 px-1.5 py-0.5 rounded text-amber-400 font-bold">+10 Ball</span>
+                  <span className="font-mono text-[10px] bg-amber-400/20 px-1.5 py-0.5 rounded text-[var(--sc-gold)] font-bold">+10 Ball</span>
                 </button>
                 <button
                   onClick={() => loadCricketPreset('high_nrr')}
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-xs font-medium text-left transition-colors',
-                    isDay ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-200'
+                    isDay ? 'bg-[var(--sc-sunken)] hover:bg-slate-200 text-[var(--sc-ink-2)]' : 'bg-white/[0.05] hover:bg-white/[0.1] text-[var(--sc-ink)]'
                   )}
                 >
                   🚀 Blowout Victory (+5.250 NRR)
@@ -618,7 +618,7 @@ export const ScoringSimulator: React.FC = () => {
                   onClick={() => loadCricketPreset('close_chase')}
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-xs font-medium text-left transition-colors',
-                    isDay ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-200'
+                    isDay ? 'bg-[var(--sc-sunken)] hover:bg-slate-200 text-[var(--sc-ink-2)]' : 'bg-white/[0.05] hover:bg-white/[0.1] text-[var(--sc-ink)]'
                   )}
                 >
                   🎯 Tight 1-Run Win (+0.050 NRR)
@@ -627,7 +627,7 @@ export const ScoringSimulator: React.FC = () => {
                   onClick={() => loadCricketPreset('all_out')}
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-xs font-medium text-left transition-colors',
-                    isDay ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-200'
+                    isDay ? 'bg-[var(--sc-sunken)] hover:bg-slate-200 text-[var(--sc-ink-2)]' : 'bg-white/[0.05] hover:bg-white/[0.1] text-[var(--sc-ink)]'
                   )}
                 >
                   ⚠️ All Out in 16.2 ov (Test Full Quota)
@@ -641,11 +641,11 @@ export const ScoringSimulator: React.FC = () => {
             <div
               className={cn(
                 'p-5 rounded-2xl border shadow-sm space-y-4 transition-colors',
-                isDay ? 'bg-white border-slate-200' : 'bg-[#0B1220] border-white/10'
+                isDay ? 'bg-white border-[var(--sc-line)]' : 'bg-[var(--sc-panel)] border-white/10'
               )}
             >
-              <div className={cn('flex justify-between items-center border-b pb-3', isDay ? 'border-slate-200' : 'border-white/10')}>
-                <h3 className={cn('font-bold flex items-center gap-2', isDay ? 'text-slate-900' : 'text-white')}>
+              <div className={cn('flex justify-between items-center border-b pb-3', isDay ? 'border-[var(--sc-line)]' : 'border-white/10')}>
+                <h3 className={cn('font-bold flex items-center gap-2', isDay ? 'text-slate-900' : 'text-[var(--sc-ink)]')}>
                   <HiOutlineSparkles className="w-5 h-5 text-amber-500" />
                   Live Simulator: Test Match Inputs
                 </h3>
@@ -664,19 +664,19 @@ export const ScoringSimulator: React.FC = () => {
                 <div className="font-bold text-sm">🏏 Team A (Batting First)</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div>
-                    <label className={cn('text-xs font-medium', isDay ? 'text-slate-600' : 'text-slate-400')}>Runs Scored</label>
+                    <label className={cn('text-xs font-medium', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Runs Scored</label>
                     <input
                       type="number"
                       value={cricketInput.teamRuns}
                       onChange={e => setCricketInput(i => ({ ...i, teamRuns: Number(e.target.value) }))}
                       className={cn(
                         'w-full mt-1 px-3 py-2 border rounded-lg font-bold text-base',
-                        isDay ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-white/10 text-white'
+                        isDay ? 'bg-white border-[var(--sc-line)] text-slate-800' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                       )}
                     />
                   </div>
                   <div>
-                    <label className={cn('text-xs font-medium', isDay ? 'text-slate-600' : 'text-slate-400')}>Overs Batted</label>
+                    <label className={cn('text-xs font-medium', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Overs Batted</label>
                     <input
                       type="number"
                       step="0.1"
@@ -684,12 +684,12 @@ export const ScoringSimulator: React.FC = () => {
                       onChange={e => setCricketInput(i => ({ ...i, teamOvers: Number(e.target.value) }))}
                       className={cn(
                         'w-full mt-1 px-3 py-2 border rounded-lg font-bold text-base',
-                        isDay ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-white/10 text-white'
+                        isDay ? 'bg-white border-[var(--sc-line)] text-slate-800' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                       )}
                     />
                   </div>
                   <div>
-                    <label className={cn('text-xs font-medium', isDay ? 'text-slate-600' : 'text-slate-400')}>Wickets Lost</label>
+                    <label className={cn('text-xs font-medium', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Wickets Lost</label>
                     <input
                       type="number"
                       min={0}
@@ -698,7 +698,7 @@ export const ScoringSimulator: React.FC = () => {
                       onChange={e => setCricketInput(i => ({ ...i, teamWickets: Number(e.target.value) }))}
                       className={cn(
                         'w-full mt-1 px-3 py-2 border rounded-lg font-bold text-base',
-                        isDay ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-white/10 text-white'
+                        isDay ? 'bg-white border-[var(--sc-line)] text-slate-800' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                       )}
                     />
                   </div>
@@ -706,7 +706,7 @@ export const ScoringSimulator: React.FC = () => {
                     <label
                       className={cn(
                         'flex items-center gap-2 p-2 border rounded-lg w-full cursor-pointer h-10',
-                        isDay ? 'bg-white border-slate-200' : 'bg-slate-900 border-white/10'
+                        isDay ? 'bg-white border-[var(--sc-line)]' : 'bg-[var(--sc-chip)] border-white/10'
                       )}
                     >
                       <input
@@ -715,7 +715,7 @@ export const ScoringSimulator: React.FC = () => {
                         onChange={e => setCricketInput(i => ({ ...i, isTeamAllOut: e.target.checked }))}
                         className="w-4 h-4 text-blue-600"
                       />
-                      <span className={cn('text-xs font-semibold', isDay ? 'text-slate-700' : 'text-slate-200')}>Team All Out</span>
+                      <span className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-2)]' : 'text-[var(--sc-ink)]')}>Team All Out</span>
                     </label>
                   </div>
                 </div>
@@ -723,7 +723,7 @@ export const ScoringSimulator: React.FC = () => {
                 {/* Quick Increment Buttons to test live event response */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-dashed border-slate-300 dark:border-white/10">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className={cn('text-xs font-semibold self-center mr-1', isDay ? 'text-slate-600' : 'text-slate-300')}>
+                    <span className={cn('text-xs font-semibold self-center mr-1', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink)]')}>
                       Simulate Delivery:
                     </span>
                     <button
@@ -732,7 +732,7 @@ export const ScoringSimulator: React.FC = () => {
                       title="Dot delivery (+0 runs, advances ball)"
                       className={cn(
                         'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
-                        isDay ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300' : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-white/10'
+                        isDay ? 'bg-white hover:bg-[var(--sc-sunken)] text-[var(--sc-ink-2)] border-slate-300' : 'bg-[var(--sc-chip)] hover:bg-[var(--sc-chip)] text-[var(--sc-ink)] border-white/10'
                       )}
                     >
                       Dot
@@ -742,7 +742,7 @@ export const ScoringSimulator: React.FC = () => {
                       onClick={() => simulateCricketBall('team', 1)}
                       className={cn(
                         'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
-                        isDay ? 'bg-white hover:bg-blue-100 text-blue-700 border-blue-200' : 'bg-slate-900 hover:bg-blue-900/40 text-blue-300 border-blue-500/40'
+                        isDay ? 'bg-white hover:bg-blue-100 text-blue-700 border-blue-200' : 'bg-[var(--sc-chip)] hover:bg-blue-900/40 text-blue-300 border-blue-500/40'
                       )}
                     >
                       +1 Run
@@ -752,7 +752,7 @@ export const ScoringSimulator: React.FC = () => {
                       onClick={() => simulateCricketBall('team', 4)}
                       className={cn(
                         'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
-                        isDay ? 'bg-white hover:bg-green-100 text-green-700 border-green-200' : 'bg-slate-900 hover:bg-green-900/40 text-green-300 border-green-500/40'
+                        isDay ? 'bg-white hover:bg-green-100 text-green-700 border-green-200' : 'bg-[var(--sc-chip)] hover:bg-green-900/40 text-green-300 border-green-500/40'
                       )}
                     >
                       +4 Four
@@ -762,7 +762,7 @@ export const ScoringSimulator: React.FC = () => {
                       onClick={() => simulateCricketBall('team', 6)}
                       className={cn(
                         'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
-                        isDay ? 'bg-white hover:bg-purple-100 text-purple-700 border-purple-200' : 'bg-slate-900 hover:bg-purple-900/40 text-purple-300 border-purple-500/40'
+                        isDay ? 'bg-white hover:bg-purple-100 text-purple-700 border-purple-200' : 'bg-[var(--sc-chip)] hover:bg-purple-900/40 text-purple-300 border-purple-500/40'
                       )}
                     >
                       +6 Six
@@ -786,7 +786,7 @@ export const ScoringSimulator: React.FC = () => {
                       onClick={() => simulateCricketWicket('team')}
                       className={cn(
                         'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
-                        isDay ? 'bg-white hover:bg-red-100 text-red-700 border-red-200' : 'bg-slate-900 hover:bg-red-900/40 text-red-300 border-red-500/40'
+                        isDay ? 'bg-white hover:bg-red-100 text-red-700 border-red-200' : 'bg-[var(--sc-chip)] hover:bg-red-900/40 text-red-300 border-red-500/40'
                       )}
                     >
                       +1 Wkt
@@ -800,7 +800,7 @@ export const ScoringSimulator: React.FC = () => {
                       onChange={e => setAutoAdvanceBall(e.target.checked)}
                       className="w-3.5 h-3.5 text-amber-500 rounded"
                     />
-                    <span className={isDay ? 'text-slate-500' : 'text-slate-400'}>
+                    <span className={isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]'}>
                       Advance ball (+0.1 ov)
                     </span>
                   </label>
@@ -811,25 +811,25 @@ export const ScoringSimulator: React.FC = () => {
               <div
                 className={cn(
                   'p-4 rounded-xl border space-y-3',
-                  isDay ? 'bg-amber-50/60 border-amber-100 text-amber-900' : 'bg-amber-950/20 border-amber-800/40 text-amber-300'
+                  isDay ? 'bg-amber-50/60 border-amber-100 text-amber-900' : 'bg-amber-950/20 border-amber-800/40 text-[var(--sc-gold)]'
                 )}
               >
                 <div className="font-bold text-sm">🏏 Team B (Chasing)</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div>
-                    <label className={cn('text-xs font-medium', isDay ? 'text-slate-600' : 'text-slate-400')}>Runs Scored</label>
+                    <label className={cn('text-xs font-medium', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Runs Scored</label>
                     <input
                       type="number"
                       value={cricketInput.opponentRuns}
                       onChange={e => setCricketInput(i => ({ ...i, opponentRuns: Number(e.target.value) }))}
                       className={cn(
                         'w-full mt-1 px-3 py-2 border rounded-lg font-bold text-base',
-                        isDay ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-white/10 text-white'
+                        isDay ? 'bg-white border-[var(--sc-line)] text-slate-800' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                       )}
                     />
                   </div>
                   <div>
-                    <label className={cn('text-xs font-medium', isDay ? 'text-slate-600' : 'text-slate-400')}>Overs Batted</label>
+                    <label className={cn('text-xs font-medium', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Overs Batted</label>
                     <input
                       type="number"
                       step="0.1"
@@ -837,12 +837,12 @@ export const ScoringSimulator: React.FC = () => {
                       onChange={e => setCricketInput(i => ({ ...i, opponentOvers: Number(e.target.value) }))}
                       className={cn(
                         'w-full mt-1 px-3 py-2 border rounded-lg font-bold text-base',
-                        isDay ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-white/10 text-white'
+                        isDay ? 'bg-white border-[var(--sc-line)] text-slate-800' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                       )}
                     />
                   </div>
                   <div>
-                    <label className={cn('text-xs font-medium', isDay ? 'text-slate-600' : 'text-slate-400')}>Wickets Lost</label>
+                    <label className={cn('text-xs font-medium', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Wickets Lost</label>
                     <input
                       type="number"
                       min={0}
@@ -851,7 +851,7 @@ export const ScoringSimulator: React.FC = () => {
                       onChange={e => setCricketInput(i => ({ ...i, opponentWickets: Number(e.target.value) }))}
                       className={cn(
                         'w-full mt-1 px-3 py-2 border rounded-lg font-bold text-base',
-                        isDay ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-white/10 text-white'
+                        isDay ? 'bg-white border-[var(--sc-line)] text-slate-800' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                       )}
                     />
                   </div>
@@ -859,7 +859,7 @@ export const ScoringSimulator: React.FC = () => {
                     <label
                       className={cn(
                         'flex items-center gap-2 p-2 border rounded-lg w-full cursor-pointer h-10',
-                        isDay ? 'bg-white border-slate-200' : 'bg-slate-900 border-white/10'
+                        isDay ? 'bg-white border-[var(--sc-line)]' : 'bg-[var(--sc-chip)] border-white/10'
                       )}
                     >
                       <input
@@ -868,7 +868,7 @@ export const ScoringSimulator: React.FC = () => {
                         onChange={e => setCricketInput(i => ({ ...i, isOpponentAllOut: e.target.checked }))}
                         className="w-4 h-4 text-amber-600"
                       />
-                      <span className={cn('text-xs font-semibold', isDay ? 'text-slate-700' : 'text-slate-200')}>Team All Out</span>
+                      <span className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-2)]' : 'text-[var(--sc-ink)]')}>Team All Out</span>
                     </label>
                   </div>
                 </div>
@@ -876,7 +876,7 @@ export const ScoringSimulator: React.FC = () => {
                 {/* Quick Increment Buttons for Team B to test chase & formula response */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-dashed border-slate-300 dark:border-white/10">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className={cn('text-xs font-semibold self-center mr-1', isDay ? 'text-slate-600' : 'text-slate-300')}>
+                    <span className={cn('text-xs font-semibold self-center mr-1', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink)]')}>
                       Simulate Delivery:
                     </span>
                     <button
@@ -885,7 +885,7 @@ export const ScoringSimulator: React.FC = () => {
                       title="Dot delivery (+0 runs, advances ball)"
                       className={cn(
                         'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
-                        isDay ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300' : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-white/10'
+                        isDay ? 'bg-white hover:bg-[var(--sc-sunken)] text-[var(--sc-ink-2)] border-slate-300' : 'bg-[var(--sc-chip)] hover:bg-[var(--sc-chip)] text-[var(--sc-ink)] border-white/10'
                       )}
                     >
                       Dot
@@ -895,7 +895,7 @@ export const ScoringSimulator: React.FC = () => {
                       onClick={() => simulateCricketBall('opponent', 1)}
                       className={cn(
                         'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
-                        isDay ? 'bg-white hover:bg-blue-100 text-blue-700 border-blue-200' : 'bg-slate-900 hover:bg-blue-900/40 text-blue-300 border-blue-500/40'
+                        isDay ? 'bg-white hover:bg-blue-100 text-blue-700 border-blue-200' : 'bg-[var(--sc-chip)] hover:bg-blue-900/40 text-blue-300 border-blue-500/40'
                       )}
                     >
                       +1 Run
@@ -905,7 +905,7 @@ export const ScoringSimulator: React.FC = () => {
                       onClick={() => simulateCricketBall('opponent', 4)}
                       className={cn(
                         'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
-                        isDay ? 'bg-white hover:bg-green-100 text-green-700 border-green-200' : 'bg-slate-900 hover:bg-green-900/40 text-green-300 border-green-500/40'
+                        isDay ? 'bg-white hover:bg-green-100 text-green-700 border-green-200' : 'bg-[var(--sc-chip)] hover:bg-green-900/40 text-green-300 border-green-500/40'
                       )}
                     >
                       +4 Four
@@ -915,7 +915,7 @@ export const ScoringSimulator: React.FC = () => {
                       onClick={() => simulateCricketBall('opponent', 6)}
                       className={cn(
                         'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
-                        isDay ? 'bg-white hover:bg-purple-100 text-purple-700 border-purple-200' : 'bg-slate-900 hover:bg-purple-900/40 text-purple-300 border-purple-500/40'
+                        isDay ? 'bg-white hover:bg-purple-100 text-purple-700 border-purple-200' : 'bg-[var(--sc-chip)] hover:bg-purple-900/40 text-purple-300 border-purple-500/40'
                       )}
                     >
                       +6 Six
@@ -939,7 +939,7 @@ export const ScoringSimulator: React.FC = () => {
                       onClick={() => simulateCricketWicket('opponent')}
                       className={cn(
                         'px-2.5 py-1 border font-bold rounded text-xs transition-all active:scale-95',
-                        isDay ? 'bg-white hover:bg-red-100 text-red-700 border-red-200' : 'bg-slate-900 hover:bg-red-900/40 text-red-300 border-red-500/40'
+                        isDay ? 'bg-white hover:bg-red-100 text-red-700 border-red-200' : 'bg-[var(--sc-chip)] hover:bg-red-900/40 text-red-300 border-red-500/40'
                       )}
                     >
                       +1 Wkt
@@ -950,17 +950,17 @@ export const ScoringSimulator: React.FC = () => {
             </div>
 
             {/* Realtime Output Badge & Math Breakdown */}
-            <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl space-y-4 border border-white/10">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4">
+            <div className="bg-[var(--sc-chip)] text-[var(--sc-ink)] p-6 rounded-2xl shadow-xl space-y-4 border border-white/10">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[var(--sc-line-strong)] pb-4">
                 <div>
-                  <div className="text-xs uppercase font-mono text-amber-400 tracking-wider">
+                  <div className="text-xs uppercase font-mono text-[var(--sc-gold)] tracking-wider">
                     Calculated Net Score Metric
                   </div>
                   <div className="text-4xl font-black mt-1 flex items-baseline gap-3">
-                    <span className={cricketResult.nrr >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                    <span className={cricketResult.nrr >= 0 ? 'text-[var(--sc-green)]' : 'text-[var(--sc-coral)]'}>
                       {cricketResult.formattedNRR} NRR
                     </span>
-                    <span className="text-sm font-semibold text-slate-400">
+                    <span className="text-sm font-semibold text-[var(--sc-ink-2)]">
                       ({cricketResult.result.toUpperCase()} • +{cricketResult.pointsEarned} Pts)
                     </span>
                   </div>
@@ -968,35 +968,35 @@ export const ScoringSimulator: React.FC = () => {
 
                 <div className="flex gap-4">
                   <div className="text-right">
-                    <div className="text-[11px] text-slate-400">Team Run Rate</div>
-                    <div className="text-xl font-bold text-blue-400">{cricketResult.teamRunRate.toFixed(3)}</div>
+                    <div className="text-[11px] text-[var(--sc-ink-2)]">Team Run Rate</div>
+                    <div className="text-xl font-bold text-[var(--sc-blue-2)]">{cricketResult.teamRunRate.toFixed(3)}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[11px] text-slate-400">Opponent Run Rate</div>
-                    <div className="text-xl font-bold text-amber-400">{cricketResult.opponentRunRate.toFixed(3)}</div>
+                    <div className="text-[11px] text-[var(--sc-ink-2)]">Opponent Run Rate</div>
+                    <div className="text-xl font-bold text-[var(--sc-gold)]">{cricketResult.opponentRunRate.toFixed(3)}</div>
                   </div>
                 </div>
               </div>
 
               {/* Step-by-Step Breakdown */}
               <div>
-                <h4 className="text-xs uppercase font-mono text-slate-400 mb-2">Step-by-Step Mathematical Verification:</h4>
-                <div className="space-y-1.5 font-mono text-xs text-slate-300 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <h4 className="text-xs uppercase font-mono text-[var(--sc-ink-2)] mb-2">Step-by-Step Mathematical Verification:</h4>
+                <div className="space-y-1.5 font-mono text-xs text-[var(--sc-ink)] bg-[var(--sc-chip)] p-4 rounded-xl border border-[var(--sc-line-strong)]">
                   {cricketResult.formulaBreakdown.map((step, idx) => (
                     <div key={idx} className="flex items-start gap-2">
-                      <span className="text-[#D9A441]">{idx + 1}.</span>
+                      <span className="text-[var(--sc-gold)]">{idx + 1}.</span>
                       <span>{step}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="pt-2 flex items-center justify-between text-xs text-emerald-400">
+              <div className="pt-2 flex items-center justify-between text-xs text-[var(--sc-green)]">
                 <span className="flex items-center gap-1.5">
                   <HiOutlineCheckCircle className="w-4 h-4" />
                   Formula Verified: Matches ICC Standard Cricket Regulations + 10-Run Bonus Ball Simulation
                 </span>
-                <span className="font-mono text-slate-500">Precision: 3 decimal places</span>
+                <span className="font-mono text-[var(--sc-ink-3)]">Precision: 3 decimal places</span>
               </div>
             </div>
           </div>
@@ -1011,56 +1011,56 @@ export const ScoringSimulator: React.FC = () => {
           <div
             className={cn(
               'lg:col-span-4 p-5 rounded-2xl border shadow-sm space-y-4 transition-colors',
-              isDay ? 'bg-white border-slate-200' : 'bg-[#0B1220] border-white/10'
+              isDay ? 'bg-white border-[var(--sc-line)]' : 'bg-[var(--sc-panel)] border-white/10'
             )}
           >
-            <h2 className={cn('text-base font-bold border-b pb-2', isDay ? 'text-slate-900 border-slate-200' : 'text-white border-white/10')}>
+            <h2 className={cn('text-base font-bold border-b pb-2', isDay ? 'text-slate-900 border-[var(--sc-line)]' : 'text-[var(--sc-ink)] border-white/10')}>
               ⚙️ Football Points & GD Rule
             </h2>
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className={cn('text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Win Pts</label>
+                <label className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Win Pts</label>
                 <input
                   type="number"
                   value={footballConfig.winPoints}
                   onChange={e => setFootballConfig(f => ({ ...f, winPoints: Number(e.target.value) }))}
                   className={cn(
                     'w-full mt-1 px-2 py-1.5 border rounded-lg text-sm text-center font-bold',
-                    isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-white/[0.04] border-white/10 text-white'
+                    isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-white/[0.04] border-white/10 text-[var(--sc-ink)]'
                   )}
                 />
               </div>
               <div>
-                <label className={cn('text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Draw Pts</label>
+                <label className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Draw Pts</label>
                 <input
                   type="number"
                   value={footballConfig.drawPoints}
                   onChange={e => setFootballConfig(f => ({ ...f, drawPoints: Number(e.target.value) }))}
                   className={cn(
                     'w-full mt-1 px-2 py-1.5 border rounded-lg text-sm text-center font-bold',
-                    isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-white/[0.04] border-white/10 text-white'
+                    isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-white/[0.04] border-white/10 text-[var(--sc-ink)]'
                   )}
                 />
               </div>
               <div>
-                <label className={cn('text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Loss Pts</label>
+                <label className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Loss Pts</label>
                 <input
                   type="number"
                   value={footballConfig.lossPoints}
                   onChange={e => setFootballConfig(f => ({ ...f, lossPoints: Number(e.target.value) }))}
                   className={cn(
                     'w-full mt-1 px-2 py-1.5 border rounded-lg text-sm text-center font-bold',
-                    isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-white/[0.04] border-white/10 text-white'
+                    isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-white/[0.04] border-white/10 text-[var(--sc-ink)]'
                   )}
                 />
               </div>
             </div>
 
-            <div className={cn('p-3 rounded-xl border', isDay ? 'bg-slate-50 border-slate-200' : 'bg-white/[0.03] border-white/10')}>
-              <div className={cn('text-xs font-bold mb-1', isDay ? 'text-slate-700' : 'text-slate-200')}>Tie-Breaker Hierarchy:</div>
-              <ol className={cn('text-xs list-decimal pl-4 space-y-1', isDay ? 'text-slate-600' : 'text-slate-400')}>
+            <div className={cn('p-3 rounded-xl border', isDay ? 'bg-slate-50 border-[var(--sc-line)]' : 'bg-white/[0.03] border-white/10')}>
+              <div className={cn('text-xs font-bold mb-1', isDay ? 'text-[var(--sc-ink-2)]' : 'text-[var(--sc-ink)]')}>Tie-Breaker Hierarchy:</div>
+              <ol className={cn('text-xs list-decimal pl-4 space-y-1', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>
                 <li>Total Points</li>
-                <li><strong className={isDay ? 'text-slate-800' : 'text-amber-400'}>Net Goal Difference (GD = GF - GA)</strong></li>
+                <li><strong className={isDay ? 'text-slate-800' : 'text-[var(--sc-gold)]'}>Net Goal Difference (GD = GF - GA)</strong></li>
                 <li>Goals Scored (GF)</li>
                 <li>Head-to-Head Result</li>
               </ol>
@@ -1071,80 +1071,80 @@ export const ScoringSimulator: React.FC = () => {
             <div
               className={cn(
                 'p-5 rounded-2xl border shadow-sm space-y-4 transition-colors',
-                isDay ? 'bg-white border-slate-200' : 'bg-[#0B1220] border-white/10'
+                isDay ? 'bg-white border-[var(--sc-line)]' : 'bg-[var(--sc-panel)] border-white/10'
               )}
             >
-              <h3 className={cn('font-bold', isDay ? 'text-slate-900' : 'text-white')}>
+              <h3 className={cn('font-bold', isDay ? 'text-slate-900' : 'text-[var(--sc-ink)]')}>
                 Live Simulator: Match & Cumulative Standings
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label className={cn('text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Match Goals For</label>
+                  <label className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Match Goals For</label>
                   <input
                     type="number"
                     value={footballInput.goalsFor}
                     onChange={e => setFootballInput(f => ({ ...f, goalsFor: Number(e.target.value) }))}
                     className={cn(
                       'w-full mt-1 px-3 py-2 border rounded-lg font-bold text-lg',
-                      isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-white/10 text-white'
+                      isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                     )}
                   />
                 </div>
                 <div>
-                  <label className={cn('text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Match Goals Against</label>
+                  <label className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Match Goals Against</label>
                   <input
                     type="number"
                     value={footballInput.goalsAgainst}
                     onChange={e => setFootballInput(f => ({ ...f, goalsAgainst: Number(e.target.value) }))}
                     className={cn(
                       'w-full mt-1 px-3 py-2 border rounded-lg font-bold text-lg',
-                      isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-white/10 text-white'
+                      isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                     )}
                   />
                 </div>
                 <div>
-                  <label className={cn('text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Previous GF</label>
+                  <label className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Previous GF</label>
                   <input
                     type="number"
                     value={footballInput.priorGF}
                     onChange={e => setFootballInput(f => ({ ...f, priorGF: Number(e.target.value) }))}
                     className={cn(
                       'w-full mt-1 px-3 py-2 border rounded-lg font-medium',
-                      isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-white/10 text-white'
+                      isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                     )}
                   />
                 </div>
                 <div>
-                  <label className={cn('text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Previous GA</label>
+                  <label className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Previous GA</label>
                   <input
                     type="number"
                     value={footballInput.priorGA}
                     onChange={e => setFootballInput(f => ({ ...f, priorGA: Number(e.target.value) }))}
                     className={cn(
                       'w-full mt-1 px-3 py-2 border rounded-lg font-medium',
-                      isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-white/10 text-white'
+                      isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                     )}
                   />
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl space-y-4 border border-white/10">
-              <div className="flex justify-between items-center border-b border-slate-800 pb-4">
+            <div className="bg-[var(--sc-chip)] text-[var(--sc-ink)] p-6 rounded-2xl shadow-xl space-y-4 border border-white/10">
+              <div className="flex justify-between items-center border-b border-[var(--sc-line-strong)] pb-4">
                 <div>
-                  <div className="text-xs uppercase font-mono text-amber-400">Cumulative Goal Difference (Net Score)</div>
-                  <div className="text-4xl font-black mt-1 text-emerald-400">{footballResult.formattedGD} GD</div>
+                  <div className="text-xs uppercase font-mono text-[var(--sc-gold)]">Cumulative Goal Difference (Net Score)</div>
+                  <div className="text-4xl font-black mt-1 text-[var(--sc-green)]">{footballResult.formattedGD} GD</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs text-slate-400">Total Table Points</div>
-                  <div className="text-3xl font-black text-amber-400">{footballResult.totalPoints} PTS</div>
+                  <div className="text-xs text-[var(--sc-ink-2)]">Total Table Points</div>
+                  <div className="text-3xl font-black text-[var(--sc-gold)]">{footballResult.totalPoints} PTS</div>
                 </div>
               </div>
 
-              <div className="space-y-1.5 font-mono text-xs text-slate-300 bg-slate-950 p-4 rounded-xl border border-slate-800">
+              <div className="space-y-1.5 font-mono text-xs text-[var(--sc-ink)] bg-[var(--sc-chip)] p-4 rounded-xl border border-[var(--sc-line-strong)]">
                 {footballResult.formulaBreakdown.map((step, idx) => (
                   <div key={idx} className="flex items-start gap-2">
-                    <span className="text-[#D9A441]">{idx + 1}.</span>
+                    <span className="text-[var(--sc-gold)]">{idx + 1}.</span>
                     <span>{step}</span>
                   </div>
                 ))}
@@ -1162,26 +1162,26 @@ export const ScoringSimulator: React.FC = () => {
           <div
             className={cn(
               'lg:col-span-4 p-5 rounded-2xl border shadow-sm space-y-4 transition-colors',
-              isDay ? 'bg-white border-slate-200' : 'bg-[#0B1220] border-white/10'
+              isDay ? 'bg-white border-[var(--sc-line)]' : 'bg-[var(--sc-panel)] border-white/10'
             )}
           >
-            <h2 className={cn('text-base font-bold border-b pb-2', isDay ? 'text-slate-900 border-slate-200' : 'text-white border-white/10')}>
+            <h2 className={cn('text-base font-bold border-b pb-2', isDay ? 'text-slate-900 border-[var(--sc-line)]' : 'text-[var(--sc-ink)] border-white/10')}>
               🏐 FIVB Volleyball Rule System
             </h2>
             <div className="text-xs space-y-2">
-              <div className={cn('p-2.5 rounded-lg border', isDay ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-white/[0.03] border-white/10 text-slate-300')}>
+              <div className={cn('p-2.5 rounded-lg border', isDay ? 'bg-slate-50 border-[var(--sc-line)] text-[var(--sc-ink-2)]' : 'bg-white/[0.03] border-white/10 text-[var(--sc-ink)]')}>
                 <strong>3 - 0 or 3 - 1 Win:</strong> Winner gets <strong>3 Pts</strong>, Loser gets <strong>0 Pts</strong>.
               </div>
-              <div className={cn('p-2.5 rounded-lg border', isDay ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-white/[0.03] border-white/10 text-slate-300')}>
+              <div className={cn('p-2.5 rounded-lg border', isDay ? 'bg-slate-50 border-[var(--sc-line)] text-[var(--sc-ink-2)]' : 'bg-white/[0.03] border-white/10 text-[var(--sc-ink)]')}>
                 <strong>3 - 2 Win:</strong> Winner gets <strong>2 Pts</strong>, Loser gets <strong>1 Pt</strong> (tiebreak split).
               </div>
-              <div className={cn('p-2.5 rounded-lg border', isDay ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-white/[0.03] border-white/10 text-slate-300')}>
+              <div className={cn('p-2.5 rounded-lg border', isDay ? 'bg-slate-50 border-[var(--sc-line)] text-[var(--sc-ink-2)]' : 'bg-white/[0.03] border-white/10 text-[var(--sc-ink)]')}>
                 <strong>Tie-Breaker Order:</strong>
                 <ol className="list-decimal pl-4 mt-1 space-y-0.5">
                   <li>Points won</li>
                   <li>Matches won</li>
-                  <li><strong className={isDay ? 'text-slate-900' : 'text-amber-400'}>Set Ratio (Sets Won / Sets Lost)</strong></li>
-                  <li><strong className={isDay ? 'text-slate-900' : 'text-amber-400'}>Point Quotient (Points Won / Points Lost)</strong></li>
+                  <li><strong className={isDay ? 'text-slate-900' : 'text-[var(--sc-gold)]'}>Set Ratio (Sets Won / Sets Lost)</strong></li>
+                  <li><strong className={isDay ? 'text-slate-900' : 'text-[var(--sc-gold)]'}>Point Quotient (Points Won / Points Lost)</strong></li>
                 </ol>
               </div>
             </div>
@@ -1191,15 +1191,15 @@ export const ScoringSimulator: React.FC = () => {
             <div
               className={cn(
                 'p-5 rounded-2xl border shadow-sm space-y-4 transition-colors',
-                isDay ? 'bg-white border-slate-200' : 'bg-[#0B1220] border-white/10'
+                isDay ? 'bg-white border-[var(--sc-line)]' : 'bg-[var(--sc-panel)] border-white/10'
               )}
             >
-              <h3 className={cn('font-bold', isDay ? 'text-slate-900' : 'text-white')}>
+              <h3 className={cn('font-bold', isDay ? 'text-slate-900' : 'text-[var(--sc-ink)]')}>
                 Live Simulator: Sets & Points Entry
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label className={cn('text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Sets Won</label>
+                  <label className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Sets Won</label>
                   <input
                     type="number"
                     max={3}
@@ -1208,12 +1208,12 @@ export const ScoringSimulator: React.FC = () => {
                     onChange={e => setVolleyballInput(v => ({ ...v, setsWon: Number(e.target.value) }))}
                     className={cn(
                       'w-full mt-1 px-3 py-2 border rounded-lg font-bold text-lg',
-                      isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-white/10 text-white'
+                      isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                     )}
                   />
                 </div>
                 <div>
-                  <label className={cn('text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Sets Lost</label>
+                  <label className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Sets Lost</label>
                   <input
                     type="number"
                     max={3}
@@ -1222,61 +1222,61 @@ export const ScoringSimulator: React.FC = () => {
                     onChange={e => setVolleyballInput(v => ({ ...v, setsLost: Number(e.target.value) }))}
                     className={cn(
                       'w-full mt-1 px-3 py-2 border rounded-lg font-bold text-lg',
-                      isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-white/10 text-white'
+                      isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                     )}
                   />
                 </div>
                 <div>
-                  <label className={cn('text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Points Won</label>
+                  <label className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Points Won</label>
                   <input
                     type="number"
                     value={volleyballInput.pointsWon}
                     onChange={e => setVolleyballInput(v => ({ ...v, pointsWon: Number(e.target.value) }))}
                     className={cn(
                       'w-full mt-1 px-3 py-2 border rounded-lg font-medium',
-                      isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-white/10 text-white'
+                      isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                     )}
                   />
                 </div>
                 <div>
-                  <label className={cn('text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Points Lost</label>
+                  <label className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Points Lost</label>
                   <input
                     type="number"
                     value={volleyballInput.pointsLost}
                     onChange={e => setVolleyballInput(v => ({ ...v, pointsLost: Number(e.target.value) }))}
                     className={cn(
                       'w-full mt-1 px-3 py-2 border rounded-lg font-medium',
-                      isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-white/10 text-white'
+                      isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                     )}
                   />
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl space-y-4 border border-white/10">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-b border-slate-800 pb-4">
+            <div className="bg-[var(--sc-chip)] text-[var(--sc-ink)] p-6 rounded-2xl shadow-xl space-y-4 border border-white/10">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-b border-[var(--sc-line-strong)] pb-4">
                 <div>
-                  <div className="text-[11px] text-slate-400">Set Ratio</div>
-                  <div className="text-2xl font-black text-amber-400">{volleyballResult.setRatio.toFixed(3)}</div>
+                  <div className="text-[11px] text-[var(--sc-ink-2)]">Set Ratio</div>
+                  <div className="text-2xl font-black text-[var(--sc-gold)]">{volleyballResult.setRatio.toFixed(3)}</div>
                 </div>
                 <div>
-                  <div className="text-[11px] text-slate-400">Point Quotient</div>
-                  <div className="text-2xl font-black text-emerald-400">{volleyballResult.pointQuotient.toFixed(3)}</div>
+                  <div className="text-[11px] text-[var(--sc-ink-2)]">Point Quotient</div>
+                  <div className="text-2xl font-black text-[var(--sc-green)]">{volleyballResult.pointQuotient.toFixed(3)}</div>
                 </div>
                 <div>
-                  <div className="text-[11px] text-slate-400">Net Points</div>
-                  <div className="text-2xl font-black text-blue-400">{volleyballResult.pointDiff > 0 ? '+' : ''}{volleyballResult.pointDiff}</div>
+                  <div className="text-[11px] text-[var(--sc-ink-2)]">Net Points</div>
+                  <div className="text-2xl font-black text-[var(--sc-blue-2)]">{volleyballResult.pointDiff > 0 ? '+' : ''}{volleyballResult.pointDiff}</div>
                 </div>
                 <div>
-                  <div className="text-[11px] text-slate-400">FIVB Points</div>
+                  <div className="text-[11px] text-[var(--sc-ink-2)]">FIVB Points</div>
                   <div className="text-2xl font-black text-purple-400">{volleyballResult.pointsEarned} PTS</div>
                 </div>
               </div>
 
-              <div className="space-y-1.5 font-mono text-xs text-slate-300 bg-slate-950 p-4 rounded-xl border border-slate-800">
+              <div className="space-y-1.5 font-mono text-xs text-[var(--sc-ink)] bg-[var(--sc-chip)] p-4 rounded-xl border border-[var(--sc-line-strong)]">
                 {volleyballResult.formulaBreakdown.map((step, idx) => (
                   <div key={idx} className="flex items-start gap-2">
-                    <span className="text-[#D9A441]">{idx + 1}.</span>
+                    <span className="text-[var(--sc-gold)]">{idx + 1}.</span>
                     <span>{step}</span>
                   </div>
                 ))}
@@ -1293,85 +1293,85 @@ export const ScoringSimulator: React.FC = () => {
         <div
           className={cn(
             'p-6 rounded-2xl border shadow-sm space-y-6 transition-colors',
-            isDay ? 'bg-white border-slate-200' : 'bg-[#0B1220] border-white/10'
+            isDay ? 'bg-white border-[var(--sc-line)]' : 'bg-[var(--sc-panel)] border-white/10'
           )}
         >
-          <div className={cn('border-b pb-4', isDay ? 'border-slate-200' : 'border-white/10')}>
-            <h2 className={cn('text-lg font-bold', isDay ? 'text-slate-900' : 'text-white')}>
+          <div className={cn('border-b pb-4', isDay ? 'border-[var(--sc-line)]' : 'border-white/10')}>
+            <h2 className={cn('text-lg font-bold', isDay ? 'text-slate-900' : 'text-[var(--sc-ink)]')}>
               ✋ Hand Tennis / Table Tennis Differential System
             </h2>
-            <p className={cn('text-xs', isDay ? 'text-slate-500' : 'text-slate-400')}>
+            <p className={cn('text-xs', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>
               Calculates point differential and game differential for outdoor hand-tennis tournaments.
             </p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <label className={cn('text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Games Won</label>
+              <label className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Games Won</label>
               <input
                 type="number"
                 value={racketInput.gamesWon}
                 onChange={e => setRacketInput(r => ({ ...r, gamesWon: Number(e.target.value) }))}
                 className={cn(
                   'w-full mt-1 px-3 py-2 border rounded-lg font-bold text-lg',
-                  isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-white/10 text-white'
+                  isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                 )}
               />
             </div>
             <div>
-              <label className={cn('text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Games Lost</label>
+              <label className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Games Lost</label>
               <input
                 type="number"
                 value={racketInput.gamesLost}
                 onChange={e => setRacketInput(r => ({ ...r, gamesLost: Number(e.target.value) }))}
                 className={cn(
                   'w-full mt-1 px-3 py-2 border rounded-lg font-bold text-lg',
-                  isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-white/10 text-white'
+                  isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                 )}
               />
             </div>
             <div>
-              <label className={cn('text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Points Won</label>
+              <label className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Points Won</label>
               <input
                 type="number"
                 value={racketInput.pointsWon}
                 onChange={e => setRacketInput(r => ({ ...r, pointsWon: Number(e.target.value) }))}
                 className={cn(
                   'w-full mt-1 px-3 py-2 border rounded-lg font-medium',
-                  isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-white/10 text-white'
+                  isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                 )}
               />
             </div>
             <div>
-              <label className={cn('text-xs font-semibold', isDay ? 'text-slate-500' : 'text-slate-400')}>Points Lost</label>
+              <label className={cn('text-xs font-semibold', isDay ? 'text-[var(--sc-ink-3)]' : 'text-[var(--sc-ink-2)]')}>Points Lost</label>
               <input
                 type="number"
                 value={racketInput.pointsLost}
                 onChange={e => setRacketInput(r => ({ ...r, pointsLost: Number(e.target.value) }))}
                 className={cn(
                   'w-full mt-1 px-3 py-2 border rounded-lg font-medium',
-                  isDay ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-white/10 text-white'
+                  isDay ? 'bg-white border-[var(--sc-line)] text-slate-900' : 'bg-[var(--sc-chip)] border-white/10 text-[var(--sc-ink)]'
                 )}
               />
             </div>
           </div>
 
-          <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl space-y-4 border border-white/10">
-            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+          <div className="bg-[var(--sc-chip)] text-[var(--sc-ink)] p-6 rounded-2xl shadow-xl space-y-4 border border-white/10">
+            <div className="flex justify-between items-center border-b border-[var(--sc-line-strong)] pb-3">
               <div>
-                <div className="text-xs uppercase font-mono text-amber-400">Net Point Difference</div>
-                <div className="text-3xl font-black text-emerald-400">{racketResult.formattedPointDiff} Pts</div>
+                <div className="text-xs uppercase font-mono text-[var(--sc-gold)]">Net Point Difference</div>
+                <div className="text-3xl font-black text-[var(--sc-green)]">{racketResult.formattedPointDiff} Pts</div>
               </div>
               <div className="text-right">
-                <div className="text-xs text-slate-400">Point Quotient</div>
-                <div className="text-2xl font-black text-blue-400">{racketResult.pointRatio.toFixed(3)}</div>
+                <div className="text-xs text-[var(--sc-ink-2)]">Point Quotient</div>
+                <div className="text-2xl font-black text-[var(--sc-blue-2)]">{racketResult.pointRatio.toFixed(3)}</div>
               </div>
             </div>
 
-            <div className="space-y-1.5 font-mono text-xs text-slate-300 bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <div className="space-y-1.5 font-mono text-xs text-[var(--sc-ink)] bg-[var(--sc-chip)] p-4 rounded-xl border border-[var(--sc-line-strong)]">
               {racketResult.formulaBreakdown.map((step, idx) => (
                 <div key={idx} className="flex items-start gap-2">
-                  <span className="text-[#D9A441]">{idx + 1}.</span>
+                  <span className="text-[var(--sc-gold)]">{idx + 1}.</span>
                   <span>{step}</span>
                 </div>
               ))}

@@ -12,14 +12,19 @@ import {
   LoadingRows,
   SearchInput,
   StatusPill,
+  SubLine,
+  TBody,
+  Td,
+  THead,
+  Th,
+  TableShell,
   Toolbar,
+  TRow,
 } from '@/components/admin/kit';
 import { useCollection } from '@/hooks/useCollection';
 import { useAuditLog } from '@/hooks/useAuditLog';
-import { useTheme } from '@/contexts/ThemeContext';
 import { deleteTournament, updateTournament } from '@/services/tournaments/tournamentService';
 import type { Match, Sport, Team, Tournament, TournamentFormat } from '@/types';
-import { cn } from '@/utils/cn';
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi';
 
 type ArchivedTournament = Tournament & { archived?: boolean };
@@ -56,8 +61,6 @@ const FORMAT_LABEL: Record<TournamentFormat, string> = {
 const TournamentsManager: React.FC = () => {
   const { log } = useAuditLog();
   const navigate = useNavigate();
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
 
   const tournaments = useCollection<Tournament>('tournaments');
   const sports = useCollection<Sport>('sports', { sortBy: 'name' });
@@ -188,7 +191,7 @@ const TournamentsManager: React.FC = () => {
           />
           Archived
         </Btn>
-        <span className={cn('ml-auto text-[12px] tabular-nums font-bold', isDay ? 'text-slate-500' : 'text-slate-400')}>
+        <span className="ml-auto text-[12px] font-bold tabular-nums text-ink-muted">
           {rows.length} of {tournaments.data.length}
         </span>
       </Toolbar>
@@ -215,102 +218,73 @@ const TournamentsManager: React.FC = () => {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1080px] border-collapse text-left">
-              <thead>
-                <tr className={cn(
-                  'border-b transition-colors',
-                  isDay ? 'border-slate-200 bg-slate-50/90 text-slate-600' : 'border-white/10 bg-[#0B1A30]/60 text-slate-400'
-                )}>
-                  {['Name', 'Sport', 'Format', 'Start Date', 'End Date', 'Status', 'Teams', 'Matches'].map(
-                    (heading) => (
-                      <th
-                        key={heading}
-                        className="whitespace-nowrap px-4 py-3.5 text-[10px] font-black uppercase tracking-wider"
+          <TableShell minW={1080}>
+            <THead>
+              <tr>
+                {['Name', 'Sport', 'Format', 'Start Date', 'End Date', 'Status', 'Teams', 'Matches'].map(
+                  (heading) => (
+                    <Th key={heading}>{heading}</Th>
+                  ),
+                )}
+                <Th className="text-right">Actions</Th>
+              </tr>
+            </THead>
+            <TBody>
+              {rows.map((tournament) => {
+                const archived = Boolean(tournament.archived);
+                return (
+                  <TRow key={tournament.id}>
+                    <Td strong className="max-w-[240px]">
+                      <span
+                        className={
+                          archived ? 'block truncate font-bold text-ink-faint' : 'block truncate font-bold text-ink'
+                        }
                       >
-                        {heading}
-                      </th>
-                    ),
-                  )}
-                  <th className="whitespace-nowrap px-4 py-3.5 text-right text-[10px] font-black uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className={cn('divide-y', isDay ? 'divide-slate-100 bg-white' : 'divide-white/5 bg-transparent')}>
-                {rows.map((tournament) => {
-                  const archived = Boolean(tournament.archived);
-                  return (
-                    <tr
-                      key={tournament.id}
-                      className={cn(
-                        'transition-colors',
-                        isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.03]',
-                      )}
-                    >
-                      <td className="max-w-[240px] px-4 py-3.5">
-                        <span
-                          className={cn(
-                            'block truncate text-[13px] font-black',
-                            archived ? 'text-slate-400' : isDay ? 'text-slate-900' : 'text-white',
-                          )}
+                        {tournament.name}
+                      </span>
+                      <SubLine>{tournament.venue || 'Venue TBC'}</SubLine>
+                    </Td>
+                    <Td className="whitespace-nowrap font-semibold text-ink">
+                      {sportName(tournament.sportId)}
+                    </Td>
+                    <Td className="whitespace-nowrap">
+                      {FORMAT_LABEL[tournament.format] ?? tournament.format ?? '—'}
+                    </Td>
+                    <Td className="whitespace-nowrap">{cellDate(tournament.startDate)}</Td>
+                    <Td className="whitespace-nowrap">{cellDate(tournament.endDate)}</Td>
+                    <Td>
+                      <StatusPill value={archived ? 'archived' : tournament.status} />
+                    </Td>
+                    <Td numeric>{counts.teamCounts.get(tournament.id) ?? 0}</Td>
+                    <Td numeric>{counts.matchCounts.get(tournament.id) ?? 0}</Td>
+                    <Td className="whitespace-nowrap text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <ActionIcon
+                          label="View"
+                          onClick={() => navigate(`/admin/tournaments/${tournament.id}`)}
                         >
-                          {tournament.name}
-                        </span>
-                        <span className={cn('block truncate text-[11px]', isDay ? 'text-slate-400' : 'text-slate-500')}>
-                          {tournament.venue || 'Venue TBC'}
-                        </span>
-                      </td>
-                      <td className={cn('whitespace-nowrap px-4 py-3.5 text-[13px] font-semibold', isDay ? 'text-slate-700' : 'text-slate-300')}>
-                        {sportName(tournament.sportId)}
-                      </td>
-                      <td className={cn('whitespace-nowrap px-4 py-3.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
-                        {FORMAT_LABEL[tournament.format] ?? tournament.format ?? '—'}
-                      </td>
-                      <td className={cn('whitespace-nowrap px-4 py-3.5 text-[12px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
-                        {cellDate(tournament.startDate)}
-                      </td>
-                      <td className={cn('whitespace-nowrap px-4 py-3.5 text-[12px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
-                        {cellDate(tournament.endDate)}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3.5">
-                        <StatusPill value={archived ? 'archived' : tournament.status} />
-                      </td>
-                      <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
-                        {counts.teamCounts.get(tournament.id) ?? 0}
-                      </td>
-                      <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
-                        {counts.matchCounts.get(tournament.id) ?? 0}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3.5">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <ActionIcon
-                            label="View"
-                            onClick={() => navigate(`/admin/tournaments/${tournament.id}`)}
-                          >
-                            <FiEye className="h-3.5 w-3.5" />
-                          </ActionIcon>
-                          <ActionIcon
-                            label="Edit"
-                            onClick={() => navigate(`/admin/tournaments/${tournament.id}/edit`)}
-                          >
-                            <FiEdit2 className="h-3.5 w-3.5" />
-                          </ActionIcon>
-                          <ActionIcon
-                            label="Delete"
-                            danger
-                            onClick={() => handleDelete(tournament)}
-                          >
-                            <FiTrash2 className="h-3.5 w-3.5" />
-                          </ActionIcon>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                          <FiEye className="h-3.5 w-3.5" />
+                        </ActionIcon>
+                        <ActionIcon
+                          label="Edit"
+                          onClick={() => navigate(`/admin/tournaments/${tournament.id}/edit`)}
+                        >
+                          <FiEdit2 className="h-3.5 w-3.5" />
+                        </ActionIcon>
+                        <ActionIcon
+                          label="Delete"
+                          danger
+                          onClick={() => handleDelete(tournament)}
+                        >
+                          <FiTrash2 className="h-3.5 w-3.5" />
+                        </ActionIcon>
+                      </div>
+                    </Td>
+                  </TRow>
+                );
+              })}
+            </TBody>
+          </TableShell>
         )}
       </Card>
     </>

@@ -13,17 +13,22 @@ import {
   LoadingRows,
   SearchInput,
   StatusPill,
+  SubLine,
+  TBody,
+  Td,
+  THead,
+  Th,
+  TableShell,
   Toolbar,
   Toggle,
+  TRow,
 } from '@/components/admin/kit';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import FormField from '@/components/admin/FormField';
 import { useCollection } from '@/hooks/useCollection';
 import { useAuditLog } from '@/hooks/useAuditLog';
-import { useTheme } from '@/contexts/ThemeContext';
 import { updateSport } from '@/services/sports/sportService';
 import type { Match, ScoringType, Sport } from '@/types';
-import { cn } from '@/utils/cn';
 import { FiEdit2, FiEye, FiLock, FiUnlock } from 'react-icons/fi';
 
 const SCORING_TYPES: ScoringType[] = [
@@ -55,8 +60,6 @@ const SportIcon: React.FC<{ sport: Sport }> = ({ sport }) => {
 const SportsManager: React.FC = () => {
   const { log } = useAuditLog();
   const navigate = useNavigate();
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
 
   const sports = useCollection<Sport>('sports', { sortBy: 'name' });
   const matches = useCollection<Match>('matches');
@@ -132,10 +135,7 @@ const SportsManager: React.FC = () => {
 
       {error && <ErrorNotice message={error} className="mb-4" />}
 
-      <div className={cn(
-        'mb-4 flex items-start gap-2.5 rounded-xl border p-3.5 text-xs leading-relaxed',
-        isDay ? 'border-amber-200 bg-amber-50/80 text-amber-900' : 'border-amber-500/30 bg-amber-950/30 text-amber-200',
-      )}>
+      <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-[13px] leading-relaxed text-amber-700 dark:text-amber-200">
         <FiLock className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
         <span>
           There is no delete control here on purpose. Disabling a sport hides it from new match
@@ -159,7 +159,7 @@ const SportsManager: React.FC = () => {
             { value: 'disabled', label: 'Disabled' },
           ]}
         />
-        <span className={cn('ml-auto text-[12px] tabular-nums font-bold', isDay ? 'text-slate-500' : 'text-slate-400')}>
+        <span className="ml-auto text-[12px] font-bold tabular-nums text-ink-muted">
           {rows.length} of {sports.data.length}
         </span>
       </Toolbar>
@@ -179,129 +179,107 @@ const SportsManager: React.FC = () => {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1020px] border-collapse text-left">
-              <thead>
-                <tr className={cn(
-                  'border-b transition-colors',
-                  isDay ? 'border-slate-200 bg-slate-50/90 text-slate-600' : 'border-white/10 bg-[#0B1A30]/60 text-slate-400'
-                )}>
-                  {['Icon', 'Name', 'Scoring Type', 'Team Based', 'Max / Min Players', 'Matches', 'Status'].map(
-                    (heading) => (
-                      <th
-                        key={heading}
-                        className="whitespace-nowrap px-4 py-3.5 text-[10px] font-black uppercase tracking-wider"
-                      >
-                        {heading}
-                      </th>
-                    ),
-                  )}
-                  <th className="whitespace-nowrap px-4 py-3.5 text-right text-[10px] font-black uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className={cn('divide-y', isDay ? 'divide-slate-100 bg-white' : 'divide-white/5 bg-transparent')}>
-                {rows.map((sport) => {
-                  const matchCount = matchCounts.get(sport.id) ?? 0;
-                  return (
-                    <React.Fragment key={sport.id}>
-                      <tr
-                        className={cn(
-                          'transition-colors',
-                          isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.03]',
-                        )}
-                      >
-                        <td className="px-4 py-3.5">
-                          <SportIcon sport={sport} />
-                        </td>
-                        <td className="max-w-[220px] px-4 py-3.5">
-                          <span
-                            className={cn(
-                              'block truncate text-[13px] font-black',
-                              sport.active
-                                ? isDay ? 'text-slate-900' : 'text-white'
-                                : 'text-slate-400',
-                            )}
+          <TableShell minW={1020}>
+            <THead>
+              <tr>
+                {['Icon', 'Name', 'Scoring Type', 'Team Based', 'Max / Min Players', 'Matches', 'Status'].map(
+                  (heading) => (
+                    <Th key={heading}>{heading}</Th>
+                  ),
+                )}
+                <Th className="text-right">Actions</Th>
+              </tr>
+            </THead>
+            <TBody>
+              {rows.map((sport) => {
+                const matchCount = matchCounts.get(sport.id) ?? 0;
+                return (
+                  <React.Fragment key={sport.id}>
+                    <TRow>
+                      <Td>
+                        <SportIcon sport={sport} />
+                      </Td>
+                      <Td strong className="max-w-[220px]">
+                        <span
+                          className={
+                            sport.active
+                              ? 'block truncate font-bold text-ink'
+                              : 'block truncate font-bold text-ink-faint'
+                          }
+                        >
+                          {sport.name}
+                        </span>
+                        <SubLine>{sport.slug}</SubLine>
+                      </Td>
+                      <Td className="whitespace-nowrap font-semibold capitalize">
+                        {scoreLabel(sport.scoringType)}
+                      </Td>
+                      <Td className="whitespace-nowrap">{sport.teamBased ? 'Yes' : 'No'}</Td>
+                      <Td numeric>
+                        {sport.maxPlayersPerTeam ?? '—'} / {sport.minPlayersPerTeam ?? '—'}
+                      </Td>
+                      <Td numeric>
+                        <span className="inline-flex items-center gap-1.5">
+                          {matchCount}
+                          {matchCount > 0 && (
+                            <FiLock
+                              className="h-3.5 w-3.5 text-amber-500"
+                              aria-label="Historical matches — cannot be removed"
+                            />
+                          )}
+                        </span>
+                      </Td>
+                      <Td>
+                        <StatusPill value={sport.active ? 'active' : 'disabled'} />
+                      </Td>
+                      <Td className="whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <ActionIcon
+                            label="View"
+                            onClick={() => navigate(`/admin/sports/${sport.id}`)}
                           >
-                            {sport.name}
-                          </span>
-                          <span className={cn('block truncate text-[11px]', isDay ? 'text-slate-400' : 'text-slate-500')}>
-                            {sport.slug}
-                          </span>
-                        </td>
-                        <td className={cn('whitespace-nowrap px-4 py-3.5 text-[13px] capitalize font-medium', isDay ? 'text-slate-700' : 'text-slate-300')}>
-                          {scoreLabel(sport.scoringType)}
-                        </td>
-                        <td className={cn('whitespace-nowrap px-4 py-3.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
-                          {sport.teamBased ? 'Yes' : 'No'}
-                        </td>
-                        <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[13px] tabular-nums', isDay ? 'text-slate-700' : 'text-slate-300')}>
-                          {sport.maxPlayersPerTeam ?? '—'} / {sport.minPlayersPerTeam ?? '—'}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3.5">
-                          <span className={cn('inline-flex items-center gap-1.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
-                            {matchCount}
-                            {matchCount > 0 && (
-                              <FiLock
-                                className="h-3.5 w-3.5 text-amber-500"
-                                aria-label="Historical matches — cannot be removed"
-                              />
-                            )}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3.5">
-                          <StatusPill value={sport.active ? 'active' : 'disabled'} />
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3.5">
-                          <div className="flex items-center justify-end gap-1.5">
+                            <FiEye className="h-3.5 w-3.5" />
+                          </ActionIcon>
+                          <ActionIcon label="Edit" onClick={() => setEditing(sport)}>
+                            <FiEdit2 className="h-3.5 w-3.5" />
+                          </ActionIcon>
+                          {sport.active ? (
                             <ActionIcon
-                              label="View"
-                              onClick={() => navigate(`/admin/sports/${sport.id}`)}
+                              label="Disable sport"
+                              disabled={busy}
+                              onClick={() => setDisabling(sport)}
                             >
-                              <FiEye className="h-3.5 w-3.5" />
+                              <FiLock className="h-3.5 w-3.5" />
                             </ActionIcon>
-                            <ActionIcon label="Edit" onClick={() => setEditing(sport)}>
-                              <FiEdit2 className="h-3.5 w-3.5" />
+                          ) : (
+                            <ActionIcon
+                              label="Enable sport"
+                              disabled={busy}
+                              primary
+                              onClick={() => enable(sport)}
+                            >
+                              <FiUnlock className="h-3.5 w-3.5" />
                             </ActionIcon>
-                            {sport.active ? (
-                              <ActionIcon
-                                label="Disable sport"
-                                disabled={busy}
-                                onClick={() => setDisabling(sport)}
-                              >
-                                <FiLock className="h-3.5 w-3.5" />
-                              </ActionIcon>
-                            ) : (
-                              <ActionIcon
-                                label="Enable sport"
-                                disabled={busy}
-                                primary
-                                onClick={() => enable(sport)}
-                              >
-                                <FiUnlock className="h-3.5 w-3.5" />
-                              </ActionIcon>
-                            )}
-                          </div>
+                          )}
+                        </div>
+                      </Td>
+                    </TRow>
+                    {matchCount > 0 && (
+                      <tr className="bg-amber-500/[0.07]">
+                        <td colSpan={8} className="px-3.5 py-1.5">
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                            <FiLock className="h-3 w-3" />
+                            {matchCount} historical {matchCount === 1 ? 'match' : 'matches'} — this
+                            sport can be disabled but never removed.
+                          </span>
                         </td>
                       </tr>
-                      {matchCount > 0 && (
-                        <tr className={isDay ? 'bg-amber-50/40' : 'bg-amber-950/20'}>
-                          <td colSpan={8} className="px-4 py-1.5">
-                            <span className={cn('inline-flex items-center gap-1.5 text-[11px] font-semibold', isDay ? 'text-amber-800' : 'text-amber-300')}>
-                              <FiLock className="h-3 w-3" />
-                              {matchCount} historical {matchCount === 1 ? 'match' : 'matches'} — this
-                              sport can be disabled but never removed.
-                            </span>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </TBody>
+          </TableShell>
         )}
       </Card>
 
@@ -336,8 +314,6 @@ const SportEditModal: React.FC<{
   onSaved: () => void;
 }> = ({ sport, onClose, onSaved }) => {
   const { log } = useAuditLog();
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
 
   const [name, setName] = useState(sport.name);
   const [icon, setIcon] = useState(sport.icon ?? '');
@@ -380,17 +356,11 @@ const SportEditModal: React.FC<{
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center px-4 py-8 text-center">
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm" aria-hidden="true" onClick={onClose} />
-        <div className={cn(
-          'relative w-full max-w-xl rounded-2xl text-left shadow-2xl border backdrop-blur-2xl overflow-hidden',
-          isDay ? 'bg-white border-slate-200 text-slate-900 shadow-slate-900/10' : 'bg-[#071426] border-white/10 text-white shadow-black/80',
-        )}>
-          <header className={cn(
-            'flex items-center justify-between gap-3 border-b px-6 py-4',
-            isDay ? 'border-slate-200 bg-slate-50/80' : 'border-white/10 bg-white/[0.02]',
-          )}>
+        <div className="relative w-full max-w-xl overflow-hidden rounded-2xl border border-line bg-surface text-left text-ink shadow-2xl backdrop-blur-2xl">
+          <header className="flex items-center justify-between gap-3 border-b border-line bg-surface-soft/70 px-6 py-4">
             <div className="min-w-0">
-              <h3 className={cn('truncate text-sm font-black', isDay ? 'text-slate-900' : 'text-white')}>Edit sport</h3>
-              <p className={cn('truncate text-[11px]', isDay ? 'text-slate-400' : 'text-slate-500')}>
+              <h3 className="truncate text-sm font-bold text-ink">Edit sport</h3>
+              <p className="truncate text-[11px] text-ink-faint">
                 {sport.slug} · id {sport.id}
               </p>
             </div>
@@ -448,7 +418,7 @@ const SportEditModal: React.FC<{
               onChange={(e) => setDescription(e.target.value)}
             />
 
-            <div className={cn('border-t pt-2', isDay ? 'border-slate-100' : 'border-white/5')}>
+            <div className="border-t border-line pt-2">
               <Toggle
                 checked={teamBased}
                 onChange={setTeamBased}
@@ -458,10 +428,7 @@ const SportEditModal: React.FC<{
             </div>
           </div>
 
-          <footer className={cn(
-            'flex items-center justify-end gap-2.5 border-t px-6 py-3.5',
-            isDay ? 'border-slate-200 bg-slate-50/80' : 'border-white/10 bg-black/20',
-          )}>
+          <footer className="flex items-center justify-end gap-2.5 border-t border-line bg-surface-soft/70 px-6 py-3.5">
             <Btn onClick={onClose}>Cancel</Btn>
             <Btn variant="primary" onClick={save} disabled={saving}>
               {saving ? 'Saving…' : 'Save changes'}

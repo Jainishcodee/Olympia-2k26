@@ -12,7 +12,7 @@ export function createTimestamp(): FieldValue {
 }
 
 export function docToData<T>(doc: DocumentSnapshot): T {
-  return { id: doc.id, ...doc.data() } as T;
+  return { ...doc.data(), id: doc.id } as T;
 }
 
 export function buildQuery(collectionRef: CollectionReference, filters?: Record<string, any>, sorting?: { field: string; dir: 'asc' | 'desc' }, queryLimit?: number): Query {

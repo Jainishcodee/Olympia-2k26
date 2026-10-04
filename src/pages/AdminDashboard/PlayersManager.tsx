@@ -1,9 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useCollection } from '@/hooks/useCollection';
-import { useTheme } from '@/contexts/ThemeContext';
 import { deletePlayer } from '@/services/players/playerService';
 import {
   ActionIcon,
@@ -16,9 +15,15 @@ import {
   LoadingRows,
   SearchInput,
   StatusPill,
+  TBody,
+  Td,
+  THead,
+  Th,
+  TableLink,
+  TableShell,
   Toolbar,
+  TRow,
 } from '@/components/admin/kit';
-import { cn } from '@/utils/cn';
 import type { Player, Sport, Team } from '@/types';
 import { FiEdit2, FiEye, FiPlus, FiTrash2, FiX } from 'react-icons/fi';
 
@@ -34,8 +39,6 @@ const roleLabel = (role?: string): string =>
 const PlayersManager: React.FC = () => {
   const navigate = useNavigate();
   const { log } = useAuditLog();
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Arriving from a roster (`/admin/players?teamId=…`) locks the team filter.
@@ -148,10 +151,7 @@ const PlayersManager: React.FC = () => {
         />
         <FilterSelect value={sportFilter} onChange={setSportFilter} options={sportOptions} />
         {teamParam ? (
-          <span className={cn(
-            'inline-flex h-9 items-center gap-2 rounded-lg border pl-2.5 pr-1.5 text-[12px] font-bold',
-            isDay ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-blue-800/80 bg-blue-950/60 text-blue-300',
-          )}>
+          <span className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#1264FF]/25 bg-[#1264FF]/10 pl-2.5 pr-1.5 text-[12px] font-bold text-[#1264FF]">
             {lockedTeamName || 'Filtered team'}
             <button
               type="button"
@@ -161,7 +161,7 @@ const PlayersManager: React.FC = () => {
                 setSearchParams({}, { replace: true });
                 setTeamFilter('');
               }}
-              className="flex h-5 w-5 items-center justify-center rounded text-inherit transition-colors hover:bg-black/10 cursor-pointer"
+              className="flex h-5 w-5 items-center justify-center rounded text-inherit transition-colors hover:bg-[#1264FF]/20 cursor-pointer"
             >
               <FiX className="h-3.5 w-3.5" />
             </button>
@@ -171,7 +171,7 @@ const PlayersManager: React.FC = () => {
         )}
         <FilterSelect value={roleFilter} onChange={setRoleFilter} options={roleOptions} />
         <FilterSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} />
-        <span className={cn('ml-auto text-[12px] tabular-nums font-bold', isDay ? 'text-slate-500' : 'text-slate-400')}>
+        <span className="ml-auto text-[12px] font-bold tabular-nums text-ink-muted">
           {rows.length} of {players.data.length}
         </span>
       </Toolbar>
@@ -196,112 +196,76 @@ const PlayersManager: React.FC = () => {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1180px] border-collapse text-left">
-              <thead>
-                <tr className={cn(
-                  'border-b transition-colors',
-                  isDay ? 'border-slate-200 bg-slate-50/90 text-slate-600' : 'border-white/10 bg-[#0B1A30]/60 text-slate-400'
-                )}>
-                  {['Photo', 'Name', 'Jersey', 'Sport', 'Team', 'Role', 'Position', 'Status', ''].map((heading) => (
-                    <th
-                      key={heading}
-                      className="whitespace-nowrap px-4 py-3.5 text-[10px] font-black uppercase tracking-wider"
-                    >
-                      {heading}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className={cn('divide-y', isDay ? 'divide-slate-100 bg-white' : 'divide-white/5 bg-transparent')}>
-                {rows.map((player) => (
-                  <tr
-                    key={player.id}
-                    className={cn(
-                      'transition-colors',
-                      isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.03]',
-                    )}
-                  >
-                    <td className="px-4 py-3.5">
-                      {player.photo ? (
-                        <img
-                          src={player.photo}
-                          alt={player.name}
-                          className={cn(
-                            'h-8 w-8 shrink-0 rounded-lg border object-cover',
-                            isDay ? 'border-slate-200 bg-white' : 'border-white/15 bg-[#0B1A30]',
-                          )}
-                        />
-                      ) : (
-                        <span className={cn(
-                          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-black border',
-                          isDay ? 'bg-slate-100 border-slate-200 text-slate-700' : 'bg-slate-800 border-slate-700 text-slate-300',
-                        )}>
-                          {initialsOf(player.name)}
-                        </span>
-                      )}
-                    </td>
-                    <td className="max-w-[200px] px-4 py-3.5">
-                      <Link
-                        to={`/admin/players/${player.id}`}
-                        className={cn(
-                          'block truncate text-[13px] font-bold transition-colors',
-                          isDay ? 'text-slate-900 hover:text-blue-600' : 'text-white hover:text-blue-400',
-                        )}
-                      >
-                        {player.name}
-                      </Link>
-                    </td>
-                    <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
-                      {player.jerseyNumber ?? '—'}
-                    </td>
-                    <td className={cn('whitespace-nowrap px-4 py-3.5 text-[13px] font-semibold', isDay ? 'text-slate-700' : 'text-slate-300')}>
-                      {sportNames(player.sportId || teamById.get(player.teamId)?.sportId || '')}
-                    </td>
-                    <td className="max-w-[180px] truncate px-4 py-3.5 text-[13px]">
-                      {player.teamId ? (
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/admin/teams/${player.teamId}/roster`)}
-                          className={cn('truncate text-left font-semibold transition-colors cursor-pointer', isDay ? 'text-blue-600 hover:underline' : 'text-blue-400 hover:text-white')}
-                        >
-                          {teamName(player.teamId)}
-                        </button>
-                      ) : (
-                        <span className={isDay ? 'text-slate-400' : 'text-slate-500'}>Free agent</span>
-                      )}
-                    </td>
-                    <td className={cn('whitespace-nowrap px-4 py-3.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
-                      {roleLabel(player.role)}
-                    </td>
-                    <td className={cn('whitespace-nowrap px-4 py-3.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
-                      {player.position || '—'}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3.5">
-                      <StatusPill value={player.active !== false ? 'active' : 'inactive'} />
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3.5">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <ActionIcon label="View" onClick={() => navigate(`/admin/players/${player.id}`)}>
-                          <FiEye className="h-3.5 w-3.5" />
-                        </ActionIcon>
-                        <ActionIcon label="Edit" onClick={() => navigate(`/admin/players/${player.id}/edit`)}>
-                          <FiEdit2 className="h-3.5 w-3.5" />
-                        </ActionIcon>
-                        <ActionIcon
-                          label="Delete"
-                          danger
-                          onClick={() => handleDelete(player)}
-                        >
-                          <FiTrash2 className="h-3.5 w-3.5" />
-                        </ActionIcon>
-                      </div>
-                    </td>
-                  </tr>
+          <TableShell minW={1180}>
+            <THead>
+              <tr>
+                {['Photo', 'Name', 'Jersey', 'Sport', 'Team', 'Role', 'Position', 'Status', ''].map((heading) => (
+                  <Th key={heading}>{heading}</Th>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </tr>
+            </THead>
+            <TBody>
+              {rows.map((player) => (
+                <TRow key={player.id}>
+                  <Td>
+                    {player.photo ? (
+                      <img
+                        src={player.photo}
+                        alt={player.name}
+                        className="h-8 w-8 shrink-0 rounded-lg border border-line bg-surface-2 object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-2 text-[11px] font-black text-ink-muted">
+                        {initialsOf(player.name)}
+                      </span>
+                    )}
+                  </Td>
+                  <Td strong className="max-w-[200px] truncate">
+                    <TableLink to={`/admin/players/${player.id}`}>{player.name}</TableLink>
+                  </Td>
+                  <Td numeric>{player.jerseyNumber ?? '—'}</Td>
+                  <Td className="whitespace-nowrap font-semibold text-ink">
+                    {sportNames(player.sportId || teamById.get(player.teamId)?.sportId || '')}
+                  </Td>
+                  <Td className="max-w-[180px] truncate">
+                    {player.teamId ? (
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/admin/teams/${player.teamId}/roster`)}
+                        className="cursor-pointer truncate text-left font-semibold text-[#1264FF] transition-colors hover:underline"
+                      >
+                        {teamName(player.teamId)}
+                      </button>
+                    ) : (
+                      <span className="text-ink-faint">Free agent</span>
+                    )}
+                  </Td>
+                  <Td className="whitespace-nowrap">{roleLabel(player.role)}</Td>
+                  <Td className="whitespace-nowrap">{player.position || '—'}</Td>
+                  <Td>
+                    <StatusPill value={player.active !== false ? 'active' : 'inactive'} />
+                  </Td>
+                  <Td className="whitespace-nowrap text-right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <ActionIcon label="View" onClick={() => navigate(`/admin/players/${player.id}`)}>
+                        <FiEye className="h-3.5 w-3.5" />
+                      </ActionIcon>
+                      <ActionIcon label="Edit" onClick={() => navigate(`/admin/players/${player.id}/edit`)}>
+                        <FiEdit2 className="h-3.5 w-3.5" />
+                      </ActionIcon>
+                      <ActionIcon
+                        label="Delete"
+                        danger
+                        onClick={() => handleDelete(player)}
+                      >
+                        <FiTrash2 className="h-3.5 w-3.5" />
+                      </ActionIcon>
+                    </div>
+                  </Td>
+                </TRow>
+              ))}
+            </TBody>
+          </TableShell>
         )}
       </Card>
     </>

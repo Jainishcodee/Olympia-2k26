@@ -16,8 +16,7 @@ const AdminLayout: React.FC = () => {
     return window.localStorage.getItem(COLLAPSE_KEY) === '1';
   });
   const location = useLocation();
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
+  const isDay = useTheme().theme === 'day';
 
   // Close the mobile drawer whenever the route changes
   useEffect(() => {
@@ -29,40 +28,31 @@ const AdminLayout: React.FC = () => {
   }, [collapsed]);
 
   return (
-    <div
-      className={cn(
-        'relative flex h-screen overflow-hidden font-sans transition-colors duration-500',
-        isDay ? 'bg-[#F4F3EE] text-slate-900' : 'bg-[#050C18] text-slate-100',
-      )}
-    >
-      {/* Background Stadium Glow & Ambient Grid */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        {/* Subtle arena stadium photo */}
-        <div 
+    <div className="relative flex h-screen overflow-hidden bg-page font-sans text-ink">
+      {/* Ambient arena backdrop — kept extremely low so data stays legible */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div
           className={cn(
             'absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-700',
-            isDay ? 'opacity-[0.03] mix-blend-multiply' : 'opacity-[0.08] mix-blend-screen',
+            isDay ? 'opacity-[0.035] mix-blend-multiply' : 'opacity-[0.07] mix-blend-screen',
           )}
           style={{ backgroundImage: `url(${BRAND.arena})` }}
         />
-        {/* Cyan/Blue orbital glow */}
-        <div 
+        <div
           className={cn(
-            'absolute -top-[15%] left-[20%] w-[55vw] h-[450px] rounded-full blur-[140px] pointer-events-none transition-opacity duration-700',
-            isDay ? 'opacity-[0.03]' : 'opacity-[0.06]',
+            'absolute -top-[15%] left-[20%] h-[450px] w-[55vw] rounded-full blur-[140px] transition-opacity duration-700',
+            isDay ? 'opacity-[0.04]' : 'opacity-[0.07]',
           )}
           style={{ background: 'radial-gradient(circle, #1264FF 0%, #1747B8 50%, transparent 80%)' }}
         />
-        {/* Gold arena floodlight */}
-        <div 
+        <div
           className={cn(
-            'absolute -bottom-[10%] right-[10%] w-[45vw] h-[400px] rounded-full blur-[130px] pointer-events-none transition-opacity duration-700',
-            isDay ? 'opacity-[0.03]' : 'opacity-[0.05]',
+            'absolute -bottom-[10%] right-[10%] h-[400px] w-[45vw] rounded-full blur-[130px] transition-opacity duration-700',
+            isDay ? 'opacity-[0.04]' : 'opacity-[0.06]',
           )}
           style={{ background: 'radial-gradient(circle, #D9A441 0%, #FFD21F 40%, transparent 80%)' }}
         />
-        {/* Digital field line overlay */}
-        <div className={cn('absolute inset-0', isDay ? 'ol-day-field opacity-30' : 'ol-night-field opacity-30')} />
+        <div className={cn('absolute inset-0', isDay ? 'ol-day-field opacity-25' : 'ol-night-field opacity-25')} />
       </div>
 
       <AdminSidebar
@@ -78,16 +68,16 @@ const AdminLayout: React.FC = () => {
           collapsed={collapsed}
           onToggleCollapse={() => setCollapsed(!collapsed)}
         />
-        
-        <main className="flex-1 overflow-y-auto p-3 sm:p-5 md:p-7 hide-scrollbar scroll-smooth">
-          <div className="mx-auto w-full max-w-[1540px]">
+
+        <main className="hide-scrollbar flex-1 scroll-smooth overflow-y-auto p-3 sm:p-5 md:p-6">
+          <div className="mx-auto w-full max-w-[1560px]">
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
-                initial={{ opacity: 0, y: 16, scale: 0.99 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.99 }}
-                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
               >
                 <Outlet />
               </motion.div>

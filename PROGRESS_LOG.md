@@ -2,11 +2,11 @@
 
 > **Project Name:** OLYMPIA 2K26 — Interactive Sports Arena & Live Scoring Platform
 > **Repository:** `g:\Project\Sports Scoring\olympia-2k26`
-> **Last Updated:** September 30, 2026
+> **Last Updated:** October 2, 2026
 >
-> **Status:** Public Arena ✅ · Day/Night Theme System ✅ · Brand Asset Integration ✅ · Cinematic Homepage Motion ✅ · Broadcast Scoring Console + FX System ✅ · **Admin Panel Cyber-Luxury Overhaul & Heavy Animations ✅** · **Live Arena Real-Time Firestore Sync ✅** · **Deterministic Zero-Duplicate CSV Seeder & Auto-Purge ✅**.
+> **Status:** Public Arena ✅ · Day/Night Theme System ✅ · Brand Asset Integration ✅ · Cinematic Homepage Motion ✅ · Broadcast Scoring Console + FX System ✅ · Admin Panel Cyber-Luxury Overhaul ✅ · Production Firebase Isolation (`olympia-2k26--prod`) ✅ · Firestore Write Sanitization (`cleanFirestoreData`) ✅ · Fast Post-Match Scoring Panel ✅ · Interactive Leaderboard Reordering Workspace ✅ · Automated Test Suite (86/86 Passing) ✅.
 >
-> **Build state:** Fully configured with Vite 8 + React 18 + Tailwind v4 + Framer Motion + Realtime Firestore.
+> **Build state:** Fully configured with Vite 5 + React 18 + Tailwind v4 + Framer Motion + Realtime Firestore. Built cleanly with zero errors.
 
 ---
 
@@ -1114,6 +1114,136 @@ App runs at `http://localhost:5173`.
 - **TypeScript:** `npx tsc --noEmit` passed with **0 errors**.
 - **Production Build:** `npm run build` compiled cleanly with **0 errors**.
 
+---
 
+## 🚀 Phase 3: Production Migration & Operations Hardening (October 2026)
 
+### 45. Production Firebase Isolation (`Olympia-2K26-Production`)
+- **Environment Alignment & Precedence Fix:**
+  - Diagnosed Vite configuration loading: `npm run dev` was prioritizing legacy `.env.development` (configured for `olympia-2k26`) over `.env`.
+  - Safely backed up old dev settings to `.env.development.old` and pointed all environment files (`.env`, `.env.development`, `.env.production`, `service-account.json`, and `firebaseConfig.json`) strictly to production: `olympia-2k26--prod`.
+- **Zero Firebase Storage Principle:**
+  - Preserved strict exclusion of Firebase Storage — image assets are local, vector, and self-contained; zero Storage queries or bucket reads occur.
+- **Production Complete Seeding Script (`scripts/seed-production-complete.mjs`):**
+  - Created and ran a comprehensive, idempotent seed script using the Firebase Admin SDK.
+  - Successfully populated `settings/default`, `announcements`, `fixtures` (10 matches), `matches` (completed, live, and scheduled states), `events` subcollections, and all 11 sport `leaderboards`.
+  - Seeded spectator engagement documents (`reactions`, `votes`, `reviews`, `ratings`).
+  - Added `"seed:prod:complete"` script command to `package.json`.
 
+### 46. Firestore Write Sanitization & Concurrency Protection
+- **`cleanFirestoreData` Helper (`src/utils/firestore.ts`):**
+  - Designed a recursive sanitizer that eliminates all `undefined` properties before passing documents to Firestore.
+  - Safely preserves Firestore `Timestamp` objects, `Date` instances, and `FieldValue` tokens (`serverTimestamp`, `deleteField`, `increment`).
+  - Completely eliminated `FirebaseError: Function Transaction.set() called with invalid data. Unsupported field value: undefined (data.assist)` and `Function addDoc() (resourceLabel / metadata)`.
+- **Integration Across Core Services:**
+  - **`scoringService.ts`**: Wrapped `eventPayload` and `matchUpdate` in `recordMatchEvent`, `undoLastActiveEvent`, and `correctMatchEvent` with `cleanFirestoreData`.
+  - **`auditService.ts` & `useAuditLog.ts`**: Sanitized all audit logging pipelines so missing optional labels or metadata are never passed as `undefined`.
+
+### 47. Fast / Simplified Post-Match Football Entry (`ScoringConsole.tsx`)
+- **Half & Minute Picker in Goal Dialog:**
+  - Added Match Half / Period selector (`1st Half (1H)` / `2nd Half (2H)` / `Extra Time (ET)`).
+  - Added Match Minute numeric input with quick-tap minute chips (`12'`, `23'`, `38'`, `44'`, `55'`, `68'`, `77'`, `89'`).
+  - Operators can now retroactively log exact match minutes (e.g., goals scored at 23' or 44' before half-time) without relying on an active live clock.
+  - Added `allowTerminalWrite` in `scoringService.ts` to permit operator post-match corrections without throwing status errors.
+- **⚡ Fast Post-Match & Quick Score Overwrite Panel:**
+  - Direct numeric score inputs for Team A and Team B.
+  - Dropdown controls for Match Status (`completed`, `live`, `paused`) and Match Winner (`teamA`, `teamB`, `tie`).
+  - Custom official result text summary field.
+  - Instant 1-click **"Save Match Score & Result"** button that updates `matches/{matchId}` atomically, logs an audit entry, and syncs the leaderboard.
+
+### 48. Chess Seed Data Removal
+- Cleared out mock test records from `leaderboards/chess` directly in the live Firestore production database (`olympia-2k26--prod`) via Firebase Admin SDK (`entries: []`).
+- Updated `scripts/seed-production-complete.mjs` to keep `chess` with `entries: []`.
+- Verified that Chess renders a clean empty state ready for real tournament entries.
+
+### 49. Interactive Admin Leaderboards Manager & Public Wall Prioritization
+- **Interactive Standings Editor (`LeaderboardsManager.tsx`):**
+  - Discipline selector ribbon covering all sports (Football, Cricket, Badminton, Volleyball, Chess, etc.).
+  - Interactive standings table with **▲ Move Up** and **▼ Move Down** buttons to reorder contenders from #1 to last.
+  - Direct inline editing of Points, Wins (W), Draws (D), Losses (L), and Matches Played (P).
+  - "+ Add Contender" drawer for manual team/player entries.
+  - "⚡ Auto-Calculate from Matches" to prefill draft standings from completed match results.
+  - "💾 Save & Publish Standings" to persist authoritative rankings directly into Firestore `leaderboards/{sportId}`.
+- **Public Leaderboard Priority (`Leaderboard.tsx`):**
+  - Prioritizes published `leaderboards/{sportId}` documents in `standingsRows` and `disciplineLeaders`.
+  - Admin-arranged rankings and points reflect authoritatively on the public wall before falling back to dynamic match derivation.
+
+### 50. Automated Test Suite & Build Verification
+- **Unit Tests (`vitest run`):** **86/86 passed** across all 5 test suites (`phase1-scoring-safety`, `phase2a-football`, `phase2b-cricket`, `phase2c-volleyball`, `navigation`).
+- **Production Build (`tsc -b && vite build`):** Successfully bundled in 2.2s with **0 TypeScript and 0 bundling errors**.
+
+---
+
+## 🔧 Phase 4: Pause / Resume / End Reliability Fix (October 2, 2026)
+
+> **Reported symptom:** *"When any game is paused from admin, I cannot resume it or end it right there."*
+
+### 51a. Root Cause 1 — Scoring Console buttons were unreachable (`ScoringConsole.tsx`)
+- The console header rendered Pause / Resume / End behind mutually exclusive guards:
+  - Pause: `isMatchLive && !isPaused`
+  - Resume: `isMatchLive && isPaused` — **impossible**, because `isMatchLive = status === 'live'` and `isPaused = status === 'paused'` can never both be true.
+  - End: `isMatchLive` only — so a paused match showed **neither Resume nor End**.
+- **Fix:** correct gates — Pause when `isMatchLive && !isPaused`, **Resume when `isPaused`**, **End when `isMatchLive || isPaused`**. Paused matches now show `▶ Resume` + `⏹ End match`.
+
+### 51b. Root Cause 2 — status flips did not maintain pause state
+- `updateMatchStatus()` (used by every surface: console, live control, match detail) wrote only `{ status, updatedAt }`, so a match could be `paused` with no `pausedAt` (clock keeps running) or `live`/`completed` with a dangling `pausedAt` (clock frozen forever after resume).
+- **Fix — `matchService.ts`:**
+  - `updateMatchStatus`: now stamps `pausedAt` on transition to `paused`, and on transition to `live`/`completed` banks the pause span into `liveState.pausedDurationMs` and clears `pausedAt`.
+  - `pauseMatch` / `resumeMatch` / `endMatch`: stamp `pausedAt`, bank `pausedDurationMs`, clear `isHalfTime`, set `endedAt`, and sync standings on end.
+- **Fix — `scoringService.ts` (event transaction):** `match_pause` → `paused`, `match_resume` → `live` (banking `pausedDurationMs`), and `match_end` / `full_time` now also bank any trailing pause and clear `pausedAt`, so the event path and the direct-status path agree.
+
+### 51c. Root Cause 3 — document-id shadowing (actions could target the **wrong** document)
+- Every read path mapped documents as `{ id: doc.id, ...doc.data() }`, so an **embedded `id` field inside the document payload silently overrode the real Firestore document id**.
+- **Symptom seen live during verification:** clicking Pause on "Match #999" wrote `MATCH_PAUSED` with `resourceLabel: "Cricket · Match #999"` against document `match-cricket-3` — the seeded match was paused instead of the card the operator clicked. In production this presents exactly as *"the button does nothing / I cannot resume it right there."*
+- **Fix:** spread first, id last — `{ ...doc.data(), id: doc.id }` — across `useCollection.ts` (`useCollection`, `useCollectionGroup`, `useDoc`), `utils/firestore.ts` (`docToData`), and all 13 services (`matchService`, `scoringService`, `teamService`, `playerService`, `sportService`, `tournamentService`, `venueService`, `fixtureService`, `standingsService`, `announcementService`, `auditService`, `adminService`, `authService`) plus `ScoringConsole.tsx`.
+
+### 51d. End-to-end verification (browser, production project)
+Verified against `olympia-2k26--prod` using a throwaway match cloned from a seeded one:
+1. `/admin/live` → Pause → card moves to **Paused Matches** with `Resume` + `End Match` ✓
+2. Scoring console on a paused match → header shows `▶ Resume` + `⏹ End match`, Pause hidden ✓
+3. Console `▶ Resume` → `status: live`, `pausedAt: null`, `pausedDurationMs` banked, `match_resume` event recorded (`lastSequence` 1 → 2) ✓
+4. Console `⏸ Pause` → `pausedAt` stamped, `lastSequence` increments ✓
+5. Console `⏹ End match` → confirm dialog (`END MATCH? … CANCEL / CONFIRM END MATCH`) → `status: completed` ✓
+6. `/admin/live` paused card → `End Match` → `completed`, `endedAt` stamped, `pausedAt` cleared, trailing pause banked ✓
+7. Seeded matches confirmed untouched after every step; all test artifacts (throwaway match, its `events` subcollection, 9 test audit entries) deleted afterwards.
+- **Test results:** `vitest run` → **86/86 passing**. **TypeScript:** `npx tsc -b` → 0 errors. **Production build:** `npm run build` → 0 errors.
+
+### 52. Admin Credential Note (doc correction)
+- The seeded super-admin `jainish@olympia.com` exists in `olympia-2k26--prod` with custom claim `admin: true`, but its password is **`Olympia@2026Admin!`** (the default of `scripts/seedFromCSV.ts`).
+- Earlier references in this log to `olympia123` are **stale** — `scripts/set-admin-claim-final.js` defaults to `olympia11`, and `seedFromCSV.ts` used `Olympia@2026Admin!`. Verified working password: `Olympia@2026Admin!`.
+
+## ?? Phase 4: Scoring Console — Day Theme, Un-sticky Telemetry Bar & Mobile Pass (October 3, 2026)
+
+### 53a. The scoring console was hard-coded to the night palette
+- `ScoringConsole.tsx` carried **351 raw hex literals** (`#05070C`, `#101A2E`, `#1E2A45`, `#EEF2F7`, `#D9A441`, …) on a `bg-[#05070C]` root, so in the **day** theme the page still rendered as a black broadcast panel. `ScoringSimulator.tsx` had the same problem (15 hexes).
+- **Fix — introduced a 34-token `--sc-*` console palette** declared twice in `src/index.css`:
+  - `:root, :root[data-theme="night"]` → the original console palette **verbatim** (so night is pixel-identical to before);
+  - `:root[data-theme="day"]` → the same surfaces re-based on the day system (`--sc-bg #f7f6f1`, `--sc-panel #ffffff`, `--sc-ink #0b1b33`, `--sc-gold #a9761b`, `--sc-line #dfe4ee`, …).
+- **Fix — two scripted codemods** (one-shot, deleted after use) rewrote every occurrence to `var(--sc-*)`:
+  1. surfaces/lines/ink/gold/coral/live/yellow → `bg-[var(--sc-chip)]`, `border-[var(--sc-line)]`, `text-[var(--sc-ink-2)]`, `background: 'var(--sc-panel)'`;
+  2. the Tailwind palette leftovers that only read on a dark ground → `text-slate-100…700` → `--sc-ink*`, `bg-slate-700…950` → `--sc-chip`/`--sc-sunken`, `border-slate-200…800` → `--sc-line*`, `text-amber/blue/rose/red/emerald/orange/yellow-400` → `--sc-gold`/`--sc-blue-2`/`--sc-coral*`/`--sc-green`/`--sc-orange`.
+  - **Guard rails:** lines starting with `accent:` (SVG/FX chart colours) were skipped so literal hexes keep working as paint-server values, and `text-white` was only replaced when the line had **no** solid brand-colour background — the 9 white-on-`bg-blue-600`/`bg-rose-700`/`bg-amber-600` buttons stayed white.
+  - `text-slate-950` on amber, and `text-black` on gold buttons, were deliberately left alone — they are correct in both themes.
+- **Fix — `ScoringSimulator.tsx` gold CTA** used `bg-[var(--sc-gold)] text-slate-950`; in day the gold darkens to `#a9761b`, so the text was switched to `text-[var(--sc-bg)]` (dark in night, cream in day).
+
+### 53b. The telemetry bar was `sticky` — it no longer pins
+- The console header (back link, sport chip, live dot + status, `Seq #`, Formula Sandbox, Start/Pause/Resume/End) was `sticky top-0 z-30 … backdrop-blur`, so on a phone it stayed welded to the top instead of scrolling away with the content.
+- **Fix:** `sticky top-0 z-30` → `relative z-10`. The bar now scrolls with the document in both themes. (`SettingsPage.tsx:578` still uses a sticky sub-nav intentionally — left as is.)
+
+### 53c. Mobile pass — the score plate was collapsing team names to 0px
+Measured by mounting the real route in a 390×844 same-origin iframe and reading computed geometry:
+- **Bug:** the plate was `grid-cols-[1fr_auto_1fr]`. The centre column is `auto` (score + a no-wrap telemetry chip row, ~251px) and `TeamPlate` sets `min-w-0`, so the `1fr` tracks were crushed to **29.5px each and the team names measured 0px wide** — i.e. *on a phone you could not see which teams were playing*.
+- **Fix:**
+  - plate → `grid-cols-[minmax(5.5rem,1fr)_auto_minmax(5.5rem,1fr)]` with `gap-2 sm:gap-3`, centre column given `min-w-0`;
+  - the chip row under the score → `flex flex-wrap items-center justify-center gap-2 sm:gap-3` so `12.3 / 50 OV · RR 4.21` wraps instead of forcing the track;
+  - `TeamPlate` avatar → `hidden … sm:flex` below `sm`, gap → `gap-2 sm:gap-3`, so the name gets the column.
+  - **Result at 390px:** columns `88px | 142.4px | 88px`, team names **57px / 88px** (visible, truncated), page `scrollWidth == clientWidth`.
+- **Tap targets:** `← Back` and *Formula Sandbox* got `py-2` (sm: `py-1`), the overs-quota chips `h-7 → h-9 sm:h-7` (`min-w-[36px] sm:min-w-[28px]`), and the *Match Overs Quota* / *✎ Custom* buttons `py-1 → py-2 sm:py-1`.
+  - **Result:** elements under 32px tall on the scoring console went **8 → 0**.
+- **Page-level overflow sweep at 390px (same-origin iframe):** `/admin` `scrollWidth 390 == clientWidth`, no offenders ✓ · `/admin/matches` no page overflow, the 1552px table scrolls **inside** its `TableShell` (`overflow-x-auto`, 365px viewport) ✓ · scoring console no overflowing elements ✓. Mobile nav confirmed working (hamburger `md:hidden` + off-canvas drawer at `left:-268` with `bg-black/70` backdrop `md:hidden`).
+
+### 53d. Fallout fixed + verification
+- `ReviewsManager.tsx` was left **half-converted** by an earlier interrupted batch (opened `<TableShell>/<THead>/<TBody>/<TRow>/<Td>` but closed with `</table>/<tbody>/<tr>/<td>`, and referenced `isDay` with no declaration). Completed the conversion by hand: closing tags matched, the inline expansion row now uses `<TRow className="bg-surface-2">` + `<Td colSpan>`, and the detail drawer's 9 `isDay ? … : …` branches were replaced with token classes.
+- **`kit.tsx`:** `Td` gained an optional `colSpan?: number` (needed for inline expansion rows).
+- **Verification (browser, day + night):** console root `rgb(247,246,241)` / `rgb(11,27,51)` in day vs `rgb(5,7,12)` / `rgb(238,242,247)` in night; header border `#cfd6e4` vs `#1A2440`; chips `#eef1f8` vs `#101A2E`; header `position: relative` in both; opacity modifiers compile through `color-mix(in oklab, var(--sc-…) …)` (15 rules in the built CSS).
+- **Test results:** `npx tsc -b` → 0 · `vitest run` → **86/86** · `npm run build` → 0.

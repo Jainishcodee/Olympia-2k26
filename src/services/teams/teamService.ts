@@ -23,7 +23,7 @@ export const getTeams = async (filters?: TeamFilter): Promise<Team[]> => {
       q = query(q, where('sportId', '==', filters.sportId));
     }
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team));
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Team));
   } catch (error) {
     console.error('Error getting teams', error);
     return [];
@@ -36,7 +36,7 @@ export const getTeam = async (id: string): Promise<Team | null> => {
     const docRef = doc(db, TEAMS_COLLECTION, id);
     const snapshot = await getDoc(docRef);
     if (snapshot.exists()) {
-      return { id: snapshot.id, ...snapshot.data() } as Team;
+      return { ...snapshot.data(), id: snapshot.id } as Team;
     }
     return null;
   } catch (error) {

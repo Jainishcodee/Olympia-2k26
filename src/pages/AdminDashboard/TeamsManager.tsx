@@ -1,9 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useCollection } from '@/hooks/useCollection';
-import { useTheme } from '@/contexts/ThemeContext';
 import { deleteTeam } from '@/services/teams/teamService';
 import {
   ActionIcon,
@@ -16,9 +15,16 @@ import {
   LoadingRows,
   SearchInput,
   StatusPill,
+  SubLine,
+  TBody,
+  Td,
+  THead,
+  Th,
+  TableLink,
+  TableShell,
   Toolbar,
+  TRow,
 } from '@/components/admin/kit';
-import { cn } from '@/utils/cn';
 import type { Match, Player, Sport, Team } from '@/types';
 import { FiEdit2, FiEye, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi';
 import { getTeamLogo } from '@/utils/teamLogos';
@@ -31,26 +37,16 @@ const initialsOf = (name: string): string => {
 
 const isActive = (team: Team): boolean => team.active !== false;
 
-const Avatar: React.FC<{ name: string; logo?: string; isDay: boolean }> = ({ name, logo, isDay }) => {
+const Avatar: React.FC<{ name: string; logo?: string }> = ({ name, logo }) => {
   const finalLogo = logo || getTeamLogo(name);
   return finalLogo ? (
     <img
       src={finalLogo}
       alt={name}
-      className={cn(
-        'h-8 w-8 shrink-0 rounded-lg border object-cover',
-        isDay ? 'border-slate-200 bg-white' : 'border-white/15 bg-[#0B1A30]',
-      )}
+      className="h-8 w-8 shrink-0 rounded-lg border border-line bg-surface-2 object-cover"
     />
   ) : (
-    <span
-      className={cn(
-        'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-black tracking-wide border',
-        isDay
-          ? 'bg-slate-100 border-slate-200 text-[#A9761B]'
-          : 'bg-[#071426] border-white/10 text-[#D9A441]',
-      )}
-    >
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-2 text-[11px] font-black tracking-wide text-gold-ink">
       {initialsOf(name)}
     </span>
   );
@@ -59,8 +55,6 @@ const Avatar: React.FC<{ name: string; logo?: string; isDay: boolean }> = ({ nam
 const TeamsManager: React.FC = () => {
   const navigate = useNavigate();
   const { log } = useAuditLog();
-  const { theme } = useTheme();
-  const isDay = theme === 'day';
 
   const teams = useCollection<Team>('teams', { sortBy: 'name' });
   const sports = useCollection<Sport>('sports', { sortBy: 'name' });
@@ -165,7 +159,7 @@ const TeamsManager: React.FC = () => {
         />
         <FilterSelect value={sportFilter} onChange={setSportFilter} options={sportOptions} />
         <FilterSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} />
-        <span className={cn('ml-auto text-[12px] tabular-nums font-bold', isDay ? 'text-slate-500' : 'text-slate-400')}>
+        <span className="ml-auto text-[12px] font-bold tabular-nums text-ink-muted">
           {rows.length} of {teams.data.length}
         </span>
       </Toolbar>
@@ -190,98 +184,62 @@ const TeamsManager: React.FC = () => {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px] border-collapse text-left">
-              <thead>
-                <tr className={cn(
-                  'border-b transition-colors',
-                  isDay ? 'border-slate-200 bg-slate-50/90 text-slate-600' : 'border-white/10 bg-[#0B1A30]/60 text-slate-400'
-                )}>
-                  {['Logo', 'Team', 'Sport', 'Captain', 'Vice captain', 'Players', 'Matches', 'Status', ''].map(
-                    (heading) => (
-                      <th
-                        key={heading}
-                        className="whitespace-nowrap px-4 py-3.5 text-[10px] font-black uppercase tracking-wider"
+          <TableShell minW={1120}>
+            <THead>
+              <tr>
+                {['Logo', 'Team', 'Sport', 'Captain', 'Vice captain', 'Players', 'Matches', 'Status', ''].map(
+                  (heading) => (
+                    <Th key={heading}>{heading}</Th>
+                  ),
+                )}
+              </tr>
+            </THead>
+            <TBody>
+              {rows.map((team) => (
+                <TRow key={team.id}>
+                  <Td>
+                    <Avatar name={team.name} logo={team.logo} />
+                  </Td>
+                  <Td strong className="min-w-[200px]">
+                    <TableLink to={`/admin/teams/${team.id}`}>{team.name}</TableLink>
+                    <SubLine>{team.shortName || '—'}</SubLine>
+                  </Td>
+                  <Td className="whitespace-nowrap font-semibold text-ink">{sportNames(team.sportId)}</Td>
+                  <Td className="max-w-[160px] truncate">{playerNames(team.captainId)}</Td>
+                  <Td className="max-w-[160px] truncate">{playerNames(team.viceCaptainId)}</Td>
+                  <Td numeric>{playerCounts.get(team.id) ?? 0}</Td>
+                  <Td numeric>{matchCounts.get(team.id) ?? 0}</Td>
+                  <Td>
+                    <StatusPill value={isActive(team) ? 'active' : 'inactive'} />
+                  </Td>
+                  <Td className="whitespace-nowrap text-right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <ActionIcon label="View" onClick={() => navigate(`/admin/teams/${team.id}`)}>
+                        <FiEye className="h-3.5 w-3.5" />
+                      </ActionIcon>
+                      <ActionIcon
+                        label="Roster"
+                        primary
+                        onClick={() => navigate(`/admin/teams/${team.id}/roster`)}
                       >
-                        {heading}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
-              <tbody className={cn('divide-y', isDay ? 'divide-slate-100 bg-white' : 'divide-white/5 bg-transparent')}>
-                {rows.map((team) => (
-                  <tr
-                    key={team.id}
-                    className={cn(
-                      'transition-colors',
-                      isDay ? 'hover:bg-slate-50/80' : 'hover:bg-white/[0.03]',
-                    )}
-                  >
-                    <td className="px-4 py-3.5">
-                      <Avatar name={team.name} logo={team.logo} isDay={isDay} />
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <Link
-                        to={`/admin/teams/${team.id}`}
-                        className={cn(
-                          'block text-[13px] font-black transition-colors',
-                          isDay ? 'text-slate-900 hover:text-[#1264FF]' : 'text-white hover:text-[#D9A441]',
-                        )}
+                        <FiUsers className="h-3.5 w-3.5" />
+                      </ActionIcon>
+                      <ActionIcon label="Edit" onClick={() => navigate(`/admin/teams/${team.id}/edit`)}>
+                        <FiEdit2 className="h-3.5 w-3.5" />
+                      </ActionIcon>
+                      <ActionIcon
+                        label="Delete"
+                        danger
+                        onClick={() => handleDelete(team)}
                       >
-                        {team.name}
-                      </Link>
-                      <span className={cn('block text-[11px] uppercase tracking-wider font-bold', isDay ? 'text-slate-400' : 'text-slate-500')}>
-                        {team.shortName || '—'}
-                      </span>
-                    </td>
-                    <td className={cn('whitespace-nowrap px-4 py-3.5 text-[13px] font-semibold', isDay ? 'text-slate-700' : 'text-slate-300')}>
-                      {sportNames(team.sportId)}
-                    </td>
-                    <td className={cn('max-w-[160px] truncate px-4 py-3.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
-                      {playerNames(team.captainId)}
-                    </td>
-                    <td className={cn('max-w-[160px] truncate px-4 py-3.5 text-[13px]', isDay ? 'text-slate-600' : 'text-slate-400')}>
-                      {playerNames(team.viceCaptainId)}
-                    </td>
-                    <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
-                      {playerCounts.get(team.id) ?? 0}
-                    </td>
-                    <td className={cn('whitespace-nowrap px-4 py-3.5 font-mono text-[13px] font-bold tabular-nums', isDay ? 'text-slate-800' : 'text-slate-200')}>
-                      {matchCounts.get(team.id) ?? 0}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3.5">
-                      <StatusPill value={isActive(team) ? 'active' : 'inactive'} />
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3.5">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <ActionIcon label="View" onClick={() => navigate(`/admin/teams/${team.id}`)}>
-                          <FiEye className="h-3.5 w-3.5" />
-                        </ActionIcon>
-                        <ActionIcon
-                          label="Roster"
-                          primary
-                          onClick={() => navigate(`/admin/teams/${team.id}/roster`)}
-                        >
-                          <FiUsers className="h-3.5 w-3.5" />
-                        </ActionIcon>
-                        <ActionIcon label="Edit" onClick={() => navigate(`/admin/teams/${team.id}/edit`)}>
-                          <FiEdit2 className="h-3.5 w-3.5" />
-                        </ActionIcon>
-                        <ActionIcon
-                          label="Delete"
-                          danger
-                          onClick={() => handleDelete(team)}
-                        >
-                          <FiTrash2 className="h-3.5 w-3.5" />
-                        </ActionIcon>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        <FiTrash2 className="h-3.5 w-3.5" />
+                      </ActionIcon>
+                    </div>
+                  </Td>
+                </TRow>
+              ))}
+            </TBody>
+          </TableShell>
         )}
       </Card>
     </>

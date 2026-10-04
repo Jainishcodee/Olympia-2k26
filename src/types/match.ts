@@ -74,6 +74,14 @@ export interface LiveState {
   winnerTeam?: 'teamA' | 'teamB' | 'draw' | 'tie';
   winnerTeamId?: string;
 
+  // Live commentary state
+  latestCommentary?: {
+    text: string;
+    eventSequence: number;
+    type: string;
+    voiceEnabled: boolean;
+  };
+
   // Volleyball fields
   currentSet?: number;
   currentSetScore?: {

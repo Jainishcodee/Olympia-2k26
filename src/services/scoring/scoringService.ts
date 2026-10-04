@@ -1160,6 +1160,10 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
       targetStatus = 'live';
     } else if (input.type === 'half_time') {
       targetStatus = 'paused';
+    } else if (input.type === 'match_pause') {
+      targetStatus = 'paused';
+    } else if (input.type === 'match_resume') {
+      targetStatus = 'live';
     } else if (input.type === 'second_half') {
       targetStatus = 'live';
     } else if (input.type === 'penalty_shootout_start' || input.type === 'penalty_scored' || input.type === 'penalty_missed') {
@@ -1205,9 +1209,44 @@ export const recordMatchEvent = async (input: RecordEventInput): Promise<{ event
         computedLiveState.pausedDurationMs = existingPaused + addedPaused;
         matchUpdate.pausedAt = null;
       }
-      if (targetStatus === 'completed' && !matchData.endedAt) {
-        matchUpdate.endedAt = Timestamp.now();
+      if (targetStatus === 'completed') {
+        // A match finished while paused banks the trailing pause first, so the
+        // completed document never keeps a dangling `pausedAt` marker.
+        if (matchData.pausedAt) {
+          const pausedMs = typeof matchData.pausedAt.toMillis === 'function' ? matchData.pausedAt.toMillis() : Date.now();
+          const existingPaused = Number((matchData.liveState as any)?.pausedDurationMs || 0);
+          computedLiveState.pausedDurationMs = existingPaused + Math.max(0, Date.now() - pausedMs);
+          matchUpdate.pausedAt = null;
+        }
+        if (!matchData.endedAt) {
+          matchUpdate.endedAt = Timestamp.now();
+        }
       }
+    }
+
+    // Generate cricket commentary when applicable
+    try {
+      const isCricketSport = (matchData.sportId || input.sportId).toLowerCase().includes('cricket');
+      if (isCricketSport) {
+        const { generateCricketCommentary } = await import('@/services/commentary/cricketCommentary');
+        const matchForComment = {
+          ...matchData,
+          liveState: computedLiveState,
+          score: computedScore,
+        } as unknown as Match;
+        const comment = generateCricketCommentary(eventPayload as MatchEvent, matchForComment);
+        if (comment) {
+          computedLiveState.latestCommentary = {
+            text: comment.text,
+            eventSequence: nextSequence,
+            type: comment.type,
+            voiceEnabled: comment.voiceEnabled,
+          };
+          matchUpdate.liveState = computedLiveState;
+        }
+      }
+    } catch (e) {
+      // Ignore commentary errors to avoid blocking scoring
     }
 
     transaction.update(matchRef, cleanFirestoreData(matchUpdate));
@@ -1246,7 +1285,7 @@ export const undoLastActiveEvent = async (
   const q = query(eventsRef, orderBy('sequence', 'desc'));
   const snap = await getDocs(q);
 
-  const allEvents = snap.docs.map((d) => ({ id: d.id, ...d.data() } as MatchEvent));
+  const allEvents = snap.docs.map((d) => ({ ...d.data(), id: d.id } as MatchEvent));
   const activeEvents = allEvents.filter((e) => !e.undone);
 
   if (activeEvents.length === 0) {
@@ -1305,7 +1344,7 @@ export const correctMatchEvent = async (input: CorrectEventInput): Promise<{ new
     const origSnap = await transaction.get(originalRef);
     if (!origSnap.exists()) throw new Error('Original event not found');
 
-    const originalEvent = { id: origSnap.id, ...origSnap.data() } as MatchEvent;
+    const originalEvent = { ...origSnap.data(), id: origSnap.id } as MatchEvent;
     if (originalEvent.undone) {
       throw new Error('Event was already corrected or undone by another operator');
     }
@@ -1402,7 +1441,7 @@ export const getMatchEvents = async (matchId: string): Promise<MatchEvent[]> => 
     const eventsRef = collection(db, `matches/${matchId}/events`);
     const q = query(eventsRef, orderBy('sequence', 'asc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as MatchEvent));
+    return snapshot.docs.map((d) => ({ ...d.data(), id: d.id } as MatchEvent));
   } catch (error) {
     console.error('Error getting match events', error);
     return [];
@@ -1417,7 +1456,7 @@ export const subscribeToMatchEvents = (
   const eventsRef = collection(db, `matches/${matchId}/events`);
   const q = query(eventsRef, orderBy('sequence', 'desc'));
   return onSnapshot(q, (snapshot) => {
-    callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as MatchEvent)));
+    callback(snapshot.docs.map((d) => ({ ...d.data(), id: d.id } as MatchEvent)));
   });
 };
 

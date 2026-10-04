@@ -26,7 +26,7 @@ export const getPlayers = async (filters?: PlayerFilter): Promise<Player[]> => {
       q = query(q, where('sportId', '==', filters.sportId));
     }
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Player));
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Player));
   } catch (error) {
     console.error('Error getting players', error);
     return [];
@@ -39,7 +39,7 @@ export const getPlayer = async (id: string): Promise<Player | null> => {
     const docRef = doc(db, PLAYERS_COLLECTION, id);
     const snapshot = await getDoc(docRef);
     if (snapshot.exists()) {
-      return { id: snapshot.id, ...snapshot.data() } as Player;
+      return { ...snapshot.data(), id: snapshot.id } as Player;
     }
     return null;
   } catch (error) {

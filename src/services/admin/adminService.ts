@@ -16,7 +16,7 @@ export const getAdmins = async (): Promise<Admin[]> => {
   if (!isFirebaseConfigured || !db) return [];
   try {
     const snapshot = await getDocs(collection(db, ADMINS_COLLECTION));
-    return snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as unknown as Admin));
+    return snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as unknown as Admin));
   } catch (error) {
     console.error('Error getting admins', error);
     return [];
@@ -29,7 +29,7 @@ export const getAdmin = async (uid: string): Promise<Admin | null> => {
     const docRef = doc(db, ADMINS_COLLECTION, uid);
     const snapshot = await getDoc(docRef);
     if (snapshot.exists()) {
-      return { uid: snapshot.id, ...snapshot.data() } as unknown as Admin;
+      return { ...snapshot.data(), uid: snapshot.id } as unknown as Admin;
     }
     return null;
   } catch (error) {

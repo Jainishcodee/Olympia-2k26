@@ -106,7 +106,7 @@ export function useCollection<T extends { id: string }>(
         query(collection(db, name), ...constraints),
         (snapshot) => {
           let next = snapshot.docs.map(
-            (d) => ({ id: d.id, ...d.data() }) as T,
+            (d) => ({ ...d.data(), id: d.id }) as T,
           );
           if (sortBy) {
             next = [...next].sort((a, b) => {
@@ -184,9 +184,9 @@ export function useCollectionGroup<T extends { id: string }>(
           let next = snapshot.docs.map(
             (d) =>
               ({
+                ...d.data(),
                 id: d.id,
                 matchId: d.data().matchId || d.ref.parent?.parent?.id,
-                ...d.data(),
               } as unknown as T),
           );
           if (sortBy) {
@@ -255,7 +255,7 @@ export function useDoc<T extends { id: string }>(
         (snapshot) => {
           setValue(
             snapshot.exists()
-              ? ({ id: snapshot.id, ...snapshot.data() } as T)
+              ? ({ ...snapshot.data(), id: snapshot.id } as T)
               : null,
           );
           setError(null);
